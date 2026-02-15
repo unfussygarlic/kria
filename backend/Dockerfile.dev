@@ -1,0 +1,30 @@
+# Kriya Backend - Development Dockerfile
+# For Edge Functions development
+# Main Supabase services run via docker-compose
+
+FROM denoland/deno:1.40.0
+
+# Install utilities
+RUN apt-get update && apt-get install -y \
+    curl \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Supabase CLI
+RUN curl -fsSL https://github.com/supabase/cli/releases/download/v1.142.2/supabase_linux_amd64.tar.gz | tar -xz \
+    && mv supabase /usr/local/bin/
+
+# Set working directory
+WORKDIR /app
+
+# Copy Supabase configuration
+COPY supabase/ ./supabase/
+
+# Expose Edge Functions port
+EXPOSE 54321
+
+# Environment
+ENV DENO_DIR=/deno-dir
+
+# Start Edge Functions server
+CMD ["supabase", "functions", "serve", "--no-verify-jwt"]

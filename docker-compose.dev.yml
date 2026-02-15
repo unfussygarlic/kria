@@ -1,0 +1,60 @@
+# Kriya - Development Environment Overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Note: Frontend runs separately in terminal (npx expo start)
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # BACKEND - FastAPI Development Mode
+  # ===========================================
+  kriya-api:
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/api:/app   # hot-reload: code changes apply instantly
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # ===========================================
+  # BACKEND - Supabase Development Mode
+  # ===========================================
+  supabase-db:
+    ports:
+      - "54322:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+
+  supabase-studio:
+    ports:
+      - "54323:3000"
+
+  supabase-auth:
+    ports:
+      - "9999:9999"
+    environment:
+      # Enable phone auth (for production)
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "true"
+      # Enable password auth (for development mock)
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      # Auto-confirm in development
+      GOTRUE_SMS_AUTOCONFIRM: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+
+  supabase-kong:
+    ports:
+      - "54321:8000"    # Main API endpoint
+      - "54320:8443"    # HTTPS (if needed)
+
+  supabase-realtime:
+    ports:
+      - "4000:4000"
+
+  supabase-storage:
+    ports:
+      - "5000:5000"
+
+  supabase-meta:
+    ports:
+      - "8080:8080"
+
+# No volumes needed - frontend runs separately

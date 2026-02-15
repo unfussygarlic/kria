@@ -1,0 +1,27 @@
+# Kriya Backend - Production Dockerfile
+# For Edge Functions deployment validation
+# Database and core services run on Supabase Cloud
+
+FROM denoland/deno:1.40.0
+
+# Set working directory
+WORKDIR /app
+
+# Copy Edge Functions
+COPY supabase/functions/ ./functions/
+
+# Cache dependencies
+RUN deno cache functions/*/index.ts || true
+
+# Environment
+ENV DENO_DIR=/deno-dir
+
+# Note: Edge Functions are deployed via Supabase CLI:
+# supabase functions deploy --project-ref <ref>
+#
+# This Dockerfile is for:
+# 1. CI/CD validation
+# 2. Local testing with production-like environment
+# 3. Self-hosted Supabase deployments
+
+CMD ["echo", "Use 'supabase functions deploy' for production deployment"]

@@ -1,0 +1,69 @@
+# Kriya - Production Environment Overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # FRONTEND - Production Build
+  # ===========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        - EXPO_PUBLIC_APP_ENV=production
+        - EXPO_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+        - EXPO_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    environment:
+      - NODE_ENV=production
+    # No port exposure - use EAS Build for app store deployment
+    # This container is for building, not serving
+
+  # ===========================================
+  # BACKEND - Production Notes
+  # ===========================================
+  # In production, use Supabase Cloud instead of self-hosted
+  # The backend services below are DISABLED for production
+  #
+  # To deploy:
+  # 1. Create project at supabase.com
+  # 2. Run migrations: supabase db push --linked
+  # 3. Set env vars in EAS/app config
+  # ===========================================
+
+  supabase-db:
+    profiles:
+      - disabled  # Not used in production
+
+  supabase-studio:
+    profiles:
+      - disabled
+
+  supabase-auth:
+    profiles:
+      - disabled
+
+  supabase-rest:
+    profiles:
+      - disabled
+
+  supabase-realtime:
+    profiles:
+      - disabled
+
+  supabase-storage:
+    profiles:
+      - disabled
+
+  supabase-meta:
+    profiles:
+      - disabled
+
+  supabase-kong:
+    profiles:
+      - disabled
+
+  supabase-imgproxy:
+    profiles:
+      - disabled

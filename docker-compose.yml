@@ -1,0 +1,237 @@
+# Kriya - Base Docker Compose Configuration
+# Use with docker-compose.dev.yml or docker-compose.prod.yml
+
+version: '3.8'
+
+# Load environment variables
+x-env: &default-env
+  env_file:
+    - .env.development
+
+services:
+  # ===========================================
+  # BACKEND - FastAPI
+  # ===========================================
+  kriya-api:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    environment:
+      SUPABASE_URL: http://supabase-kong:8000
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      SUPABASE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@supabase-db:5432/postgres
+      ENVIRONMENT: ${APP_ENV:-development}
+      API_VERSION: v1
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    networks:
+      - kriya-network
+
+  # ===========================================
+  # BACKEND - Supabase Stack
+  # ===========================================
+
+  # PostgreSQL Database
+  supabase-db:
+    image: supabase/postgres:15.1.1.61
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+    volumes:
+      - supabase-db-data:/var/lib/postgresql/data
+      - ./backend/supabase/init/zzz-roles.sql:/docker-entrypoint-initdb.d/init-scripts/99999-set-passwords.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    networks:
+      - kriya-network
+
+  # Supabase Studio (Database UI)
+  supabase-studio:
+    image: supabase/studio:20240101-8e4a094
+    environment:
+      STUDIO_PG_META_URL: http://supabase-meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DEFAULT_ORGANIZATION_NAME: Kriya
+      DEFAULT_PROJECT_NAME: Kriya Dev
+      SUPABASE_URL: http://supabase-kong:8000
+      SUPABASE_PUBLIC_URL: http://localhost:54321
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+    depends_on:
+      supabase-meta:
+        condition: service_started
+    networks:
+      - kriya-network
+
+  # Supabase Auth (GoTrue)
+  supabase-auth:
+    image: supabase/gotrue:v2.143.0
+    restart: on-failure
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: http://localhost:54321
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-postgres}@supabase-db:5432/postgres
+      GOTRUE_SITE_URL: ${SITE_URL:-http://localhost:8081}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS:-}
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "true"
+      GOTRUE_SMS_AUTOCONFIRM: ${SMS_AUTOCONFIRM:-true}
+      GOTRUE_SMS_PROVIDER: ${SMS_PROVIDER:-twilio}
+      GOTRUE_SMS_TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      GOTRUE_SMS_TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: ${TWILIO_MESSAGE_SERVICE_SID:-}
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+    networks:
+      - kriya-network
+
+  # Supabase REST API (PostgREST)
+  supabase-rest:
+    image: postgrest/postgrest:v12.0.1
+    restart: on-failure
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD:-postgres}@supabase-db:5432/postgres
+      PGRST_DB_SCHEMAS: public,storage,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    networks:
+      - kriya-network
+
+  # Supabase Realtime
+  supabase-realtime:
+    image: supabase/realtime:v2.27.5
+    restart: on-failure
+    environment:
+      PORT: 4000
+      DB_HOST: supabase-db
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_NAME: postgres
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: supabase_realtime_encryption_key_12345
+      API_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      FLY_ALLOC_ID: local
+      FLY_APP_NAME: realtime
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-super-secret-key-base-at-least-64-characters-long-for-realtime-service}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      ENABLE_TAILSCALE: "false"
+      DNS_NODES: "''"
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    networks:
+      - kriya-network
+
+  # Supabase Storage
+  supabase-storage:
+    image: supabase/storage-api:v0.46.4
+    restart: on-failure
+    environment:
+      ANON_KEY: ${SUPABASE_ANON_KEY}
+      SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://supabase-rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD:-postgres}@supabase-db:5432/postgres
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: local
+      GLOBAL_S3_BUCKET: stub
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://supabase-imgproxy:8080
+    volumes:
+      - supabase-storage-data:/var/lib/storage
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+      supabase-rest:
+        condition: service_started
+    networks:
+      - kriya-network
+
+  # Supabase Meta (for Studio)
+  supabase-meta:
+    image: supabase/postgres-meta:v0.79.0
+    restart: on-failure
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: supabase-db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: supabase_admin
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    networks:
+      - kriya-network
+
+  # Supabase Kong (API Gateway)
+  supabase-kong:
+    image: kong:2.8.1
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+    volumes:
+      - ./backend/kong.yml:/var/lib/kong/kong.yml:ro
+    depends_on:
+      - supabase-auth
+      - supabase-rest
+      - supabase-realtime
+      - supabase-storage
+    networks:
+      - kriya-network
+
+  # Image Proxy (for storage transformations)
+  supabase-imgproxy:
+    image: darthsim/imgproxy:v3.21
+    environment:
+      IMGPROXY_BIND: ":8080"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
+      IMGPROXY_USE_ETAG: "true"
+    volumes:
+      - supabase-storage-data:/var/lib/storage:ro
+    networks:
+      - kriya-network
+
+networks:
+  kriya-network:
+    driver: bridge
+
+volumes:
+  supabase-db-data:
+  supabase-storage-data:
