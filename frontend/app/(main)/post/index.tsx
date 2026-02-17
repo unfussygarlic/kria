@@ -13,7 +13,7 @@ import {
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useGigStore } from "@/stores/gigStore";
-import { Colors, CategoryColors } from "@/constants/colors";
+import { T, CategoryColors } from "@/constants/colors";
 import { GigCategories, Languages } from "@/constants/config";
 import { GigCategory, PayType, GenderPreference } from "@/types/database";
 import { StickyFooter } from "@/components/ui/StickyFooter";
@@ -107,7 +107,7 @@ export default function PostGigScreen() {
                     borderColor:
                       category === cat.value
                         ? CategoryColors[cat.value]
-                        : Colors.border,
+                        : T.border,
                   },
                 ]}
                 onPress={() => setCategory(cat.value as GigCategory)}
@@ -137,7 +137,7 @@ export default function PostGigScreen() {
             disabled={!category}
           >
             <Text style={styles.nextButtonText}>Next</Text>
-            <Feather name="arrow-right" size={20} color={Colors.text.inverse} />
+            <Feather name="arrow-right" size={20} color={T.textInverse} />
           </Pressable>
         </StickyFooter>
       </View>
@@ -157,7 +157,7 @@ export default function PostGigScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Pressable style={styles.backStep} onPress={() => setStep(1)}>
-            <Feather name="arrow-left" size={20} color={Colors.primary.DEFAULT} />
+            <Feather name="arrow-left" size={20} color={T.primary} />
             <Text style={styles.backStepText}>Back</Text>
           </Pressable>
 
@@ -169,7 +169,7 @@ export default function PostGigScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="e.g., Registration Desk Staff Needed"
-                placeholderTextColor={Colors.text.muted}
+                placeholderTextColor={T.textMuted}
                 value={title}
                 onChangeText={setTitle}
               />
@@ -180,7 +180,7 @@ export default function PostGigScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="e.g., TechEvents India"
-                placeholderTextColor={Colors.text.muted}
+                placeholderTextColor={T.textMuted}
                 value={companyName}
                 onChangeText={setCompanyName}
               />
@@ -191,7 +191,7 @@ export default function PostGigScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="e.g., Bangalore Tech Summit 2026"
-                placeholderTextColor={Colors.text.muted}
+                placeholderTextColor={T.textMuted}
                 value={eventName}
                 onChangeText={setEventName}
               />
@@ -202,7 +202,7 @@ export default function PostGigScreen() {
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Describe the gig, responsibilities, etc."
-                placeholderTextColor={Colors.text.muted}
+                placeholderTextColor={T.textMuted}
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -220,7 +220,7 @@ export default function PostGigScreen() {
             disabled={!title}
           >
             <Text style={styles.nextButtonText}>Next</Text>
-            <Feather name="arrow-right" size={20} color={Colors.text.inverse} />
+            <Feather name="arrow-right" size={20} color={T.textInverse} />
           </Pressable>
         </StickyFooter>
       </KeyboardAvoidingView>
@@ -240,7 +240,7 @@ export default function PostGigScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Pressable style={styles.backStep} onPress={() => setStep(2)}>
-            <Feather name="arrow-left" size={20} color={Colors.primary.DEFAULT} />
+            <Feather name="arrow-left" size={20} color={T.primary} />
             <Text style={styles.backStepText}>Back</Text>
           </Pressable>
 
@@ -253,7 +253,7 @@ export default function PostGigScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="500"
-                  placeholderTextColor={Colors.text.muted}
+                  placeholderTextColor={T.textMuted}
                   value={payAmount}
                   onChangeText={setPayAmount}
                   keyboardType="numeric"
@@ -290,7 +290,7 @@ export default function PostGigScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="e.g., KTPO Convention Center"
-                placeholderTextColor={Colors.text.muted}
+                placeholderTextColor={T.textMuted}
                 value={venueName}
                 onChangeText={setVenueName}
               />
@@ -301,7 +301,7 @@ export default function PostGigScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Bangalore"
-                placeholderTextColor={Colors.text.muted}
+                placeholderTextColor={T.textMuted}
                 value={city}
                 onChangeText={setCity}
               />
@@ -312,7 +312,7 @@ export default function PostGigScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="2026-03-15"
-                placeholderTextColor={Colors.text.muted}
+                placeholderTextColor={T.textMuted}
                 value={eventDate}
                 onChangeText={setEventDate}
               />
@@ -324,7 +324,7 @@ export default function PostGigScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="09:00"
-                  placeholderTextColor={Colors.text.muted}
+                  placeholderTextColor={T.textMuted}
                   value={shiftStart}
                   onChangeText={setShiftStart}
                 />
@@ -334,7 +334,7 @@ export default function PostGigScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="18:00"
-                  placeholderTextColor={Colors.text.muted}
+                  placeholderTextColor={T.textMuted}
                   value={shiftEnd}
                   onChangeText={setShiftEnd}
                 />
@@ -346,7 +346,7 @@ export default function PostGigScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="5"
-                placeholderTextColor={Colors.text.muted}
+                placeholderTextColor={T.textMuted}
                 value={slots}
                 onChangeText={setSlots}
                 keyboardType="numeric"
@@ -365,7 +365,7 @@ export default function PostGigScreen() {
             disabled={!payAmount || !venueName || !eventDate}
           >
             <Text style={styles.nextButtonText}>Next</Text>
-            <Feather name="arrow-right" size={20} color={Colors.text.inverse} />
+            <Feather name="arrow-right" size={20} color={T.textInverse} />
           </Pressable>
         </StickyFooter>
       </KeyboardAvoidingView>
@@ -384,7 +384,7 @@ export default function PostGigScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Pressable style={styles.backStep} onPress={() => setStep(3)}>
-          <Feather name="arrow-left" size={20} color={Colors.primary.DEFAULT} />
+          <Feather name="arrow-left" size={20} color={T.primary} />
           <Text style={styles.backStepText}>Back</Text>
         </Pressable>
 
@@ -396,7 +396,7 @@ export default function PostGigScreen() {
             <TextInput
               style={styles.input}
               placeholder="e.g., Formal - black trousers, white shirt"
-              placeholderTextColor={Colors.text.muted}
+              placeholderTextColor={T.textMuted}
               value={dressCode}
               onChangeText={setDressCode}
             />
@@ -472,7 +472,7 @@ export default function PostGigScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
   },
   scroll: {
     flex: 1,
@@ -489,17 +489,17 @@ const styles = StyleSheet.create({
   },
   backStepText: {
     fontSize: 16,
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
   },
   stepTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: Colors.text.primary,
+    color: T.text,
     marginBottom: 4,
   },
   stepSubtitle: {
     fontSize: 14,
-    color: Colors.text.secondary,
+    color: T.textSub,
     marginBottom: 24,
   },
   categoryGrid: {
@@ -510,15 +510,15 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     width: "47%",
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: T.border,
   },
   categoryCardSelected: {
-    backgroundColor: Colors.primary[50],
+    backgroundColor: T.primary50,
   },
   categoryIcon: {
     width: 48,
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
   categoryLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
     textAlign: "center",
   },
   form: {
@@ -548,17 +548,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
   },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: T.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 52,
     fontSize: 16,
-    color: Colors.text.primary,
+    color: T.text,
   },
   textArea: {
     height: 100,
@@ -572,21 +572,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 8,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: T.border,
     alignItems: "center",
   },
   payTypeOptionSelected: {
-    backgroundColor: Colors.primary[100],
-    borderColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary100,
+    borderColor: T.primary,
   },
   payTypeText: {
     fontSize: 12,
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   payTypeTextSelected: {
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
     fontWeight: "600",
   },
   genderContainer: {
@@ -597,21 +597,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: T.border,
     alignItems: "center",
   },
   genderOptionSelected: {
-    backgroundColor: Colors.primary[100],
-    borderColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary100,
+    borderColor: T.primary,
   },
   genderText: {
     fontSize: 14,
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   genderTextSelected: {
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
     fontWeight: "600",
   },
   chipContainer: {
@@ -623,20 +623,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: T.border,
   },
   chipSelected: {
-    backgroundColor: Colors.primary[100],
-    borderColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary100,
+    borderColor: T.primary,
   },
   chipText: {
     fontSize: 14,
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   chipTextSelected: {
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
     fontWeight: "600",
   },
   nextButton: {
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary,
     height: 56,
     borderRadius: 12,
   },
@@ -652,12 +652,12 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   nextButtonText: {
-    color: Colors.text.inverse,
+    color: T.textInverse,
     fontSize: 18,
     fontWeight: "600",
   },
   submitButton: {
-    backgroundColor: Colors.success,
+    backgroundColor: T.success,
     height: 56,
     borderRadius: 12,
     justifyContent: "center",
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: Colors.text.inverse,
+    color: T.textInverse,
     fontSize: 18,
     fontWeight: "600",
   },

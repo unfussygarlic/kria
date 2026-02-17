@@ -153,6 +153,7 @@ export interface Database {
           created_at: string;
           updated_at: string;
           application_deadline: string | null;
+          event_id: string | null;
         };
         Insert: {
           poster_id: string;
@@ -182,6 +183,7 @@ export interface Database {
           experience_required?: boolean;
           requirements_note?: string | null;
           status?: GigStatus;
+          event_id?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["gigs"]["Insert"]>;
       };
@@ -261,3 +263,46 @@ export type GigAssignment =
   Database["public"]["Tables"]["gig_assignments"]["Row"];
 export type MomentumWallet =
   Database["public"]["Tables"]["momentum_wallets"]["Row"];
+
+// Event types (from FastAPI — not stored in Supabase client schema)
+export interface EventJobSummary {
+  id: string;
+  title: string;
+  category: GigCategory;
+  pay_amount: number;
+  pay_type: PayType;
+  slots_total: number;
+  slots_filled: number;
+  status: GigStatus;
+  application_count: number;
+  shift_start_time: string;
+  shift_end_time: string;
+}
+
+export interface EventResponse {
+  id: string;
+  title: string;
+  description: string | null;
+  venue_name: string;
+  city: string;
+  state: string | null;
+  event_date: string;
+  event_end_date: string | null;
+  is_multi_day: boolean;
+  status: string;
+  created_at: string;
+  jobs: EventJobSummary[];
+}
+
+export interface MyEventSummary {
+  id: string;
+  title: string;
+  venue_name: string;
+  city: string;
+  event_date: string;
+  status: string;
+  job_count: number;
+  total_slots: number;
+  total_applicants: number;
+  created_at: string;
+}

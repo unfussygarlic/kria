@@ -13,7 +13,7 @@ import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
 import {
   verifyIdentity,
   ID_TYPE_OPTIONS,
@@ -40,7 +40,7 @@ export default function VerifyIdentityScreen() {
       <View style={styles.screen}>
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="arrow-left" size={22} color={Colors.text.primary} />
+            <Feather name="arrow-left" size={22} color={T.text} />
           </Pressable>
           <Text style={styles.headerTitle}>Verify Identity</Text>
           <View style={{ width: 34 }} />
@@ -48,7 +48,7 @@ export default function VerifyIdentityScreen() {
 
         <View style={styles.verifiedContainer}>
           <View style={styles.verifiedIcon}>
-            <Feather name="check-circle" size={56} color={Colors.success} />
+            <Feather name="check-circle" size={56} color={T.success} />
           </View>
           <Text style={styles.verifiedTitle}>Identity Verified</Text>
           <Text style={styles.verifiedSubtitle}>
@@ -91,7 +91,7 @@ export default function VerifyIdentityScreen() {
       <View style={styles.screen}>
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="arrow-left" size={22} color={Colors.text.primary} />
+            <Feather name="arrow-left" size={22} color={T.text} />
           </Pressable>
           <Text style={styles.headerTitle}>Verify Identity</Text>
           <View style={{ width: 34 }} />
@@ -99,7 +99,7 @@ export default function VerifyIdentityScreen() {
 
         <View style={styles.verifiedContainer}>
           <View style={styles.verifiedIcon}>
-            <Feather name="check-circle" size={56} color={Colors.success} />
+            <Feather name="check-circle" size={56} color={T.success} />
           </View>
           <Text style={styles.verifiedTitle}>Verified!</Text>
           <Text style={styles.verifiedSubtitle}>
@@ -125,7 +125,7 @@ export default function VerifyIdentityScreen() {
       {/* Fixed header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Feather name="arrow-left" size={22} color={Colors.text.primary} />
+          <Feather name="arrow-left" size={22} color={T.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Verify Identity</Text>
         <View style={{ width: 34 }} />
@@ -178,7 +178,7 @@ export default function VerifyIdentityScreen() {
               <TextInput
                 style={styles.idInput}
                 placeholder={selectedOption.placeholder}
-                placeholderTextColor={Colors.text.muted}
+                placeholderTextColor={T.textMuted}
                 value={idValue}
                 onChangeText={(t) => { setIdValue(t); setError(""); }}
                 autoCapitalize="characters"
@@ -217,7 +217,7 @@ export default function VerifyIdentityScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
   },
   scroll: {
     flex: 1,
@@ -228,9 +228,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: T.border,
   },
   backButton: {
     padding: 4,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
   },
   body: {
     padding: 20,
@@ -246,11 +246,11 @@ const styles = StyleSheet.create({
   },
   intro: {
     fontSize: 15,
-    color: Colors.text.secondary,
+    color: T.textSub,
     lineHeight: 22,
   },
   section: {
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderRadius: 16,
     padding: 16,
     gap: 12,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: Colors.text.primary,
+    color: T.text,
   },
   typeGrid: {
     flexDirection: "row",
@@ -269,45 +269,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: T.border,
   },
   typeCardSelected: {
-    backgroundColor: Colors.primary[50],
-    borderColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary50,
+    borderColor: T.primary,
   },
   typeLabel: {
     fontSize: 14,
     fontWeight: "500",
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   typeLabelSelected: {
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
     fontWeight: "700",
   },
   formatHint: {
     fontSize: 13,
-    color: Colors.text.muted,
+    color: T.textMuted,
   },
   idInput: {
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: T.border,
     borderRadius: 10,
     paddingHorizontal: 16,
     height: 52,
     fontSize: 16,
-    color: Colors.text.primary,
+    color: T.text,
     letterSpacing: 1,
   },
   error: {
-    color: Colors.error,
+    color: T.error,
     fontSize: 14,
     textAlign: "center",
   },
   button: {
-    backgroundColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary,
     height: 54,
     borderRadius: 12,
     justifyContent: "center",
@@ -317,13 +317,13 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   buttonText: {
-    color: Colors.text.inverse,
+    color: T.textInverse,
     fontSize: 17,
     fontWeight: "600",
   },
   disclaimer: {
     fontSize: 12,
-    color: Colors.text.muted,
+    color: T.textMuted,
     textAlign: "center",
     lineHeight: 18,
   },
@@ -342,11 +342,11 @@ const styles = StyleSheet.create({
   verifiedTitle: {
     fontSize: 26,
     fontWeight: "bold",
-    color: Colors.text.primary,
+    color: T.text,
   },
   verifiedSubtitle: {
     fontSize: 15,
-    color: Colors.text.secondary,
+    color: T.textSub,
     textAlign: "center",
     lineHeight: 22,
   },

@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useAuthStore } from "@/stores/authStore";
 import { useWalletStore } from "@/stores/walletStore";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
 import { calculateCompletion } from "@/lib/profileCompletion";
 
 export default function ProfileScreen() {
@@ -41,14 +41,14 @@ export default function ProfileScreen() {
         <View style={styles.badges}>
           {profile?.is_student && (
             <View style={styles.badge}>
-              <Feather name="book" size={12} color={Colors.primary.DEFAULT} />
+              <Feather name="book" size={12} color={T.primary} />
               <Text style={styles.badgeText}>Student</Text>
             </View>
           )}
           {profile?.is_verified && (
             <View style={[styles.badge, styles.verifiedBadge]}>
-              <Feather name="check-circle" size={12} color={Colors.success} />
-              <Text style={[styles.badgeText, { color: Colors.success }]}>
+              <Feather name="check-circle" size={12} color={T.success} />
+              <Text style={[styles.badgeText, { color: T.success }]}>
                 Verified
               </Text>
             </View>
@@ -109,7 +109,7 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.statDivider} />
         <View style={styles.stat}>
-          <Text style={[styles.statValue, { color: Colors.momentum.DEFAULT }]}>
+          <Text style={[styles.statValue, { color: T.momentum }]}>
             {wallet?.balance || 0}
           </Text>
           <Text style={styles.statLabel}>Momentum</Text>
@@ -122,30 +122,30 @@ export default function ProfileScreen() {
           style={styles.menuItem}
           onPress={() => router.push("/(main)/wallet")}
         >
-          <Feather name="zap" size={20} color={Colors.text.primary} />
+          <Feather name="zap" size={20} color={T.text} />
           <Text style={styles.menuItemText}>Momentum Wallet</Text>
-          <Feather name="chevron-right" size={20} color={Colors.text.muted} />
+          <Feather name="chevron-right" size={20} color={T.textMuted} />
         </Pressable>
 
         <Pressable style={styles.menuItem}>
-          <Feather name="award" size={20} color={Colors.text.primary} />
+          <Feather name="award" size={20} color={T.text} />
           <Text style={styles.menuItemText}>My Badges</Text>
-          <Feather name="chevron-right" size={20} color={Colors.text.muted} />
+          <Feather name="chevron-right" size={20} color={T.textMuted} />
         </Pressable>
 
         <Pressable style={styles.menuItem}>
-          <Feather name="clock" size={20} color={Colors.text.primary} />
+          <Feather name="clock" size={20} color={T.text} />
           <Text style={styles.menuItemText}>Gig History</Text>
-          <Feather name="chevron-right" size={20} color={Colors.text.muted} />
+          <Feather name="chevron-right" size={20} color={T.textMuted} />
         </Pressable>
 
         <Pressable
           style={styles.menuItem}
           onPress={() => router.push("/(main)/edit-profile")}
         >
-          <Feather name="edit-2" size={20} color={Colors.text.primary} />
+          <Feather name="edit-2" size={20} color={T.text} />
           <Text style={styles.menuItemText}>Edit Profile</Text>
-          <Feather name="chevron-right" size={20} color={Colors.text.muted} />
+          <Feather name="chevron-right" size={20} color={T.textMuted} />
         </Pressable>
 
         <Pressable
@@ -155,32 +155,32 @@ export default function ProfileScreen() {
           <Feather
             name={profile?.id_verified ? "shield" : "shield-off"}
             size={20}
-            color={profile?.id_verified ? Colors.success : Colors.text.primary}
+            color={profile?.id_verified ? T.success : T.text}
           />
           <Text style={styles.menuItemText}>Verify Identity</Text>
           {profile?.id_verified ? (
             <Text style={styles.verifiedTag}>Verified</Text>
           ) : (
-            <Feather name="chevron-right" size={20} color={Colors.text.muted} />
+            <Feather name="chevron-right" size={20} color={T.textMuted} />
           )}
         </Pressable>
 
         <Pressable style={styles.menuItem}>
-          <Feather name="settings" size={20} color={Colors.text.primary} />
+          <Feather name="settings" size={20} color={T.text} />
           <Text style={styles.menuItemText}>Settings</Text>
-          <Feather name="chevron-right" size={20} color={Colors.text.muted} />
+          <Feather name="chevron-right" size={20} color={T.textMuted} />
         </Pressable>
 
         <Pressable style={styles.menuItem}>
-          <Feather name="help-circle" size={20} color={Colors.text.primary} />
+          <Feather name="help-circle" size={20} color={T.text} />
           <Text style={styles.menuItemText}>Help & Support</Text>
-          <Feather name="chevron-right" size={20} color={Colors.text.muted} />
+          <Feather name="chevron-right" size={20} color={T.textMuted} />
         </Pressable>
       </View>
 
       {/* Sign Out */}
       <Pressable style={styles.signOutButton} onPress={handleSignOut}>
-        <Feather name="log-out" size={20} color={Colors.error} />
+        <Feather name="log-out" size={20} color={T.error} />
         <Text style={styles.signOutText}>Sign Out</Text>
       </Pressable>
 
@@ -193,19 +193,19 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
   },
   header: {
     alignItems: "center",
     paddingTop: 60,
     paddingBottom: 24,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
   },
   avatarContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.primary[100],
+    backgroundColor: T.primary100,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
@@ -213,16 +213,16 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 32,
     fontWeight: "bold",
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
   },
   name: {
     fontSize: 24,
     fontWeight: "bold",
-    color: Colors.text.primary,
+    color: T.text,
   },
   phone: {
     fontSize: 14,
-    color: Colors.text.secondary,
+    color: T.textSub,
     marginTop: 4,
   },
   badges: {
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: T.primary50,
   },
   verifiedBadge: {
     backgroundColor: "#DCFCE7",
@@ -245,19 +245,19 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: "600",
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
   },
 
   // ── Completion card ──────────────────────────────────────────
   completionCard: {
     marginHorizontal: 16,
     marginTop: 12,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderRadius: 16,
     padding: 16,
     gap: 10,
     borderWidth: 1,
-    borderColor: Colors.primary[100],
+    borderColor: T.primary100,
   },
   completionRow: {
     flexDirection: "row",
@@ -267,27 +267,27 @@ const styles = StyleSheet.create({
   completionTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: Colors.text.primary,
+    color: T.text,
   },
   completionPct: {
     fontSize: 20,
     fontWeight: "bold",
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
   },
   progressTrack: {
     height: 6,
-    backgroundColor: Colors.border,
+    backgroundColor: T.border,
     borderRadius: 3,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    backgroundColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary,
     borderRadius: 3,
   },
   completionMissing: {
     fontSize: 12,
-    color: Colors.text.muted,
+    color: T.textMuted,
   },
   completionButton: {
     alignSelf: "flex-end",
@@ -295,13 +295,13 @@ const styles = StyleSheet.create({
   completionButtonText: {
     fontSize: 13,
     fontWeight: "700",
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
   },
 
   // ── Stats ────────────────────────────────────────────────────
   stats: {
     flexDirection: "row",
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     marginTop: 8,
     paddingVertical: 20,
     paddingHorizontal: 16,
@@ -313,21 +313,21 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: "bold",
-    color: Colors.text.primary,
+    color: T.text,
   },
   statLabel: {
     fontSize: 12,
-    color: Colors.text.secondary,
+    color: T.textSub,
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    backgroundColor: Colors.border,
+    backgroundColor: T.border,
   },
 
   // ── Menu ─────────────────────────────────────────────────────
   menu: {
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     marginTop: 8,
   },
   menuItem: {
@@ -336,18 +336,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: T.border,
     gap: 12,
   },
   menuItemText: {
     flex: 1,
     fontSize: 16,
-    color: Colors.text.primary,
+    color: T.text,
   },
   verifiedTag: {
     fontSize: 12,
     fontWeight: "600",
-    color: Colors.success,
+    color: T.success,
   },
 
   // ── Footer ───────────────────────────────────────────────────
@@ -360,19 +360,19 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderWidth: 1,
-    borderColor: Colors.error,
+    borderColor: T.error,
   },
   signOutText: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.error,
+    color: T.error,
   },
   version: {
     textAlign: "center",
     fontSize: 12,
-    color: Colors.text.muted,
+    color: T.textMuted,
     marginTop: 24,
     marginBottom: 32,
   },

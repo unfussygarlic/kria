@@ -3,8 +3,9 @@ import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "@/stores/authStore";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -24,18 +25,18 @@ export default function RootLayout() {
   }
 
   return (
-    <>
-      <StatusBar style="dark" backgroundColor={Colors.background} />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <StatusBar style="dark" backgroundColor={T.bg} />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: Colors.background },
+          contentStyle: { backgroundColor: T.bg },
         }}
       >
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="(main)" />
       </Stack>
-    </>
+    </GestureHandlerRootView>
   );
 }

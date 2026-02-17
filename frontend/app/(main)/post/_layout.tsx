@@ -1,14 +1,14 @@
 import { Stack } from "expo-router";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
 
 export default function PostLayout() {
   return (
     <Stack
       screenOptions={{
         headerShown: true,
-        headerStyle: { backgroundColor: Colors.surface },
-        headerTintColor: Colors.primary.DEFAULT,
-        contentStyle: { backgroundColor: Colors.background },
+        headerStyle: { backgroundColor: T.surface },
+        headerTintColor: T.primary,
+        contentStyle: { backgroundColor: T.bg },
       }}
     >
       <Stack.Screen

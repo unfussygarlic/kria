@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuthStore } from "@/stores/authStore";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
 
 const OTP_LENGTH = 6;
 
@@ -164,7 +164,7 @@ export default function VerifyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
   },
   content: {
     flex: 1,
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
   },
   header: {
     marginBottom: 40,
@@ -184,17 +184,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: Colors.text.primary,
+    color: T.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: Colors.text.secondary,
+    color: T.textSub,
     lineHeight: 24,
   },
   phone: {
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
   },
   otpContainer: {
     flexDirection: "row",
@@ -204,35 +204,35 @@ const styles = StyleSheet.create({
   otpBox: {
     width: 48,
     height: 56,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: T.border,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
   otpBoxActive: {
-    borderColor: Colors.primary.DEFAULT,
+    borderColor: T.primary,
     borderWidth: 2,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: T.primary50,
   },
   otpBoxFilled: {
-    borderColor: Colors.primary[300],
-    backgroundColor: Colors.surface,
+    borderColor: T.primary300,
+    backgroundColor: T.surface,
   },
   otpBoxError: {
-    borderColor: Colors.error,
+    borderColor: T.error,
     backgroundColor: "#FEF2F2",
   },
   otpDigit: {
     fontSize: 24,
     fontWeight: "bold",
-    color: Colors.text.primary,
+    color: T.text,
   },
   cursor: {
     width: 2,
     height: 24,
-    backgroundColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary,
     borderRadius: 1,
   },
   // Invisible — positioned off-screen so the keyboard never overlaps the UI
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     top: -100,
   },
   error: {
-    color: Colors.error,
+    color: T.error,
     fontSize: 14,
     textAlign: "center",
     marginBottom: 16,
@@ -255,16 +255,16 @@ const styles = StyleSheet.create({
   },
   resendTimer: {
     fontSize: 14,
-    color: Colors.text.muted,
+    color: T.textMuted,
   },
   resendButton: {
     fontSize: 14,
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
     fontWeight: "600",
   },
   loadingText: {
     fontSize: 16,
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
     textAlign: "center",
     marginTop: 24,
   },

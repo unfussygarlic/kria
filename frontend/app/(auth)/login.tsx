@@ -7,10 +7,13 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useAuthStore } from "@/stores/authStore";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
+import { rf, rw, SCREEN } from "@/constants/responsive";
 
 export default function LoginScreen() {
   const [phone, setPhone] = useState("");
@@ -23,24 +26,15 @@ export default function LoginScreen() {
       setError("Enter a valid phone number");
       return;
     }
-
     setIsLoading(true);
     setError("");
-
-    // Add country code if not present
     const fullPhone = phone.startsWith("+") ? phone : `+91${phone}`;
-
     const result = await sendOtp(fullPhone);
-
     setIsLoading(false);
-
     if (result.error) {
       setError(result.error);
     } else {
-      router.push({
-        pathname: "/(auth)/verify",
-        params: { phone: fullPhone },
-      });
+      router.push({ pathname: "/(auth)/verify", params: { phone: fullPhone } });
     }
   };
 
@@ -49,22 +43,35 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+      >
+        {/* ── Gradient Hero ─────────────────────────────────────────────── */}
+        <LinearGradient
+          colors={["#F97316", "#EA580C", "#C2410C"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
           <Text style={styles.logo}>Kriya</Text>
           <Text style={styles.tagline}>Event gigs for students</Text>
-        </View>
+        </LinearGradient>
 
-        {/* Form */}
-        <View style={styles.form}>
+        {/* ── Form Card ─────────────────────────────────────────────────── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Welcome back</Text>
+          <Text style={styles.cardSubtitle}>Enter your phone number to get started</Text>
+
           <Text style={styles.label}>Phone Number</Text>
           <View style={styles.inputContainer}>
             <Text style={styles.countryCode}>+91</Text>
             <TextInput
               style={styles.input}
               placeholder="9876543210"
-              placeholderTextColor={Colors.text.muted}
+              placeholderTextColor={T.textMuted}
               keyboardType="phone-pad"
               value={phone}
               onChangeText={(text) => {
@@ -78,103 +85,143 @@ export default function LoginScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <Pressable
-            style={[styles.button, isLoading && styles.buttonDisabled]}
+            style={[styles.buttonWrapper, isLoading && styles.buttonDisabled]}
             onPress={handleSendOtp}
             disabled={isLoading}
           >
-            <Text style={styles.buttonText}>
-              {isLoading ? "Sending..." : "Get OTP"}
-            </Text>
+            <LinearGradient
+              colors={["#F97316", "#EA580C", "#C2410C"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>
+                {isLoading ? "Sending..." : "Get OTP"}
+              </Text>
+            </LinearGradient>
           </Pressable>
-        </View>
 
-        {/* Footer */}
-        <Text style={styles.footer}>
-          By continuing, you agree to our Terms of Service and Privacy Policy
-        </Text>
-      </View>
+          <Text style={styles.footer}>
+            By continuing, you agree to our Terms of Service and Privacy Policy
+          </Text>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
+const HERO_HEIGHT = SCREEN.height * 0.38;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
   },
-  content: {
+  scroll: {
     flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: "center",
   },
-  header: {
-    alignItems: "center",
-    marginBottom: 48,
+  scrollContent: {
+    minHeight: SCREEN.height,
+  },
+  // ── Hero
+  hero: {
+    height: HERO_HEIGHT,
+    justifyContent: "flex-end",
+    paddingHorizontal: rw(28),
+    paddingBottom: rw(36),
   },
   logo: {
-    fontSize: 48,
-    fontWeight: "bold",
-    color: Colors.primary.DEFAULT,
+    fontSize: rf(52),
+    fontWeight: "900",
+    color: "#fff",
+    letterSpacing: -1,
   },
   tagline: {
-    fontSize: 16,
-    color: Colors.text.secondary,
-    marginTop: 8,
+    fontSize: rf(15),
+    color: "rgba(255,255,255,0.85)",
+    marginTop: 4,
+    fontWeight: "500",
   },
-  form: {
-    marginBottom: 32,
+  // ── Card
+  card: {
+    flex: 1,
+    backgroundColor: T.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -20,
+    paddingHorizontal: rw(24),
+    paddingTop: rw(32),
+    paddingBottom: rw(32),
+  },
+  cardTitle: {
+    fontSize: rf(26),
+    fontWeight: "700",
+    color: T.text,
+    marginBottom: 4,
+  },
+  cardSubtitle: {
+    fontSize: rf(14),
+    color: T.textSub,
+    marginBottom: rw(28),
   },
   label: {
-    fontSize: 14,
+    fontSize: rf(13),
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.textSub,
     marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: T.bg,
+    borderWidth: 1.5,
+    borderColor: T.border,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 56,
+    paddingHorizontal: rw(16),
+    height: rw(56),
   },
   countryCode: {
-    fontSize: 18,
-    color: Colors.text.primary,
+    fontSize: rf(17),
+    color: T.text,
     marginRight: 8,
+    fontWeight: "600",
   },
   input: {
     flex: 1,
-    fontSize: 18,
-    color: Colors.text.primary,
+    fontSize: rf(17),
+    color: T.text,
   },
   error: {
-    color: Colors.error,
-    fontSize: 14,
+    color: T.error,
+    fontSize: rf(13),
     marginTop: 8,
   },
-  button: {
-    backgroundColor: Colors.primary.DEFAULT,
-    height: 56,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 24,
+  buttonWrapper: {
+    marginTop: rw(24),
+    borderRadius: 14,
+    overflow: "hidden",
   },
   buttonDisabled: {
     opacity: 0.6,
   },
+  button: {
+    height: rw(56),
+    justifyContent: "center",
+    alignItems: "center",
+  },
   buttonText: {
-    color: Colors.text.inverse,
-    fontSize: 18,
-    fontWeight: "600",
+    color: "#fff",
+    fontSize: rf(17),
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   footer: {
-    fontSize: 12,
-    color: Colors.text.muted,
+    fontSize: rf(12),
+    color: T.textMuted,
     textAlign: "center",
     lineHeight: 18,
+    marginTop: rw(24),
   },
 });

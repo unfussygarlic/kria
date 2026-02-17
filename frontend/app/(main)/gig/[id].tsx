@@ -11,7 +11,7 @@ import { useLocalSearchParams, Stack, router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useGigStore } from "@/stores/gigStore";
 import { useAuthStore } from "@/stores/authStore";
-import { Colors, CategoryColors } from "@/constants/colors";
+import { T, CategoryColors } from "@/constants/colors";
 import { GigCategories } from "@/constants/config";
 import { Gig } from "@/types/database";
 import { StickyFooter } from "@/components/ui/StickyFooter";
@@ -62,7 +62,7 @@ export default function GigDetailScreen() {
   }
 
   const categoryInfo = GigCategories.find((c) => c.value === gig.category);
-  const categoryColor = CategoryColors[gig.category] || Colors.text.muted;
+  const categoryColor = CategoryColors[gig.category] || T.textMuted;
   const isOwnGig = gig.poster_id === profile?.id;
 
   const formatTime = (time: string) => {
@@ -114,7 +114,7 @@ export default function GigDetailScreen() {
         {/* Details */}
         <View style={styles.details}>
           <View style={styles.detailRow}>
-            <Feather name="calendar" size={18} color={Colors.text.secondary} />
+            <Feather name="calendar" size={18} color={T.textSub} />
             <Text style={styles.detailText}>
               {new Date(gig.event_date).toLocaleDateString("en-IN", {
                 weekday: "short",
@@ -131,7 +131,7 @@ export default function GigDetailScreen() {
           </View>
 
           <View style={styles.detailRow}>
-            <Feather name="clock" size={18} color={Colors.text.secondary} />
+            <Feather name="clock" size={18} color={T.textSub} />
             <Text style={styles.detailText}>
               {formatTime(gig.shift_start_time)} -{" "}
               {formatTime(gig.shift_end_time)}
@@ -140,14 +140,14 @@ export default function GigDetailScreen() {
           </View>
 
           <View style={styles.detailRow}>
-            <Feather name="map-pin" size={18} color={Colors.text.secondary} />
+            <Feather name="map-pin" size={18} color={T.textSub} />
             <Text style={styles.detailText}>
               {gig.venue_name}, {gig.city}
             </Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Feather name="users" size={18} color={Colors.text.secondary} />
+            <Feather name="users" size={18} color={T.textSub} />
             <Text style={styles.detailText}>
               {gig.slots_filled} / {gig.slots_total} spots filled
             </Text>
@@ -216,7 +216,7 @@ export default function GigDetailScreen() {
             style={styles.primaryButton}
             onPress={() => router.push(`/(main)/gig/applicants/${id}`)}
           >
-            <Feather name="users" size={20} color={Colors.text.inverse} />
+            <Feather name="users" size={20} color={T.textInverse} />
             <Text style={styles.primaryButtonText}>Manage Applicants</Text>
           </Pressable>
         ) : (
@@ -248,7 +248,7 @@ export default function GigDetailScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
   },
   loading: {
     flex: 1,
@@ -270,23 +270,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   categoryText: {
-    color: Colors.text.inverse,
+    color: T.textInverse,
     fontSize: 12,
     fontWeight: "600",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: Colors.text.primary,
+    color: T.text,
   },
   company: {
     fontSize: 16,
-    color: Colors.text.secondary,
+    color: T.textSub,
     marginTop: 4,
   },
   eventName: {
     fontSize: 14,
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
     marginTop: 4,
   },
   payContainer: {
@@ -298,14 +298,14 @@ const styles = StyleSheet.create({
   payAmount: {
     fontSize: 28,
     fontWeight: "bold",
-    color: Colors.success,
+    color: T.success,
   },
   payType: {
     fontSize: 16,
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   details: {
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderRadius: 12,
     padding: 16,
     marginTop: 20,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: Colors.text.primary,
+    color: T.text,
     flex: 1,
   },
   section: {
@@ -327,12 +327,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
     marginBottom: 12,
   },
   description: {
     fontSize: 14,
-    color: Colors.text.secondary,
+    color: T.textSub,
     lineHeight: 22,
   },
   requirement: {
@@ -340,15 +340,15 @@ const styles = StyleSheet.create({
   },
   requirementLabel: {
     fontSize: 12,
-    color: Colors.text.muted,
+    color: T.textMuted,
     marginBottom: 4,
   },
   requirementValue: {
     fontSize: 14,
-    color: Colors.text.primary,
+    color: T.text,
   },
   primaryButton: {
-    backgroundColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary,
     height: 56,
     borderRadius: 12,
     justifyContent: "center",
@@ -357,10 +357,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryButtonDisabled: {
-    backgroundColor: Colors.text.muted,
+    backgroundColor: T.textMuted,
   },
   primaryButtonText: {
-    color: Colors.text.inverse,
+    color: T.textInverse,
     fontSize: 18,
     fontWeight: "600",
   },

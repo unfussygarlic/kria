@@ -14,7 +14,7 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
 import { useAuthStore } from "@/stores/authStore";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
 import { GenderType } from "@/types/database";
 import { StickyFooter } from "@/components/ui/StickyFooter";
 
@@ -120,7 +120,7 @@ export default function OnboardingProfileScreen() {
       setError(result.error);
     } else {
       setOnboarded(true);
-      router.replace("/(main)/(tabs)");
+      router.replace("/(main)/(tabs)/explore");
     }
   };
 
@@ -155,7 +155,7 @@ export default function OnboardingProfileScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="First"
-                placeholderTextColor={Colors.text.muted}
+                placeholderTextColor={T.textMuted}
                 value={firstName}
                 onChangeText={(t) => { setFirstName(t); setError(""); }}
                 autoFocus
@@ -167,7 +167,7 @@ export default function OnboardingProfileScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Last"
-                placeholderTextColor={Colors.text.muted}
+                placeholderTextColor={T.textMuted}
                 value={lastName}
                 onChangeText={(t) => { setLastName(t); setError(""); }}
                 returnKeyType="done"
@@ -218,7 +218,7 @@ export default function OnboardingProfileScreen() {
             <Text
               style={[
                 styles.dateButtonValue,
-                !dobSelected && { color: Colors.text.muted },
+                !dobSelected && { color: T.textMuted },
               ]}
             >
               {dobSelected ? formatDate(dob) : "Tap to select"}
@@ -344,7 +344,7 @@ export default function OnboardingProfileScreen() {
           <TextInput
             style={styles.input}
             placeholder="e.g., Bangalore"
-            placeholderTextColor={Colors.text.muted}
+            placeholderTextColor={T.textMuted}
             value={city}
             onChangeText={setCity}
             autoFocus
@@ -356,7 +356,7 @@ export default function OnboardingProfileScreen() {
           <TextInput
             style={styles.input}
             placeholder="e.g., Karnataka"
-            placeholderTextColor={Colors.text.muted}
+            placeholderTextColor={T.textMuted}
             value={state}
             onChangeText={setState}
             returnKeyType="done"
@@ -385,7 +385,7 @@ export default function OnboardingProfileScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
   },
   scroll: {
     flex: 1,
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 16,
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
   },
 
   stepHeader: {
@@ -407,19 +407,19 @@ const styles = StyleSheet.create({
   stepIndicator: {
     fontSize: 13,
     fontWeight: "600",
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   stepTitle: {
     fontSize: 34,
     fontWeight: "bold",
-    color: Colors.text.primary,
+    color: T.text,
     lineHeight: 42,
   },
   stepSubtitle: {
     fontSize: 15,
-    color: Colors.text.secondary,
+    color: T.textSub,
     lineHeight: 22,
   },
 
@@ -433,25 +433,25 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
-    color: Colors.text.secondary,
+    color: T.textSub,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: T.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 52,
     fontSize: 16,
-    color: Colors.text.primary,
+    color: T.text,
   },
 
   dateButton: {
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderWidth: 1.5,
-    borderColor: Colors.primary.DEFAULT,
+    borderColor: T.primary,
     borderRadius: 14,
     paddingHorizontal: 20,
     paddingVertical: 16,
@@ -460,26 +460,26 @@ const styles = StyleSheet.create({
   dateButtonLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: Colors.text.muted,
+    color: T.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   dateButtonValue: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
   },
   pickerDoneButton: {
     alignSelf: "flex-end",
     paddingHorizontal: 20,
     paddingVertical: 8,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: T.primary50,
     borderRadius: 8,
   },
   pickerDoneText: {
     fontSize: 15,
     fontWeight: "600",
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
   },
 
   genderRow: {
@@ -490,15 +490,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     paddingVertical: 20,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: T.border,
     borderRadius: 16,
     gap: 8,
   },
   genderCardSelected: {
-    borderColor: Colors.primary.DEFAULT,
-    backgroundColor: Colors.primary[50],
+    borderColor: T.primary,
+    backgroundColor: T.primary50,
   },
   genderEmoji: {
     fontSize: 28,
@@ -506,19 +506,19 @@ const styles = StyleSheet.create({
   genderLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   genderLabelSelected: {
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
   },
 
   error: {
-    color: Colors.error,
+    color: T.error,
     fontSize: 14,
     textAlign: "center",
   },
   button: {
-    backgroundColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary,
     height: 56,
     borderRadius: 12,
     justifyContent: "center",
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   buttonText: {
-    color: Colors.text.inverse,
+    color: T.textInverse,
     fontSize: 18,
     fontWeight: "600",
   },

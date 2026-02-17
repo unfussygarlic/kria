@@ -244,6 +244,10 @@ async def match_gigs_for_worker(
     worker_ctx = await _fetch_worker_context(db, worker_id)
     avg_pay = await _avg_pay_by_category(db)
 
+    # Exclude already-seen gigs
+    excluded_set = set(request.excluded_ids)
+    gigs = [g for g in gigs if g.id not in excluded_set]
+
     poster_ids = {g.poster_id for g in gigs}
     poster_ratings = await _poster_avg_ratings(db, poster_ids)
 
@@ -262,7 +266,15 @@ async def match_gigs_for_worker(
             scored.append((score, dist_km, gig))
 
     scored.sort(key=lambda x: x[0], reverse=True)
-    top = scored[: request.limit]
+
+    # Apply offset and limit for pagination
+    total_available = len(scored)
+    start_idx = request.offset
+    end_idx = start_idx + request.limit
+    paginated = scored[start_idx:end_idx]
+
+    # Determine if more results exist beyond this page
+    has_more = end_idx < total_available
 
     results = [
         ScoredGig(
@@ -276,7 +288,7 @@ async def match_gigs_for_worker(
             poster_id=g.poster_id,
             event_date=g.event_date,
         )
-        for s, d, g in top
+        for s, d, g in paginated
     ]
 
-    return GigMatchResponse(gigs=results, total=len(results))
+    return GigMatchResponse(gigs=results, total=total_available, has_more=has_more)

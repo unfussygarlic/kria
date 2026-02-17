@@ -14,7 +14,7 @@ import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
 import { Languages, Skills } from "@/constants/config";
 import { StickyFooter } from "@/components/ui/StickyFooter";
 
@@ -96,7 +96,7 @@ export default function EditProfileScreen() {
       {/* Fixed header — outside scroll */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Feather name="arrow-left" size={22} color={Colors.text.primary} />
+          <Feather name="arrow-left" size={22} color={T.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Edit Profile</Text>
         <View style={{ width: 34 }} />
@@ -113,7 +113,7 @@ export default function EditProfileScreen() {
             <TextInput
               style={[styles.input, styles.multiline]}
               placeholder="Tell gig posters a little about yourself..."
-              placeholderTextColor={Colors.text.muted}
+              placeholderTextColor={T.textMuted}
               value={bio}
               onChangeText={setBio}
               multiline
@@ -129,7 +129,7 @@ export default function EditProfileScreen() {
             <TextInput
               style={[styles.input, styles.multiline]}
               placeholder="Briefly describe your work history..."
-              placeholderTextColor={Colors.text.muted}
+              placeholderTextColor={T.textMuted}
               value={experienceSummary}
               onChangeText={setExperienceSummary}
               multiline
@@ -201,8 +201,8 @@ export default function EditProfileScreen() {
             <Switch
               value={isStudent}
               onValueChange={setIsStudent}
-              trackColor={{ false: Colors.border, true: Colors.primary[200] }}
-              thumbColor={isStudent ? Colors.primary.DEFAULT : Colors.text.muted}
+              trackColor={{ false: T.border, true: T.primary200 }}
+              thumbColor={isStudent ? T.primary : T.textMuted}
             />
           </View>
 
@@ -213,7 +213,7 @@ export default function EditProfileScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="e.g., Christ University"
-                  placeholderTextColor={Colors.text.muted}
+                  placeholderTextColor={T.textMuted}
                   value={collegeName}
                   onChangeText={setCollegeName}
                 />
@@ -225,7 +225,7 @@ export default function EditProfileScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="1–5"
-                    placeholderTextColor={Colors.text.muted}
+                    placeholderTextColor={T.textMuted}
                     value={collegeYear}
                     onChangeText={setCollegeYear}
                     keyboardType="number-pad"
@@ -237,7 +237,7 @@ export default function EditProfileScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="e.g., BBA"
-                    placeholderTextColor={Colors.text.muted}
+                    placeholderTextColor={T.textMuted}
                     value={course}
                     onChangeText={setCourse}
                   />
@@ -272,7 +272,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
   },
   scroll: {
     flex: 1,
@@ -283,9 +283,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: T.border,
   },
   backButton: {
     padding: 4,
@@ -293,14 +293,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
   },
   form: {
     padding: 20,
     gap: 8,
   },
   section: {
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderRadius: 16,
     padding: 16,
     gap: 16,
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: Colors.text.primary,
+    color: T.text,
   },
   field: {
     gap: 6,
@@ -321,17 +321,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   input: {
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: T.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     height: 48,
     fontSize: 15,
-    color: Colors.text.primary,
+    color: T.text,
   },
   multiline: {
     height: 88,
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   },
   charCount: {
     fontSize: 11,
-    color: Colors.text.muted,
+    color: T.textMuted,
     textAlign: "right",
   },
   switchRow: {
@@ -358,35 +358,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: T.border,
   },
   chipSelected: {
-    backgroundColor: Colors.primary[100],
-    borderColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary100,
+    borderColor: T.primary,
   },
   chipText: {
     fontSize: 13,
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   chipTextSelected: {
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
     fontWeight: "600",
   },
   error: {
-    color: Colors.error,
+    color: T.error,
     fontSize: 14,
     textAlign: "center",
   },
   savedText: {
-    color: Colors.success,
+    color: T.success,
     fontSize: 14,
     textAlign: "center",
     fontWeight: "600",
   },
   button: {
-    backgroundColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary,
     height: 54,
     borderRadius: 12,
     justifyContent: "center",
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: Colors.text.inverse,
+    color: T.textInverse,
     fontSize: 17,
     fontWeight: "600",
   },

@@ -1,6 +1,6 @@
 import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
 
 interface StickyFooterProps {
   children: React.ReactNode;
@@ -28,9 +28,9 @@ export function StickyFooter({ children }: StickyFooterProps) {
 
 const styles = StyleSheet.create({
   footer: {
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: T.border,
     paddingTop: 12,
     paddingHorizontal: 16,
   },

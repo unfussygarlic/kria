@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
 import { Stack } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useWalletStore } from "@/stores/walletStore";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
 
 export default function WalletScreen() {
   const { wallet, transactions, fetchWallet, fetchTransactions } =
@@ -23,7 +23,7 @@ export default function WalletScreen() {
   };
 
   const getTransactionColor = (amount: number) => {
-    return amount >= 0 ? Colors.success : Colors.error;
+    return amount >= 0 ? T.success : T.error;
   };
 
   return (
@@ -37,7 +37,7 @@ export default function WalletScreen() {
       <View style={styles.container}>
         {/* Balance Card */}
         <View style={styles.balanceCard}>
-          <Feather name="zap" size={32} color={Colors.momentum.DEFAULT} />
+          <Feather name="zap" size={32} color={T.momentum} />
           <Text style={styles.balanceLabel}>Current Balance</Text>
           <Text style={styles.balanceAmount}>{wallet?.balance || 0}</Text>
           <View style={styles.lifetimeStats}>
@@ -60,11 +60,11 @@ export default function WalletScreen() {
         {/* Actions */}
         <View style={styles.actions}>
           <Pressable style={styles.actionButton}>
-            <Feather name="trending-up" size={20} color={Colors.primary.DEFAULT} />
+            <Feather name="trending-up" size={20} color={T.primary} />
             <Text style={styles.actionText}>How to Earn</Text>
           </Pressable>
           <Pressable style={styles.actionButton}>
-            <Feather name="gift" size={20} color={Colors.secondary.DEFAULT} />
+            <Feather name="gift" size={20} color={T.secondary} />
             <Text style={styles.actionText}>Spend Momentum</Text>
           </Pressable>
         </View>
@@ -123,7 +123,7 @@ export default function WalletScreen() {
           contentContainerStyle={styles.transactionList}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Feather name="inbox" size={48} color={Colors.text.muted} />
+              <Feather name="inbox" size={48} color={T.textMuted} />
               <Text style={styles.emptyText}>No transactions yet</Text>
               <Text style={styles.emptySubtext}>
                 Complete gigs to earn momentum
@@ -139,10 +139,10 @@ export default function WalletScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
   },
   balanceCard: {
-    backgroundColor: Colors.momentum.light,
+    backgroundColor: T.momentumLight,
     margin: 16,
     padding: 24,
     borderRadius: 16,
@@ -150,13 +150,13 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 14,
-    color: Colors.text.secondary,
+    color: T.textSub,
     marginTop: 8,
   },
   balanceAmount: {
     fontSize: 48,
     fontWeight: "bold",
-    color: Colors.momentum.DEFAULT,
+    color: T.momentum,
     marginTop: 4,
   },
   lifetimeStats: {
@@ -170,16 +170,16 @@ const styles = StyleSheet.create({
   lifetimeValue: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
   },
   lifetimeLabel: {
     fontSize: 12,
-    color: Colors.text.muted,
+    color: T.textMuted,
     marginTop: 2,
   },
   lifetimeDivider: {
     width: 1,
-    backgroundColor: Colors.border,
+    backgroundColor: T.border,
   },
   actions: {
     flexDirection: "row",
@@ -193,28 +193,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: T.border,
   },
   actionText: {
     fontSize: 14,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
   },
   historyHeader: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: T.border,
   },
   historyTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
   },
   transactionList: {
     paddingBottom: 32,
@@ -224,9 +224,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: T.border,
     gap: 12,
   },
   transactionIcon: {
@@ -241,12 +241,12 @@ const styles = StyleSheet.create({
   },
   transactionDesc: {
     fontSize: 14,
-    color: Colors.text.primary,
+    color: T.text,
     textTransform: "capitalize",
   },
   transactionDate: {
     fontSize: 12,
-    color: Colors.text.muted,
+    color: T.textMuted,
     marginTop: 2,
   },
   transactionAmount: {
@@ -261,10 +261,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   emptySubtext: {
     fontSize: 14,
-    color: Colors.text.muted,
+    color: T.textMuted,
   },
 });

@@ -63,6 +63,11 @@ class GigMatchRequest(BaseModel):
     longitude: float | None = Field(None, description="Worker's current longitude")
     max_distance_km: float = Field(50.0, ge=1, le=200)
     limit: int = Field(20, ge=1, le=100)
+    offset: int = Field(0, ge=0, description="Number of results to skip (for pagination)")
+    excluded_ids: list[UUID] = Field(
+        default_factory=list,
+        description="Gig IDs to exclude (already seen/applied)",
+    )
 
 
 class ScoredGig(BaseModel):
@@ -80,3 +85,6 @@ class ScoredGig(BaseModel):
 class GigMatchResponse(BaseModel):
     gigs: list[ScoredGig]
     total: int
+    has_more: bool = Field(
+        ..., description="Whether more results are available for pagination"
+    )

@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Gig } from "@/types/database";
-import { Colors, CategoryColors } from "@/constants/colors";
+import { T, CategoryColors } from "@/constants/colors";
 import { GigCategories } from "@/constants/config";
 
 interface GigCardProps {
@@ -11,7 +11,7 @@ interface GigCardProps {
 
 export function GigCard({ gig, onPress }: GigCardProps) {
   const categoryInfo = GigCategories.find((c) => c.value === gig.category);
-  const categoryColor = CategoryColors[gig.category] || Colors.text.muted;
+  const categoryColor = CategoryColors[gig.category] || T.textMuted;
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -42,7 +42,7 @@ export function GigCard({ gig, onPress }: GigCardProps) {
         </View>
         {gig.momentum_boost > 0 && (
           <View style={styles.boostBadge}>
-            <Feather name="zap" size={12} color={Colors.momentum.DEFAULT} />
+            <Feather name="zap" size={12} color={T.momentum} />
             <Text style={styles.boostText}>Boosted</Text>
           </View>
         )}
@@ -61,20 +61,20 @@ export function GigCard({ gig, onPress }: GigCardProps) {
       {/* Details */}
       <View style={styles.details}>
         <View style={styles.detailItem}>
-          <Feather name="calendar" size={14} color={Colors.text.muted} />
+          <Feather name="calendar" size={14} color={T.textMuted} />
           <Text style={styles.detailText}>
             {formatDate(gig.event_date)}
             {gig.is_multi_day && " - " + formatDate(gig.event_end_date!)}
           </Text>
         </View>
         <View style={styles.detailItem}>
-          <Feather name="clock" size={14} color={Colors.text.muted} />
+          <Feather name="clock" size={14} color={T.textMuted} />
           <Text style={styles.detailText}>
             {formatTime(gig.shift_start_time)} - {formatTime(gig.shift_end_time)}
           </Text>
         </View>
         <View style={styles.detailItem}>
-          <Feather name="map-pin" size={14} color={Colors.text.muted} />
+          <Feather name="map-pin" size={14} color={T.textMuted} />
           <Text style={styles.detailText} numberOfLines={1}>
             {gig.venue_name}
           </Text>
@@ -112,11 +112,11 @@ export function GigCard({ gig, onPress }: GigCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: T.border,
   },
   header: {
     flexDirection: "row",
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   categoryText: {
-    color: Colors.text.inverse,
+    color: T.textInverse,
     fontSize: 11,
     fontWeight: "600",
   },
@@ -140,23 +140,23 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: Colors.momentum.light,
+    backgroundColor: T.momentumLight,
     borderRadius: 6,
   },
   boostText: {
     fontSize: 11,
     fontWeight: "600",
-    color: Colors.momentum.DEFAULT,
+    color: T.momentum,
   },
   title: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
     lineHeight: 24,
   },
   company: {
     fontSize: 14,
-    color: Colors.text.secondary,
+    color: T.textSub,
     marginTop: 2,
   },
   details: {
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 13,
-    color: Colors.text.secondary,
+    color: T.textSub,
     flex: 1,
   },
   footer: {
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: T.border,
   },
   payContainer: {
     flexDirection: "row",
@@ -190,19 +190,19 @@ const styles = StyleSheet.create({
   payAmount: {
     fontSize: 20,
     fontWeight: "bold",
-    color: Colors.success,
+    color: T.success,
   },
   payType: {
     fontSize: 14,
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   spotsContainer: {},
   spotsText: {
     fontSize: 13,
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   spotsTextUrgent: {
-    color: Colors.secondary.DEFAULT,
+    color: T.secondary,
     fontWeight: "600",
   },
 });

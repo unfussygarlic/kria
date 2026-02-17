@@ -11,7 +11,7 @@ import {
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useGigStore } from "@/stores/gigStore";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
 import { GigCategories } from "@/constants/config";
 import { GigCard } from "@/components/gig/GigCard";
 import { GigCategory } from "@/types/database";
@@ -40,17 +40,17 @@ export default function SearchScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Find Gigs</Text>
         <View style={styles.searchBar}>
-          <Feather name="search" size={20} color={Colors.text.muted} />
+          <Feather name="search" size={20} color={T.textMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search gigs..."
-            placeholderTextColor={Colors.text.muted}
+            placeholderTextColor={T.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery ? (
             <Pressable onPress={() => setSearchQuery("")}>
-              <Feather name="x" size={20} color={Colors.text.muted} />
+              <Feather name="x" size={20} color={T.textMuted} />
             </Pressable>
           ) : null}
         </View>
@@ -97,7 +97,7 @@ export default function SearchScreen() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Feather name="search" size={48} color={Colors.text.muted} />
+            <Feather name="search" size={48} color={T.textMuted} />
             <Text style={styles.emptyText}>No gigs found</Text>
             <Text style={styles.emptySubtext}>
               Try adjusting your filters or search query
@@ -112,24 +112,24 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
   },
   header: {
     paddingHorizontal: 16,
     paddingTop: 60,
     paddingBottom: 16,
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     gap: 12,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: Colors.text.primary,
+    color: T.text,
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 48,
@@ -138,12 +138,12 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: Colors.text.primary,
+    color: T.text,
   },
   categoryScroll: {
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: T.border,
   },
   categoryContainer: {
     paddingHorizontal: 16,
@@ -154,21 +154,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: T.border,
     marginRight: 8,
   },
   categoryChipActive: {
-    backgroundColor: Colors.primary[100],
-    borderColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary100,
+    borderColor: T.primary,
   },
   categoryText: {
     fontSize: 14,
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   categoryTextActive: {
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
     fontWeight: "600",
   },
   list: {
@@ -183,10 +183,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.text.secondary,
+    color: T.textSub,
   },
   emptySubtext: {
     fontSize: 14,
-    color: Colors.text.muted,
+    color: T.textMuted,
   },
 });

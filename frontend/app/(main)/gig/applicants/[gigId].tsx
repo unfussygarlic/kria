@@ -16,7 +16,7 @@ import {
   rejectApplicant,
   ApplicantListItem,
 } from "@/lib/api/applicants";
-import { Colors } from "@/constants/colors";
+import { T } from "@/constants/colors";
 
 export default function ApplicantsScreen() {
   const { gigId } = useLocalSearchParams<{ gigId: string }>();
@@ -119,15 +119,15 @@ export default function ApplicantsScreen() {
             <View style={styles.nameRow}>
               <Text style={styles.name}>{p.display_name}</Text>
               {p.is_verified && (
-                <Feather name="check-circle" size={14} color={Colors.primary.DEFAULT} />
+                <Feather name="check-circle" size={14} color={T.primary} />
               )}
               {p.id_verified && (
-                <Feather name="shield" size={14} color={Colors.success} />
+                <Feather name="shield" size={14} color={T.success} />
               )}
             </View>
             {p.city && (
               <Text style={styles.location}>
-                <Feather name="map-pin" size={12} color={Colors.text.muted} /> {p.city}
+                <Feather name="map-pin" size={12} color={T.textMuted} /> {p.city}
               </Text>
             )}
           </View>
@@ -187,6 +187,15 @@ export default function ApplicantsScreen() {
           })}
         </Text>
 
+        {/* Chat button — always visible */}
+        <Pressable
+          style={styles.chatBtn}
+          onPress={() => Alert.alert("Chat", "Chat is coming soon!")}
+        >
+          <Feather name="message-circle" size={15} color={T.primary} />
+          <Text style={styles.chatBtnText}>Chat</Text>
+        </Pressable>
+
         {/* Action buttons (only for pending) */}
         {item.status === "pending" && (
           <View style={styles.actions}>
@@ -196,11 +205,11 @@ export default function ApplicantsScreen() {
               disabled={isActing}
             >
               {isActing ? (
-                <ActivityIndicator size="small" color={Colors.error} />
+                <ActivityIndicator size="small" color={T.error} />
               ) : (
                 <>
-                  <Feather name="x" size={16} color={Colors.error} />
-                  <Text style={[styles.actionText, { color: Colors.error }]}>Reject</Text>
+                  <Feather name="x" size={16} color={T.error} />
+                  <Text style={[styles.actionText, { color: T.error }]}>Reject</Text>
                 </>
               )}
             </Pressable>
@@ -210,11 +219,11 @@ export default function ApplicantsScreen() {
               disabled={isActing}
             >
               {isActing ? (
-                <ActivityIndicator size="small" color={Colors.text.inverse} />
+                <ActivityIndicator size="small" color={T.textInverse} />
               ) : (
                 <>
-                  <Feather name="check" size={16} color={Colors.text.inverse} />
-                  <Text style={[styles.actionText, { color: Colors.text.inverse }]}>Accept</Text>
+                  <Feather name="check" size={16} color={T.textInverse} />
+                  <Text style={[styles.actionText, { color: T.textInverse }]}>Accept</Text>
                 </>
               )}
             </Pressable>
@@ -232,17 +241,17 @@ export default function ApplicantsScreen() {
         options={{
           headerShown: true,
           headerTitle: "Applicants",
-          headerTintColor: Colors.primary.DEFAULT,
+          headerTintColor: T.primary,
         }}
       />
       <View style={styles.container}>
         {loading ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={Colors.primary.DEFAULT} />
+            <ActivityIndicator size="large" color={T.primary} />
           </View>
         ) : error ? (
           <View style={styles.center}>
-            <Feather name="alert-circle" size={48} color={Colors.error} />
+            <Feather name="alert-circle" size={48} color={T.error} />
             <Text style={styles.errorText}>{error}</Text>
             <Pressable style={styles.retryBtn} onPress={load}>
               <Text style={styles.retryText}>Retry</Text>
@@ -264,7 +273,7 @@ export default function ApplicantsScreen() {
             }
             ListEmptyComponent={
               <View style={styles.center}>
-                <Feather name="users" size={48} color={Colors.text.muted} />
+                <Feather name="users" size={48} color={T.textMuted} />
                 <Text style={styles.emptyText}>No applicants yet</Text>
               </View>
             }
@@ -277,10 +286,10 @@ export default function ApplicantsScreen() {
 
 function StatusChip({ status }: { status: ApplicantListItem["status"] }) {
   const config: Record<typeof status, { label: string; color: string; bg: string }> = {
-    pending: { label: "Pending", color: Colors.warning, bg: "#FEF3C7" },
-    accepted: { label: "Accepted", color: Colors.success, bg: "#DCFCE7" },
-    rejected: { label: "Rejected", color: Colors.error, bg: "#FEE2E2" },
-    withdrawn: { label: "Withdrawn", color: Colors.text.muted, bg: Colors.border },
+    pending: { label: "Pending", color: T.warning, bg: "#FEF3C7" },
+    accepted: { label: "Accepted", color: T.success, bg: "#DCFCE7" },
+    rejected: { label: "Rejected", color: T.error, bg: "#FEE2E2" },
+    withdrawn: { label: "Withdrawn", color: T.textMuted, bg: T.border },
   };
   const c = config[status];
   return (
@@ -293,7 +302,7 @@ function StatusChip({ status }: { status: ApplicantListItem["status"] }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
   },
   center: {
     flex: 1,
@@ -308,15 +317,15 @@ const styles = StyleSheet.create({
   },
   summary: {
     fontSize: 13,
-    color: Colors.text.muted,
+    color: T.textMuted,
     marginBottom: 4,
   },
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: T.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: T.border,
     gap: 10,
   },
   cardHeader: {
@@ -328,14 +337,14 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.primary[100],
+    backgroundColor: T.primary100,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
   },
   nameBlock: {
     flex: 1,
@@ -349,11 +358,11 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 15,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: T.text,
   },
   location: {
     fontSize: 12,
-    color: Colors.text.muted,
+    color: T.textMuted,
   },
   chip: {
     paddingHorizontal: 8,
@@ -366,7 +375,7 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: "row",
-    backgroundColor: Colors.background,
+    backgroundColor: T.bg,
     borderRadius: 8,
     padding: 10,
   },
@@ -378,15 +387,15 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: "700",
-    color: Colors.text.primary,
+    color: T.text,
   },
   statLabel: {
     fontSize: 11,
-    color: Colors.text.muted,
+    color: T.textMuted,
   },
   statDivider: {
     width: 1,
-    backgroundColor: Colors.border,
+    backgroundColor: T.border,
     marginVertical: 4,
   },
   tagsRow: {
@@ -395,31 +404,47 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tag: {
-    backgroundColor: Colors.primary[50],
+    backgroundColor: T.primary50,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
   },
   tagText: {
     fontSize: 11,
-    color: Colors.primary.DEFAULT,
+    color: T.primary,
     textTransform: "capitalize",
   },
   tagSkill: {
-    backgroundColor: Colors.secondary[50] ?? "#FFF7ED",
+    backgroundColor: T.secondary50 ?? "#FFF7ED",
   },
   tagSkillText: {
-    color: Colors.secondary.DEFAULT,
+    color: T.secondary,
   },
   message: {
     fontSize: 13,
-    color: Colors.text.secondary,
+    color: T.textSub,
     fontStyle: "italic",
     lineHeight: 18,
   },
   appliedAt: {
     fontSize: 11,
-    color: Colors.text.muted,
+    color: T.textMuted,
+  },
+  chatBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: T.primary50,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  chatBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: T.primary,
   },
   actions: {
     flexDirection: "row",
@@ -438,10 +463,10 @@ const styles = StyleSheet.create({
   rejectBtn: {
     backgroundColor: "#FEE2E2",
     borderWidth: 1,
-    borderColor: Colors.error,
+    borderColor: T.error,
   },
   acceptBtn: {
-    backgroundColor: Colors.success,
+    backgroundColor: T.success,
   },
   actionText: {
     fontSize: 14,
@@ -449,21 +474,21 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 15,
-    color: Colors.text.secondary,
+    color: T.textSub,
     textAlign: "center",
   },
   emptyText: {
     fontSize: 16,
-    color: Colors.text.muted,
+    color: T.textMuted,
   },
   retryBtn: {
     paddingHorizontal: 24,
     paddingVertical: 10,
-    backgroundColor: Colors.primary.DEFAULT,
+    backgroundColor: T.primary,
     borderRadius: 8,
   },
   retryText: {
-    color: Colors.text.inverse,
+    color: T.textInverse,
     fontWeight: "600",
   },
 });
