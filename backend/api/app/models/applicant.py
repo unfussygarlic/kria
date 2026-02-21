@@ -1,7 +1,7 @@
 """Pydantic models for applicant management endpoints."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -21,6 +21,9 @@ class ApplicantProfile(BaseModel):
     id_verified: bool = False
     languages: list[str] = []
     skills: list[str] = []
+    bio: Optional[str] = None
+    work_experience: list[dict[str, Any]] = []
+    education_entries: list[dict[str, Any]] = []
 
 
 class ApplicantListItem(BaseModel):
@@ -30,6 +33,14 @@ class ApplicantListItem(BaseModel):
     responded_at: Optional[datetime] = None
     message: Optional[str] = None
     applicant: ApplicantProfile
+    assignment_id: Optional[str] = None
+    assignment_status: Optional[str] = None
+    assignment_otp: Optional[str] = None
+    has_been_rated: bool = False
+
+
+class OtpVerifyRequest(BaseModel):
+    otp: str
 
 
 class ApplicantListResponse(BaseModel):

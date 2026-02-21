@@ -1,4 +1,4 @@
-import { apiPost } from "./client";
+import { apiGet, apiPost } from "./client";
 
 export interface MatchGigsParams {
   latitude?: number;
@@ -26,4 +26,38 @@ interface MatchGigsResponse {
 
 export async function matchGigs(params: MatchGigsParams = {}) {
   return apiPost<MatchGigsResponse>("/api/v1/gigs/match", params);
+}
+
+export interface AcceptedGigPoster {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+}
+
+export interface AcceptedGigItem {
+  gig_id: string;
+  application_id: string;
+  assignment_id: string | null;
+  assignment_status: string | null;
+  title: string;
+  category: string;
+  company_name: string | null;
+  venue_name: string;
+  city: string;
+  event_date: string;
+  shift_start_time: string;
+  shift_end_time: string;
+  pay_amount: number;
+  pay_type: string;
+  poster: AcceptedGigPoster;
+  has_been_rated: boolean;
+}
+
+export interface AcceptedGigsResponse {
+  items: AcceptedGigItem[];
+  total: number;
+}
+
+export function getMyAcceptedGigs() {
+  return apiGet<AcceptedGigsResponse>("/api/v1/gigs/my-accepted");
 }

@@ -1,4 +1,9 @@
+from datetime import datetime
+from typing import Optional
+
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.middleware import CurrentUser
@@ -7,6 +12,118 @@ from app.models.gig import GigMatchRequest, GigMatchResponse
 from app.services.matching import match_gigs_for_worker
 
 router = APIRouter(prefix="/gigs", tags=["gigs"])
+
+
+# ── Accepted gig types ──────────────────────────────────────────────────────
+
+class AcceptedGigPoster(BaseModel):
+    id: str
+    display_name: str
+    avatar_url: Optional[str] = None
+
+
+class AcceptedGigItem(BaseModel):
+    gig_id: str
+    application_id: str
+    assignment_id: Optional[str] = None
+    assignment_status: Optional[str] = None
+    title: str
+    category: str
+    company_name: Optional[str] = None
+    venue_name: str
+    city: str
+    event_date: str
+    shift_start_time: str
+    shift_end_time: str
+    pay_amount: float
+    pay_type: str
+    poster: AcceptedGigPoster
+    has_been_rated: bool = False
+
+
+class AcceptedGigsResponse(BaseModel):
+    items: list[AcceptedGigItem]
+    total: int
+
+
+# ── Endpoints ────────────────────────────────────────────────────────────────
+
+@router.get("/my-accepted", response_model=AcceptedGigsResponse)
+async def get_my_accepted_gigs(
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> AcceptedGigsResponse:
+    """
+    Return gigs where the current user has an accepted application.
+    Includes assignment status and whether they've already rated the poster.
+    MUST be defined before /{gig_id} to avoid route shadowing.
+    """
+    rows = await db.execute(
+        text("""
+            SELECT
+                g.id            AS gig_id,
+                ga.id           AS application_id,
+                asgn.id         AS assignment_id,
+                asgn.status     AS assignment_status,
+                g.title,
+                g.category,
+                g.company_name,
+                g.venue_name,
+                g.city,
+                g.event_date::TEXT,
+                g.shift_start_time::TEXT,
+                g.shift_end_time::TEXT,
+                g.pay_amount,
+                g.pay_type,
+                p.id            AS poster_id,
+                p.display_name  AS poster_name,
+                p.avatar_url    AS poster_avatar,
+                (
+                    SELECT COUNT(*) FROM ratings r
+                    WHERE r.gig_id = g.id
+                      AND r.rater_id = :user_id
+                      AND r.rating_type = 'poster_rating'
+                ) > 0           AS has_been_rated
+            FROM gig_applications ga
+            JOIN gigs g ON g.id = ga.gig_id
+            JOIN profiles p ON p.id = g.poster_id
+            LEFT JOIN gig_assignments asgn
+                ON asgn.gig_id = ga.gig_id AND asgn.worker_id = ga.applicant_id
+            WHERE ga.applicant_id = :user_id
+              AND ga.status = 'accepted'
+            ORDER BY g.event_date DESC
+        """),
+        {"user_id": current_user.user_id},
+    )
+    data = rows.mappings().all()
+
+    items = [
+        AcceptedGigItem(
+            gig_id=str(row["gig_id"]),
+            application_id=str(row["application_id"]),
+            assignment_id=str(row["assignment_id"]) if row["assignment_id"] else None,
+            assignment_status=row["assignment_status"],
+            title=row["title"],
+            category=row["category"],
+            company_name=row["company_name"],
+            venue_name=row["venue_name"],
+            city=row["city"],
+            event_date=str(row["event_date"]),
+            shift_start_time=str(row["shift_start_time"]),
+            shift_end_time=str(row["shift_end_time"]),
+            pay_amount=float(row["pay_amount"]),
+            pay_type=row["pay_type"],
+            poster=AcceptedGigPoster(
+                id=str(row["poster_id"]),
+                display_name=row["poster_name"],
+                avatar_url=row["poster_avatar"],
+            ),
+            has_been_rated=bool(row["has_been_rated"]),
+        )
+        for row in data
+    ]
+
+    return AcceptedGigsResponse(items=items, total=len(items))
 
 
 @router.post("/match", response_model=GigMatchResponse)

@@ -1,11 +1,14 @@
 """Applicant management endpoints for gig posters.
 
 Routes:
-  GET  /api/v1/gigs/{gig_id}/applicants            → list all applicants
-  POST /api/v1/applicants/{application_id}/accept  → accept an applicant
-  POST /api/v1/applicants/{application_id}/reject  → reject an applicant
+  GET  /api/v1/gigs/{gig_id}/applicants                  → list all applicants
+  POST /api/v1/applicants/{application_id}/accept         → accept an applicant
+  POST /api/v1/applicants/{application_id}/reject         → reject an applicant
+  POST /api/v1/assignments/{assignment_id}/verify-otp     → seeker enters OTP to mark attended
+  POST /api/v1/assignments/{assignment_id}/no-show        → poster marks worker as no-show
 """
 
+import secrets
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -19,7 +22,21 @@ from app.models.applicant import (
     ApplicantListResponse,
     ApplicantProfile,
     ApplicationActionResponse,
+    OtpVerifyRequest,
 )
+from app.services.momentum_calculator import recalculate_momentum
+
+# ---------------------------------------------------------------------------
+# OTP helpers
+# ---------------------------------------------------------------------------
+
+def _generate_otp() -> str:
+    """
+    Generate a 4-digit numeric check-in OTP (1000–9999).
+    Switch to per-assignment generation in accept_applicant when ready —
+    no other code needs to change.
+    """
+    return str(secrets.randbelow(9000) + 1000)
 
 router = APIRouter(tags=["applicants"])
 
@@ -60,6 +77,7 @@ async def list_applicants(
                 p.first_name,
                 p.last_name,
                 p.avatar_url,
+                p.bio,
                 p.city,
                 p.gender,
                 p.worker_reputation,
@@ -68,13 +86,27 @@ async def list_applicants(
                 p.is_verified,
                 p.id_verified,
                 p.languages,
-                p.skills
+                p.skills,
+                COALESCE(p.work_experience, '[]'::jsonb)   AS work_experience,
+                COALESCE(p.education_entries, '[]'::jsonb) AS education_entries,
+                asgn.id         AS assignment_id,
+                asgn.status     AS assignment_status,
+                asgn.otp        AS assignment_otp,
+                (
+                    SELECT COUNT(*) FROM ratings r
+                    WHERE r.gig_id = ga.gig_id
+                      AND r.rater_id = :poster_id
+                      AND r.ratee_id = p.id
+                      AND r.rating_type = 'worker_rating'
+                ) > 0           AS has_been_rated
             FROM gig_applications ga
             JOIN profiles p ON p.id = ga.applicant_id
+            LEFT JOIN gig_assignments asgn
+                ON asgn.gig_id = ga.gig_id AND asgn.worker_id = ga.applicant_id
             WHERE ga.gig_id = :gig_id
             ORDER BY ga.applied_at ASC
         """),
-        {"gig_id": gig_id},
+        {"gig_id": gig_id, "poster_id": current_user.user_id},
     )
     data = rows.mappings().all()
 
@@ -91,6 +123,7 @@ async def list_applicants(
                 first_name=row["first_name"],
                 last_name=row["last_name"],
                 avatar_url=row["avatar_url"],
+                bio=row["bio"],
                 city=row["city"],
                 gender=row["gender"],
                 worker_reputation=row["worker_reputation"],
@@ -100,7 +133,13 @@ async def list_applicants(
                 id_verified=bool(row["id_verified"]),
                 languages=list(row["languages"] or []),
                 skills=list(row["skills"] or []),
+                work_experience=list(row["work_experience"] or []),
+                education_entries=list(row["education_entries"] or []),
             ),
+            assignment_id=str(row["assignment_id"]) if row["assignment_id"] else None,
+            assignment_status=row["assignment_status"],
+            assignment_otp=row["assignment_otp"],
+            has_been_rated=bool(row["has_been_rated"]),
         )
         for row in data
     ]
@@ -171,14 +210,24 @@ async def accept_applicant(
         {"now": now, "app_id": application_id},
     )
 
-    # 2. Create assignment
+    # 2. Determine OTP — per-gig: reuse any existing code for this gig,
+    #    so all accepted workers share the same OTP (finder shows one code at the venue).
+    #    To switch to per-assignment: replace the SELECT with `otp = _generate_otp()`.
+    existing_otp_row = await db.execute(
+        text("SELECT otp FROM gig_assignments WHERE gig_id = :gig_id AND otp IS NOT NULL LIMIT 1"),
+        {"gig_id": str(app["gig_id"])},
+    )
+    existing_otp = existing_otp_row.scalar()
+    otp = existing_otp if existing_otp else _generate_otp()
+
+    # 3. Create assignment with OTP
     await db.execute(
         text("""
-            INSERT INTO gig_assignments (gig_id, worker_id)
-            VALUES (:gig_id, :worker_id)
+            INSERT INTO gig_assignments (gig_id, worker_id, otp)
+            VALUES (:gig_id, :worker_id, :otp)
             ON CONFLICT DO NOTHING
         """),
-        {"gig_id": str(app["gig_id"]), "worker_id": str(app["applicant_id"])},
+        {"gig_id": str(app["gig_id"]), "worker_id": str(app["applicant_id"]), "otp": otp},
     )
 
     # 3. Increment slots_filled
@@ -250,4 +299,122 @@ async def reject_applicant(
         application_id=application_id,
         new_status="rejected",
         message="Application rejected.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /assignments/{assignment_id}/verify-otp  (called by seeker)
+# ---------------------------------------------------------------------------
+
+@router.post("/assignments/{assignment_id}/verify-otp", response_model=ApplicationActionResponse)
+async def verify_otp(
+    assignment_id: str,
+    payload: OtpVerifyRequest,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> ApplicationActionResponse:
+    """
+    Seeker enters the OTP shown to the finder.
+    On success: assignment → completed, rating unlocked for both parties.
+    """
+    row = await db.execute(
+        text("""
+            SELECT id, status, worker_id, gig_id, otp
+            FROM gig_assignments
+            WHERE id = :asgn_id
+        """),
+        {"asgn_id": assignment_id},
+    )
+    asgn = row.mappings().first()
+
+    if not asgn:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found.")
+    if str(asgn["worker_id"]) != current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your assignment.")
+    if asgn["status"] == "completed":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already verified.")
+    if asgn["status"] == "no_show":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Marked as no-show.")
+    if not asgn["otp"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No OTP set for this assignment.")
+    if payload.otp.strip() != asgn["otp"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect OTP.")
+
+    now = datetime.utcnow()
+    await db.execute(
+        text("""
+            UPDATE gig_assignments
+            SET status = 'completed',
+                completed_at = :now,
+                worker_confirmed = TRUE,
+                otp_verified_at = :now
+            WHERE id = :asgn_id
+        """),
+        {"now": now, "asgn_id": assignment_id},
+    )
+    await db.commit()
+
+    # Worker completed a gig — update their momentum (gig_count + show_rate)
+    await recalculate_momentum(str(asgn["worker_id"]), db)
+
+    return ApplicationActionResponse(
+        ok=True,
+        application_id=assignment_id,
+        new_status="completed",
+        message="OTP verified. Assignment marked as completed.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /assignments/{assignment_id}/no-show
+# ---------------------------------------------------------------------------
+
+@router.post("/assignments/{assignment_id}/no-show", response_model=ApplicationActionResponse)
+async def no_show_assignment(
+    assignment_id: str,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> ApplicationActionResponse:
+    """Poster marks worker as no-show."""
+    row = await db.execute(
+        text("""
+            SELECT asgn.id, asgn.status, asgn.worker_id, asgn.gig_id, g.poster_id
+            FROM gig_assignments asgn
+            JOIN gigs g ON g.id = asgn.gig_id
+            WHERE asgn.id = :asgn_id
+        """),
+        {"asgn_id": assignment_id},
+    )
+    asgn = row.mappings().first()
+
+    if not asgn:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found.")
+    if str(asgn["poster_id"]) != current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your gig.")
+    if asgn["status"] in ("completed", "no_show"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Assignment is already {asgn['status']}.",
+        )
+
+    worker_id = str(asgn["worker_id"])
+
+    await db.execute(
+        text("""
+            UPDATE gig_assignments
+            SET status = 'no_show'
+            WHERE id = :asgn_id
+        """),
+        {"asgn_id": assignment_id},
+    )
+    await db.commit()
+
+    # Update worker's momentum (show_rate drops)
+    await recalculate_momentum(worker_id, db)
+
+    return ApplicationActionResponse(
+        ok=True,
+        application_id=assignment_id,
+        new_status="no_show",
+        message="Assignment marked as no-show.",
     )

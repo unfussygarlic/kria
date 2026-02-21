@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGigStore } from "@/stores/gigStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -94,17 +95,17 @@ export default function ExploreScreen() {
   }
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 8 }]}>
+    <View style={styles.screen}>
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <View style={styles.header}>
+      <LinearGradient colors={T.gradDark} style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.headerTitle}>Explore Jobs</Text>
         {profile?.city ? (
           <View style={styles.locationChip}>
-            <Feather name="map-pin" size={12} color={T.primary} />
+            <Feather name="map-pin" size={12} color={T.accentLight} />
             <Text style={styles.locationText}>{profile.city}</Text>
           </View>
         ) : null}
-      </View>
+      </LinearGradient>
 
       {/* ── Card area (centered) ──────────────────────────────────────────── */}
       <View style={styles.deckArea}>
@@ -151,18 +152,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 20,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "800",
-    color: T.text,
+    color: T.textInverse,
   },
   locationChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: T.primary50,
+    backgroundColor: "rgba(255,255,255,0.12)",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
@@ -170,7 +171,7 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 12,
     fontWeight: "600",
-    color: T.primary,
+    color: T.accentLight,
   },
 
   // ── Deck area (centered vertically and horizontally)

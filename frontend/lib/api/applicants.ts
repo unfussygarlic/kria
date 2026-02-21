@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from "./client";
+import type { WorkExperience, EducationEntry } from "@/types/database";
 
 export interface ApplicantProfile {
   id: string;
@@ -6,6 +7,7 @@ export interface ApplicantProfile {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
+  bio: string | null;
   city: string | null;
   gender: string | null;
   worker_reputation: number | null;
@@ -15,6 +17,8 @@ export interface ApplicantProfile {
   id_verified: boolean;
   languages: string[];
   skills: string[];
+  work_experience: WorkExperience[];
+  education_entries: EducationEntry[];
 }
 
 export interface ApplicantListItem {
@@ -24,6 +28,10 @@ export interface ApplicantListItem {
   responded_at: string | null;
   message: string | null;
   applicant: ApplicantProfile;
+  assignment_id: string | null;
+  assignment_status: string | null;
+  assignment_otp: string | null;
+  has_been_rated: boolean;
 }
 
 export interface ApplicantListResponse {

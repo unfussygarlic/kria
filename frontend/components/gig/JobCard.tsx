@@ -7,6 +7,7 @@
 
 import { View, Text, StyleSheet, Pressable, Dimensions } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { MomentumBadge } from "@/components/momentum/MomentumBadge";
 
 const SCREEN_H = Dimensions.get("window").height;
 import { Gig, GigCategory } from "@/types/database";
@@ -19,6 +20,7 @@ interface JobCardProps {
   gig: Gig;
   variant: JobCardVariant;
   applicationCount?: number; // for "space" and "event" variants
+  posterMomentum?: number;   // poster's Momentum score, shown on explore cards
   onPress?: () => void;
 }
 
@@ -56,7 +58,7 @@ export function getCategoryLabel(category: GigCategory): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function JobCard({ gig, variant, applicationCount, onPress }: JobCardProps) {
+export function JobCard({ gig, variant, applicationCount, posterMomentum, onPress }: JobCardProps) {
   const categoryColor = getCategoryColor(gig.category);
   const spotsLeft = gig.slots_total - gig.slots_filled;
   const isExplore = variant === "explore";
@@ -76,6 +78,10 @@ export function JobCard({ gig, variant, applicationCount, onPress }: JobCardProp
             <Feather name="zap" size={11} color={T.momentum} />
             <Text style={styles.boostText}>Boosted</Text>
           </View>
+        )}
+        {/* Poster Momentum — shown on explore cards so workers can trust the poster */}
+        {isExplore && posterMomentum !== undefined && (
+          <MomentumBadge score={posterMomentum} variant="chip" />
         )}
       </View>
 

@@ -124,6 +124,12 @@ export const T = {
   textMuted:   palette.text.muted,
   textInverse: palette.text.inverse,
 
+  // ── Momentum (FICO-style trust score)
+  // Used for the "Momentum Boost" badge and generic momentum UI accents.
+  // Band-specific colors live in constants/momentum.ts.
+  momentum:      "#FFC83D",   // Signal yellow — boost / default Momentum accent
+  momentumLight: "#FFF0C0",   // Light yellow — boost badge background
+
   // ── Gradient arrays (pass directly to LinearGradient colors prop)
   gradBrand:    ["#FF7A3C", "#F05A28"] as const,           // Burnt orange gradient
   gradFire:     ["#FFC83D", "#FF7A3C", "#F05A28"] as const, // Yellow to orange

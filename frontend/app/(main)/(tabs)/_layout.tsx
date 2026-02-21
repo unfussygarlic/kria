@@ -61,6 +61,10 @@ const SPACE_OPT = {
   title: "My Space",
   tabBarIcon: ({ color, size }: any) => <Feather name="layers" size={size} color={color} />,
 };
+const ARENA_OPT = {
+  title: "Arena",
+  tabBarIcon: ({ color, size }: any) => <Feather name="zap" size={size} color={color} />,
+};
 const HIDDEN = { href: null } as const;
 
 // An inert spacer so the center slot exists in the tab bar layout.
@@ -86,6 +90,7 @@ const TabsNavigator = memo(function TabsNavigator() {
       <Tabs.Screen name="explore"     options={EXPLORE_OPT} />
       <Tabs.Screen name="post"        options={POST_OPT} />
       <Tabs.Screen name="space"       options={SPACE_OPT} />
+      <Tabs.Screen name="arena"       options={ARENA_OPT} />
       <Tabs.Screen name="chat"        options={HIDDEN} />
       <Tabs.Screen name="search"      options={HIDDEN} />
       <Tabs.Screen name="profile"     options={HIDDEN} />

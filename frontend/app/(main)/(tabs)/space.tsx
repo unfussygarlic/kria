@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,10 @@ import {
   Pressable,
   ActivityIndicator,
   RefreshControl,
+  Alert,
+  TextInput,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,12 +18,248 @@ import { useGigStore } from "@/stores/gigStore";
 import { Gig, MyEventSummary } from "@/types/database";
 import { T } from "@/constants/colors";
 import { JobCard, formatDate } from "@/components/gig/JobCard";
+import { RatingModal } from "@/components/ui/RatingModal";
+import { getMyAcceptedGigs, AcceptedGigItem } from "@/lib/api/gigs";
+import { verifyOtp } from "@/lib/api/ratings";
 
-// ── Merged list item type ─────────────────────────────────────────────────────
+// ── Tab types ─────────────────────────────────────────────────────────────────
+
+type SpaceTab = "seeker" | "poster";
+
+// ── Poster tab items ──────────────────────────────────────────────────────────
 
 type SpaceItem =
   | { kind: "gig"; data: Gig; created_at: string }
   | { kind: "event"; data: MyEventSummary; created_at: string };
+
+// ── Seeker tab ────────────────────────────────────────────────────────────────
+
+function SeekerTab() {
+  const [items, setItems] = useState<AcceptedGigItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [ratingTarget, setRatingTarget] = useState<AcceptedGigItem | null>(null);
+  // OTP entry state: gigId → entered OTP text
+  const [otpInputs, setOtpInputs] = useState<Record<string, string>>({});
+  // Which card has its OTP input expanded
+  const [otpExpanded, setOtpExpanded] = useState<string | null>(null);
+  const [otpSubmitting, setOtpSubmitting] = useState<string | null>(null);
+
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    const result = await getMyAcceptedGigs();
+    if (isRefresh) setRefreshing(false);
+    else setLoading(false);
+    if (!result.error) {
+      setItems(result.data.items);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const handleVerifyOtp = async (item: AcceptedGigItem) => {
+    if (!item.assignment_id) return;
+    const otp = (otpInputs[item.gig_id] ?? "").trim();
+    if (otp.length < 4) {
+      Alert.alert("Enter OTP", "Please enter the 4-digit code from the poster.");
+      return;
+    }
+    setOtpSubmitting(item.gig_id);
+    const result = await verifyOtp(item.assignment_id, otp);
+    setOtpSubmitting(null);
+    if (result.error) {
+      Alert.alert("Invalid OTP", result.error);
+    } else {
+      setItems((prev) =>
+        prev.map((i) =>
+          i.gig_id === item.gig_id ? { ...i, assignment_status: "completed" } : i
+        )
+      );
+      setOtpExpanded(null);
+      setOtpInputs((prev) => { const n = { ...prev }; delete n[item.gig_id]; return n; });
+    }
+  };
+
+  const getStatusChip = (item: AcceptedGigItem) => {
+    if (!item.assignment_status || item.assignment_status === "assigned") {
+      return { label: "Upcoming", color: T.primary, bg: T.primary50 };
+    }
+    if (item.assignment_status === "completed") {
+      return { label: "Done", color: T.success, bg: "#DCFCE7" };
+    }
+    if (item.assignment_status === "no_show") {
+      return { label: "No-Show", color: T.error, bg: "#FEE2E2" };
+    }
+    return { label: item.assignment_status, color: T.textMuted, bg: T.border };
+  };
+
+  const renderItem = ({ item }: { item: AcceptedGigItem }) => {
+    const chip = getStatusChip(item);
+    const canRate =
+      item.assignment_status === "completed" && !item.has_been_rated;
+
+    return (
+      <View style={styles.seekerCard}>
+        {/* Header row */}
+        <View style={styles.seekerHeader}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.seekerTitle} numberOfLines={1}>{item.title}</Text>
+            {item.company_name && (
+              <Text style={styles.seekerSub} numberOfLines={1}>{item.company_name}</Text>
+            )}
+          </View>
+          <View style={[styles.statusChip, { backgroundColor: chip.bg }]}>
+            <Text style={[styles.statusChipText, { color: chip.color }]}>{chip.label}</Text>
+          </View>
+        </View>
+
+        {/* Meta */}
+        <View style={styles.seekerMeta}>
+          <View style={styles.metaItem}>
+            <Feather name="map-pin" size={12} color={T.textMuted} />
+            <Text style={styles.metaText}>{item.venue_name}, {item.city}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Feather name="calendar" size={12} color={T.textMuted} />
+            <Text style={styles.metaText}>{formatDate(item.event_date)}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Feather name="clock" size={12} color={T.textMuted} />
+            <Text style={styles.metaText}>
+              {item.shift_start_time.slice(0, 5)} – {item.shift_end_time.slice(0, 5)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Poster + pay */}
+        <View style={styles.seekerFooter}>
+          <View style={styles.posterRow}>
+            <View style={styles.posterAvatar}>
+              <Text style={styles.posterAvatarText}>
+                {item.poster.display_name[0].toUpperCase()}
+              </Text>
+            </View>
+            <Text style={styles.posterName}>{item.poster.display_name}</Text>
+          </View>
+          <Text style={styles.pay}>
+            ₹{item.pay_amount.toLocaleString("en-IN")}
+            <Text style={styles.payType}> / {item.pay_type.replace("_", " ")}</Text>
+          </Text>
+        </View>
+
+        {/* OTP entry — upcoming assignments */}
+        {(!item.assignment_status || item.assignment_status === "assigned") && (
+          otpExpanded === item.gig_id ? (
+            <View style={styles.otpEntry}>
+              <TextInput
+                style={styles.otpInput}
+                placeholder="4-digit code"
+                placeholderTextColor={T.textMuted}
+                value={otpInputs[item.gig_id] ?? ""}
+                onChangeText={(t) =>
+                  setOtpInputs((prev) => ({ ...prev, [item.gig_id]: t.replace(/\D/g, "") }))
+                }
+                keyboardType="number-pad"
+                maxLength={4}
+                autoFocus
+              />
+              <Pressable
+                style={[styles.otpConfirmBtn, otpSubmitting === item.gig_id && { opacity: 0.6 }]}
+                onPress={() => handleVerifyOtp(item)}
+                disabled={otpSubmitting === item.gig_id}
+              >
+                {otpSubmitting === item.gig_id ? (
+                  <ActivityIndicator size="small" color={T.textInverse} />
+                ) : (
+                  <Text style={styles.otpConfirmText}>Confirm</Text>
+                )}
+              </Pressable>
+              <Pressable onPress={() => setOtpExpanded(null)} style={styles.otpCancelBtn}>
+                <Feather name="x" size={16} color={T.textMuted} />
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={styles.enterOtpBtn} onPress={() => setOtpExpanded(item.gig_id)}>
+              <Feather name="key" size={14} color={T.primary} />
+              <Text style={styles.enterOtpText}>Enter OTP</Text>
+            </Pressable>
+          )
+        )}
+
+        {/* Rate poster button */}
+        {canRate && (
+          <Pressable
+            style={styles.rateBtn}
+            onPress={() => setRatingTarget(item)}
+          >
+            <Feather name="star" size={14} color={T.textInverse} />
+            <Text style={styles.rateBtnText}>Rate Poster</Text>
+          </Pressable>
+        )}
+        {item.assignment_status === "completed" && item.has_been_rated && (
+          <View style={styles.ratedRow}>
+            <Feather name="check-circle" size={13} color={T.success} />
+            <Text style={styles.ratedText}>You rated this poster</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <>
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.gig_id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={T.primary} />
+        }
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.center}>
+              <ActivityIndicator size="large" color={T.primary} />
+            </View>
+          ) : (
+            <View style={styles.center}>
+              <Feather name="briefcase" size={48} color={T.primary200} />
+              <Text style={styles.emptyTitle}>No accepted gigs</Text>
+              <Text style={styles.emptySubtitle}>
+                Gigs you've been accepted for will appear here.
+              </Text>
+            </View>
+          )
+        }
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+      />
+
+      {ratingTarget && (
+        <RatingModal
+          visible={!!ratingTarget}
+          onClose={() => setRatingTarget(null)}
+          gigId={ratingTarget.gig_id}
+          rateeId={ratingTarget.poster.id}
+          ratingType="poster_rating"
+          rateeName={ratingTarget.poster.display_name}
+          onSuccess={() => {
+            setItems((prev) =>
+              prev.map((i) =>
+                i.gig_id === ratingTarget.gig_id
+                  ? { ...i, has_been_rated: true }
+                  : i
+              )
+            );
+            setRatingTarget(null);
+          }}
+        />
+      )}
+    </>
+  );
+}
 
 // ── Event card ────────────────────────────────────────────────────────────────
 
@@ -69,10 +308,9 @@ function EventCard({ event, onPress }: { event: MyEventSummary; onPress: () => v
   );
 }
 
-// ── Main screen ───────────────────────────────────────────────────────────────
+// ── Poster tab ────────────────────────────────────────────────────────────────
 
-export default function SpaceScreen() {
-  const insets = useSafeAreaInsets();
+function PosterTab() {
   const {
     myPostedGigs,
     myPostedEvents,
@@ -89,7 +327,6 @@ export default function SpaceScreen() {
     loadAll();
   }, []);
 
-  // Merge and sort by created_at desc
   const items: SpaceItem[] = [
     ...myPostedGigs.map((g): SpaceItem => ({ kind: "gig", data: g, created_at: g.created_at })),
     ...myPostedEvents.map((e): SpaceItem => ({ kind: "event", data: e, created_at: e.created_at })),
@@ -115,37 +352,71 @@ export default function SpaceScreen() {
   };
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 8 }]}>
+    <FlatList
+      data={items}
+      keyExtractor={(item) => `${item.kind}-${item.data.id}`}
+      renderItem={renderItem}
+      contentContainerStyle={styles.list}
+      refreshControl={
+        <RefreshControl refreshing={isLoading} onRefresh={loadAll} />
+      }
+      ListEmptyComponent={
+        isLoading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={T.primary} />
+          </View>
+        ) : (
+          <View style={styles.center}>
+            <Feather name="layers" size={48} color={T.primary200} />
+            <Text style={styles.emptyTitle}>Nothing posted yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Tap the + to post a gig or create an event.
+            </Text>
+          </View>
+        )
+      }
+      ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+    />
+  );
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
+
+export default function SpaceScreen() {
+  const insets = useSafeAreaInsets();
+  const [activeTab, setActiveTab] = useState<SpaceTab>("seeker");
+
+  return (
+    <View style={styles.screen}>
       {/* Header */}
-      <View style={styles.header}>
+      <LinearGradient colors={T.gradDark} style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.headerTitle}>My Space</Text>
+      </LinearGradient>
+
+      {/* Tab row */}
+      <View style={styles.tabRow}>
+        <Pressable
+          style={[styles.tab, activeTab === "seeker" && styles.tabActive]}
+          onPress={() => setActiveTab("seeker")}
+        >
+          <Feather name="briefcase" size={14} color={activeTab === "seeker" ? T.primary : T.textMuted} />
+          <Text style={[styles.tabLabel, activeTab === "seeker" && styles.tabLabelActive]}>
+            Seeker
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.tab, activeTab === "poster" && styles.tabActive]}
+          onPress={() => setActiveTab("poster")}
+        >
+          <Feather name="layers" size={14} color={activeTab === "poster" ? T.primary : T.textMuted} />
+          <Text style={[styles.tabLabel, activeTab === "poster" && styles.tabLabelActive]}>
+            Poster
+          </Text>
+        </Pressable>
       </View>
 
-      {isLoading && items.length === 0 ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={T.primary} />
-        </View>
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(item) => `${item.kind}-${item.data.id}`}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={loadAll} />
-          }
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <Feather name="layers" size={48} color={T.primary200} />
-              <Text style={styles.emptyTitle}>Nothing posted yet</Text>
-              <Text style={styles.emptySubtitle}>
-                Tap the + to post a gig or create an event.
-              </Text>
-            </View>
-          }
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-        />
-      )}
+      {/* Tab content */}
+      {activeTab === "seeker" ? <SeekerTab /> : <PosterTab />}
     </View>
   );
 }
@@ -159,15 +430,57 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 20,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "800",
-    color: T.text,
+    color: T.textInverse,
   },
+
+  // Tab row
+  tabRow: {
+    flexDirection: "row",
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    backgroundColor: T.bg,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: 3,
+    gap: 3,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  tabActive: {
+    backgroundColor: T.surface,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  tabLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: T.textMuted,
+  },
+  tabLabelActive: {
+    color: T.primary,
+  },
+
+  // List
   list: {
     paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 100,
   },
   center: {
@@ -176,6 +489,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 40,
     gap: 16,
+    minHeight: 300,
   },
   emptyTitle: {
     fontSize: 20,
@@ -189,7 +503,167 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  // Event card
+  // Seeker card
+  seekerCard: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+    gap: 10,
+  },
+  seekerHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  seekerTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: T.text,
+  },
+  seekerSub: {
+    fontSize: 12,
+    color: T.textSub,
+  },
+  statusChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  statusChipText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  seekerMeta: {
+    gap: 5,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  metaText: {
+    fontSize: 12,
+    color: T.textSub,
+  },
+  seekerFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  posterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  posterAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: T.primary100,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  posterAvatarText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: T.primary,
+  },
+  posterName: {
+    fontSize: 12,
+    color: T.textSub,
+    fontWeight: "500",
+  },
+  pay: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: T.text,
+  },
+  payType: {
+    fontSize: 12,
+    fontWeight: "400",
+    color: T.textMuted,
+  },
+  // OTP entry
+  enterOtpBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: T.primary50,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: T.primary200,
+  },
+  enterOtpText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: T.primary,
+  },
+  otpEntry: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  otpInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: T.bg,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: T.border,
+    paddingHorizontal: 12,
+    fontSize: 18,
+    fontWeight: "800",
+    color: T.text,
+    letterSpacing: 4,
+  },
+  otpConfirmBtn: {
+    height: 40,
+    paddingHorizontal: 14,
+    backgroundColor: T.primary,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  otpConfirmText: {
+    color: T.textInverse,
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  otpCancelBtn: {
+    padding: 6,
+  },
+
+  rateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: T.accent,
+    borderRadius: 8,
+    paddingVertical: 9,
+  },
+  rateBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: T.textInverse,
+  },
+  ratedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  ratedText: {
+    fontSize: 12,
+    color: T.success,
+    fontWeight: "500",
+  },
+
+  // Event card (Poster tab)
   eventCard: {
     backgroundColor: T.surface,
     borderRadius: 14,

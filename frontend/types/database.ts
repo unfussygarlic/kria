@@ -9,6 +9,20 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+export type WorkExperience = {
+  company: string;
+  role: string;
+  from_year: number;
+  to_year: number | null; // null = currently working
+};
+
+export type EducationEntry = {
+  college: string;
+  degree: string;
+  field: string;
+  passing_year: number;
+};
+
 export type GigCategory =
   | "registration_desk"
   | "ushering"
@@ -87,6 +101,8 @@ export interface Database {
           id_verified: boolean;
           id_verified_at: string | null;
           experience_summary: string | null;
+          work_experience: WorkExperience[];
+          education_entries: EducationEntry[];
           is_verified: boolean;
           created_at: string;
           updated_at: string;
@@ -115,6 +131,8 @@ export interface Database {
           id_verified?: boolean;
           id_verified_at?: string | null;
           experience_summary?: string | null;
+          work_experience?: WorkExperience[];
+          education_entries?: EducationEntry[];
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
       };
@@ -218,6 +236,8 @@ export interface Database {
           completed_at: string | null;
           worker_confirmed: boolean;
           poster_confirmed: boolean;
+          otp: string | null;
+          otp_verified_at: string | null;
         };
         Insert: {
           gig_id: string;
@@ -248,6 +268,54 @@ export interface Database {
           balance?: number;
           lifetime_earned?: number;
           lifetime_spent?: number;
+        };
+      };
+      momentum_profiles: {
+        Row: {
+          id: string;
+          user_id: string;
+          // Computed FICO-style scores (300–850)
+          worker_score: number;
+          poster_score: number;
+          // Worker signals (internal, normalized 0–1 except performance which is 0–5)
+          worker_show_rate: number;
+          worker_on_time_rate: number;
+          worker_performance_score: number;
+          worker_response_rate: number;
+          worker_consistency_score: number;
+          worker_penalty_points: number;
+          worker_gig_count: number;
+          // Poster signals
+          poster_payment_rate: number;
+          poster_rating: number;
+          poster_accuracy_rate: number;
+          poster_resolution_speed: number;
+          poster_penalty_points: number;
+          poster_gig_count: number;
+          last_calculated_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+        };
+        Update: {
+          worker_score?: number;
+          poster_score?: number;
+          worker_show_rate?: number;
+          worker_on_time_rate?: number;
+          worker_performance_score?: number;
+          worker_response_rate?: number;
+          worker_consistency_score?: number;
+          worker_penalty_points?: number;
+          worker_gig_count?: number;
+          poster_payment_rate?: number;
+          poster_rating?: number;
+          poster_accuracy_rate?: number;
+          poster_resolution_speed?: number;
+          poster_penalty_points?: number;
+          poster_gig_count?: number;
+          last_calculated_at?: string;
         };
       };
       conversations: {
@@ -293,7 +361,10 @@ export interface Database {
   };
 }
 
+export type RatingType = "worker_rating" | "poster_rating";
+
 // Convenience types
+export type MomentumProfile = Database["public"]["Tables"]["momentum_profiles"]["Row"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Gig = Database["public"]["Tables"]["gigs"]["Row"];
 export type GigApplication =
