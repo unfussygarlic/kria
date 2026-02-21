@@ -55,6 +55,12 @@ const GENDER_OPTIONS: GenderOption[] = [
 export default function OnboardingProfileScreen() {
   const updateProfile = useAuthStore((s) => s.updateProfile);
   const setOnboarded = useAuthStore((s) => s.setOnboarded);
+  const signOut = useAuthStore((s) => s.signOut);
+
+  const handleChangePhone = async () => {
+    await signOut();
+    router.replace("/");
+  };
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
@@ -144,6 +150,10 @@ export default function OnboardingProfileScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
+          <Pressable onPress={handleChangePhone}>
+            <Text style={styles.backText}>← Change Phone</Text>
+          </Pressable>
+
           <StepHeader
             title={"What's your\nname?"}
             subtitle="This is how gig posters and workers will see you."
