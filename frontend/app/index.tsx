@@ -16,5 +16,5 @@ export default function Index() {
   }
 
   // Logged in and onboarded -> Main app
-  return <Redirect href="/(main)/(tabs)/explore" />;
+  return <Redirect href="/(main)/(tabs)/home" />;
 }

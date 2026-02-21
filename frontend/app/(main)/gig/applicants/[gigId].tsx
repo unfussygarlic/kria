@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { useLocalSearchParams, Stack } from "expo-router";
+import { useLocalSearchParams, Stack, router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import {
   getApplicants,
@@ -16,6 +16,7 @@ import {
   rejectApplicant,
   ApplicantListItem,
 } from "@/lib/api/applicants";
+import { createConversation } from "@/lib/api/chat";
 import { T } from "@/constants/colors";
 
 export default function ApplicantsScreen() {
@@ -24,6 +25,7 @@ export default function ApplicantsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const [chatInProgress, setChatInProgress] = useState<string | null>(null);
 
   const load = async () => {
     if (!gigId) return;
@@ -100,9 +102,21 @@ export default function ApplicantsScreen() {
     );
   };
 
+  const handleChat = async (item: ApplicantListItem) => {
+    setChatInProgress(item.application_id);
+    const result = await createConversation({ other_user_id: item.applicant.id });
+    setChatInProgress(null);
+    if (result.error) {
+      Alert.alert("Error", result.error);
+    } else {
+      router.push(`/(main)/chat/${result.data.id}`);
+    }
+  };
+
   const renderItem = ({ item }: { item: ApplicantListItem }) => {
     const p = item.applicant;
     const isActing = actionInProgress === item.application_id;
+    const isChatting = chatInProgress === item.application_id;
     const reputation = p.worker_reputation ?? 0;
     const stars = Math.round(reputation);
 
@@ -189,10 +203,15 @@ export default function ApplicantsScreen() {
 
         {/* Chat button — always visible */}
         <Pressable
-          style={styles.chatBtn}
-          onPress={() => Alert.alert("Chat", "Chat is coming soon!")}
+          style={[styles.chatBtn, isChatting && { opacity: 0.6 }]}
+          onPress={() => handleChat(item)}
+          disabled={isChatting}
         >
-          <Feather name="message-circle" size={15} color={T.primary} />
+          {isChatting ? (
+            <ActivityIndicator size="small" color={T.primary} />
+          ) : (
+            <Feather name="message-circle" size={15} color={T.primary} />
+          )}
           <Text style={styles.chatBtnText}>Chat</Text>
         </Pressable>
 

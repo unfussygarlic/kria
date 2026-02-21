@@ -250,6 +250,45 @@ export interface Database {
           lifetime_spent?: number;
         };
       };
+      conversations: {
+        Row: {
+          id: string;
+          type: string;
+          title: string | null;
+          created_at: string;
+          updated_at: string;
+          last_message_at: string | null;
+        };
+        Insert: {
+          type?: string;
+          title?: string | null;
+        };
+        Update: {
+          last_message_at?: string | null;
+          updated_at?: string;
+        };
+      };
+      messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          sender_id: string;
+          content: string;
+          type: string;
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          conversation_id: string;
+          sender_id: string;
+          content: string;
+          type?: string;
+          metadata?: Json | null;
+        };
+        Update: {
+          // messages are immutable
+        };
+      };
     };
   };
 }
@@ -263,6 +302,46 @@ export type GigAssignment =
   Database["public"]["Tables"]["gig_assignments"]["Row"];
 export type MomentumWallet =
   Database["public"]["Tables"]["momentum_wallets"]["Row"];
+
+// Chat convenience types
+export type Conversation = Database["public"]["Tables"]["conversations"]["Row"];
+// ConversationParticipant is not in the Database type (composite PK table, not directly queried by client)
+export interface ConversationParticipant {
+  conversation_id: string;
+  user_id: string;
+  joined_at: string;
+  last_read_at: string | null;
+}
+export type Message = Database["public"]["Tables"]["messages"]["Row"];
+
+// Chat types from FastAPI responses
+export interface ConversationSummary {
+  id: string;
+  type: string;
+  other_user_id: string;
+  other_user_name: string;
+  other_user_avatar: string | null;
+  last_message_content: string | null;
+  last_message_sender_id: string | null;
+  last_message_at: string | null;
+  unread_count: number;
+  created_at: string;
+}
+
+export interface ConversationCreatedResponse {
+  id: string;
+  type: string;
+  other_user_id: string;
+  other_user_name: string;
+  other_user_avatar: string | null;
+  created_at: string;
+  is_new: boolean;
+}
+
+export interface MessagesPage {
+  messages: Message[];
+  has_more: boolean;
+}
 
 // Event types (from FastAPI — not stored in Supabase client schema)
 export interface EventJobSummary {

@@ -63,6 +63,12 @@ export default function MainLayout() {
           headerTintColor: T.primary,
         }}
       />
+      <Stack.Screen
+        name="chat"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

@@ -1,19 +1,21 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
 import { useWalletStore } from "@/stores/walletStore";
 import { T } from "@/constants/colors";
 import { calculateCompletion } from "@/lib/profileCompletion";
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
   const wallet = useWalletStore((s) => s.wallet);
 
   const handleSignOut = async () => {
     await signOut();
-    router.replace("/(auth)/login");
+    router.replace("/");
   };
 
   const displayName = profile
@@ -29,6 +31,15 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Top nav bar */}
+      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+        <Pressable onPress={() => router.back()} style={styles.closeButton}>
+          <Feather name="x" size={22} color={T.text} />
+        </Pressable>
+        <Text style={styles.topBarTitle}>Profile</Text>
+        <View style={{ width: 34 }} />
+      </View>
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
@@ -195,9 +206,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: T.bg,
   },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: T.surface,
+  },
+  closeButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: T.bg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  topBarTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: T.text,
+  },
   header: {
     alignItems: "center",
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 24,
     backgroundColor: T.surface,
   },
