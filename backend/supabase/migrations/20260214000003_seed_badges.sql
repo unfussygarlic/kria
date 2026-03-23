@@ -1,4 +1,4 @@
--- Kriya Seed Data: Badges
+-- Kria Seed Data: Badges
 -- Created: 2026-02-14
 
 INSERT INTO badges (code, name, description, category, requirements) VALUES

@@ -447,11 +447,11 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
     paddingHorizontal: 20,
     paddingVertical: 8,
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     borderRadius: 8,
     marginTop: 8,
   },
-  doneButtonText: { fontSize: 15, fontWeight: "600", color: "#fff" },
+  doneButtonText: { fontSize: 15, fontWeight: "600", color: T.ctaText },
   // Category grid
   categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   catCard: {
@@ -465,10 +465,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: T.border,
   },
-  catCardSelected: { borderColor: T.primary, backgroundColor: T.primary50 },
+  catCardSelected: { borderColor: T.selBorder, backgroundColor: T.selBg },
   catDot: { width: 8, height: 8, borderRadius: 4 },
   catLabel: { fontSize: 13, color: T.textSub, fontWeight: "500" },
-  catLabelSelected: { color: T.primary, fontWeight: "700" },
+  catLabelSelected: { color: T.selText, fontWeight: "700" },
   // Pay type buttons
   payTypeRow: { flexDirection: "column", gap: 4 },
   payTypeBtn: {
@@ -479,9 +479,9 @@ const styles = StyleSheet.create({
     borderColor: T.border,
     alignItems: "center",
   },
-  payTypeBtnSelected: { borderColor: T.primary, backgroundColor: T.primary50 },
+  payTypeBtnSelected: { borderColor: T.selBorder, backgroundColor: T.selBg },
   payTypeBtnText: { fontSize: 12, color: T.textSub, fontWeight: "500" },
-  payTypeBtnTextSelected: { color: T.primary, fontWeight: "700" },
+  payTypeBtnTextSelected: { color: T.selText, fontWeight: "700" },
   // Review card
   reviewCard: {
     backgroundColor: T.surface,
@@ -500,12 +500,12 @@ const styles = StyleSheet.create({
   // Shared
   error: { color: T.error, fontSize: 14, textAlign: "center" },
   button: {
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     height: 54,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
   buttonDisabled: { opacity: 0.4 },
-  buttonText: { color: T.textInverse, fontSize: 17, fontWeight: "600" },
+  buttonText: { color: T.ctaText, fontSize: 17, fontWeight: "600" },
 });

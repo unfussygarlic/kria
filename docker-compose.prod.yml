@@ -1,4 +1,4 @@
-# Kriya - Production Environment Overrides
+# Kria - Production Environment Overrides
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml build
 
 version: '3.8'

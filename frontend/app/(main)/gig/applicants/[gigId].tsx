@@ -204,7 +204,7 @@ export default function ApplicantsScreen() {
           <StatusChip status={item.status} small />
           {item.assignment_status === "assigned" && item.assignment_otp && (
             <View style={styles.rowOtpBadge}>
-              <Feather name="key" size={10} color={T.primary} />
+              <Feather name="key" size={10} color={T.selText} />
               <Text style={styles.rowOtpText}>{item.assignment_otp}</Text>
             </View>
           )}
@@ -316,7 +316,7 @@ export default function ApplicantsScreen() {
                   {gigOtp && (
                     <View style={styles.otpBanner}>
                       <View style={styles.otpBannerLeft}>
-                        <Feather name="key" size={20} color={T.primary} />
+                        <Feather name="key" size={20} color={T.selText} />
                         <View>
                           <Text style={styles.otpBannerLabel}>Check-in Code</Text>
                           <Text style={styles.otpBannerHint}>
@@ -538,7 +538,7 @@ function DetailSheet({
         {/* OTP banner (assignment = assigned) */}
         {item.status === "accepted" && item.assignment_status === "assigned" && item.assignment_otp && (
           <View style={styles.sheetOtpBanner}>
-            <Feather name="key" size={16} color={T.primary} />
+            <Feather name="key" size={16} color={T.selText} />
             <View style={{ flex: 1 }}>
               <Text style={styles.sheetOtpLabel}>Check-in Code</Text>
               <Text style={styles.sheetOtpHint}>Worker enters this to confirm attendance</Text>
@@ -573,9 +573,9 @@ function DetailSheet({
           disabled={isChatting}
         >
           {isChatting ? (
-            <ActivityIndicator size="small" color={T.primary} />
+            <ActivityIndicator size="small" color={T.ctaText} />
           ) : (
-            <Feather name="message-circle" size={16} color={T.primary} />
+            <Feather name="message-circle" size={16} color={T.ctaText} />
           )}
           <Text style={styles.chatBtnText}>Chat</Text>
         </Pressable>
@@ -728,9 +728,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: T.primary50,
+    backgroundColor: T.selBg,
     borderWidth: 1.5,
-    borderColor: T.primary200,
+    borderColor: T.selBorder,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -744,17 +744,17 @@ const styles = StyleSheet.create({
   otpBannerLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: T.primary,
+    color: T.selText,
   },
   otpBannerHint: {
     fontSize: 11,
-    color: T.textMuted,
+    color: T.selText,
     marginTop: 1,
   },
   otpBannerCode: {
     fontSize: 28,
     fontWeight: "900",
-    color: T.primary,
+    color: T.selText,
     letterSpacing: 6,
   },
   summary: {
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: T.primary100,
+    backgroundColor: T.avatarBg,
     justifyContent: "center",
     alignItems: "center",
     flexShrink: 0,
@@ -782,7 +782,7 @@ const styles = StyleSheet.create({
   rowAvatarText: {
     fontSize: 15,
     fontWeight: "700",
-    color: T.primary,
+    color: T.avatarText,
   },
   rowBody: {
     flex: 1,
@@ -812,7 +812,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: T.primary50,
+    backgroundColor: T.selBg,
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -820,7 +820,7 @@ const styles = StyleSheet.create({
   rowOtpText: {
     fontSize: 11,
     fontWeight: "800",
-    color: T.primary,
+    color: T.selText,
     letterSpacing: 1,
   },
 
@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: T.primary100,
+    backgroundColor: T.avatarBg,
     justifyContent: "center",
     alignItems: "center",
     flexShrink: 0,
@@ -866,7 +866,7 @@ const styles = StyleSheet.create({
   sheetAvatarText: {
     fontSize: 20,
     fontWeight: "bold",
-    color: T.primary,
+    color: T.avatarText,
   },
   sheetNameBlock: {
     flex: 1,
@@ -958,16 +958,16 @@ const styles = StyleSheet.create({
     color: T.textSub,
   },
   skillChip: {
-    backgroundColor: T.primary50,
+    backgroundColor: T.selBg,
     borderWidth: 1,
-    borderColor: T.primary200,
+    borderColor: T.selBorder,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
   },
   skillChipText: {
     fontSize: 12,
-    color: T.primary,
+    color: T.selText,
     fontWeight: "500",
   },
 
@@ -1012,7 +1012,7 @@ const styles = StyleSheet.create({
     color: T.textMuted,
   },
   studentBadge: {
-    backgroundColor: T.primary100,
+    backgroundColor: T.selBg,
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -1020,7 +1020,7 @@ const styles = StyleSheet.create({
   studentBadgeText: {
     fontSize: 10,
     fontWeight: "700",
-    color: T.primary,
+    color: T.selText,
   },
 
   // ── Message / date ──
@@ -1041,9 +1041,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: T.primary50,
+    backgroundColor: T.selBg,
     borderWidth: 1,
-    borderColor: T.primary200,
+    borderColor: T.selBorder,
     borderRadius: 10,
     padding: 14,
     marginBottom: 10,
@@ -1051,17 +1051,17 @@ const styles = StyleSheet.create({
   sheetOtpLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: T.primary,
+    color: T.selText,
   },
   sheetOtpHint: {
     fontSize: 11,
-    color: T.textMuted,
+    color: T.selText,
     marginTop: 1,
   },
   sheetOtpCode: {
     fontSize: 24,
     fontWeight: "900",
-    color: T.primary,
+    color: T.selText,
     letterSpacing: 4,
   },
 
@@ -1118,16 +1118,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   chatBtn: {
-    backgroundColor: T.primary50,
+    backgroundColor: T.ctaBg,
     borderWidth: 1,
-    borderColor: T.primary200,
+    borderColor: T.ctaBg,
     flex: 0,
     paddingHorizontal: 16,
   },
   chatBtnText: {
     fontSize: 14,
     fontWeight: "600",
-    color: T.primary,
+    color: T.ctaText,
   },
   rejectBtn: {
     backgroundColor: "#FEE2E2",
@@ -1181,11 +1181,11 @@ const styles = StyleSheet.create({
   retryBtn: {
     paddingHorizontal: 24,
     paddingVertical: 10,
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     borderRadius: 8,
   },
   retryText: {
-    color: T.textInverse,
+    color: T.ctaText,
     fontWeight: "600",
   },
 });

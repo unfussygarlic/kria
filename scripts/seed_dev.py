@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Kriya Dev Seed Script
+Kria Dev Seed Script
 ---------------------
 Populates the local Supabase database with dummy profiles, events, and gigs.
 
@@ -28,7 +28,7 @@ SERVICE_KEY = (
     ".eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0"
     ".EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
 )
-DEV_PASSWORD = "kriya-dev-2026"
+DEV_PASSWORD = "kria-dev-2026"
 
 SEED_PHONES = {
     "priya":  "9001000001",
@@ -98,7 +98,7 @@ def _find_user_by_email(email):
 
 
 def create_auth_user(phone, display_name):
-    email = f"{phone}@kriya.dev"
+    email = f"{phone}@kria.dev"
     result, status = _req("POST", "/auth/v1/admin/users", {
         "email": email,
         "password": DEV_PASSWORD,
@@ -674,7 +674,7 @@ def build_standalone_gigs(uids):
 
         {"poster_id": V, "title": "Booth Staff — India Startup Summit",
          "description": "Demo the product to visitors, collect business cards, answer FAQs. Training session the evening before.",
-         "category": "booth_staff", "company_name": "Kriya Technologies",
+         "category": "booth_staff", "company_name": "Kria Technologies",
          "venue_name": "The Lalit Ashok, Kumara Krupa Road", "city": "Bangalore",
          "event_date": "2026-03-05",
          "shift_start_time": "09:00:00", "shift_end_time": "17:00:00", "report_time": "08:45:00",
@@ -913,14 +913,14 @@ def main():
     clean = "--clean" in sys.argv
 
     print("╔══════════════════════════════════════╗")
-    print("║      Kriya Dev Seed Script           ║")
+    print("║      Kria Dev Seed Script           ║")
     print("╚══════════════════════════════════════╝\n")
 
     # ── 0. Clean ──────────────────────────────────────────────────────────────
     if clean:
         print("Cleaning existing seed users...")
         for key, phone in SEED_PHONES.items():
-            uid = _find_user_by_email(f"{phone}@kriya.dev")
+            uid = _find_user_by_email(f"{phone}@kria.dev")
             if uid:
                 delete_auth_user(uid)
                 print(f"  ✓ Deleted {phone}")
@@ -942,7 +942,7 @@ def main():
         uid, created = create_auth_user(phone, DISPLAY_NAMES[key])
         user_ids[key] = uid
         tag = "created" if created else "exists"
-        print(f"  {'✓' if created else '~'} [{tag}] {DISPLAY_NAMES[key]}  ({phone}@kriya.dev)")
+        print(f"  {'✓' if created else '~'} [{tag}] {DISPLAY_NAMES[key]}  ({phone}@kria.dev)")
     time.sleep(1)
 
     # ── 2. Profiles ───────────────────────────────────────────────────────────

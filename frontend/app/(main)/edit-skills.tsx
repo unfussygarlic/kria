@@ -70,7 +70,7 @@ export default function EditSkillsScreen() {
                       <Feather
                         name="check"
                         size={12}
-                        color={T.primary}
+                        color={T.selText}
                         style={{ marginRight: 4 }}
                       />
                     )}
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     color: T.text,
   },
   headerBadge: {
-    backgroundColor: T.primary100,
+    backgroundColor: T.selBg,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   headerBadgeText: {
     fontSize: 13,
     fontWeight: "700",
-    color: T.primary,
+    color: T.selText,
   },
   scroll: {
     flex: 1,
@@ -169,19 +169,19 @@ const styles = StyleSheet.create({
     borderColor: T.border,
   },
   chipOn: {
-    backgroundColor: T.primary100,
-    borderColor: T.primary,
+    backgroundColor: T.selBg,
+    borderColor: T.selBorder,
   },
   chipText: {
     fontSize: 13,
     color: T.textSub,
   },
   chipTextOn: {
-    color: T.primary,
+    color: T.selText,
     fontWeight: "600",
   },
   button: {
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     height: 54,
     borderRadius: 12,
     justifyContent: "center",
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: T.textInverse,
+    color: T.ctaText,
     fontSize: 17,
     fontWeight: "600",
   },

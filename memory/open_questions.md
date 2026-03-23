@@ -1,4 +1,4 @@
-# Kriya - Open Questions
+# Kria - Open Questions
 
 **Last Updated:** 2026-02-14
 
@@ -16,7 +16,7 @@
 **Question:** How do we handle payment between users?
 **Options:**
 - A) Fully off-platform (users arrange payment)
-- B) Escrow system (Kriya holds payment)
+- B) Escrow system (Kria holds payment)
 - C) Hybrid (escrow optional, incentivized)
 **Status:** Starting with Option A, escrow planned for v2
 **Assumption:** Initial launch uses off-platform payment

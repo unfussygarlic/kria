@@ -1,4 +1,4 @@
-# Kriya - Development Changelog
+# Kria - Development Changelog
 
 ## 2026-02-15 (Session 3)
 
@@ -43,7 +43,7 @@
 **What Changed:**
 - Fixed RLS infinite recursion on `gigs` table (SECURITY DEFINER helper functions in migration 0005 of the old SQL runner, baked into Alembic migration 0002)
 - Fixed FastAPI `matching.py` wrong column names (`is_remote`→computed, `boost_level`→`momentum_boost`, `starts_at`→`event_date`, table names, `rated_id`→`ratee_id`)
-- Replaced bash `supabase-db-migrations` Docker service with Alembic (`backend/api/alembic/`, runs in `kriya-api` container on start)
+- Replaced bash `supabase-db-migrations` Docker service with Alembic (`backend/api/alembic/`, runs in `kria-api` container on start)
 - OTP input rewritten with single hidden TextInput pattern (reliable cross-platform)
 
 ---
@@ -95,7 +95,7 @@
 
 **Structure:**
 ```
-/kriya
+/kria
 ├── memory/           # AI agent hippocampus
 ├── frontend/         # Expo app + Dockerfiles
 ├── backend/          # Supabase + Dockerfiles
@@ -138,7 +138,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml build
 - Added new open questions for event-specific features
 
 **Why:**
-User clarified that Kriya is for:
+User clarified that Kria is for:
 - Tech summits needing registration staff
 - Companies hiring booth staff for exhibitions
 - Brand activations needing promoters
@@ -415,7 +415,7 @@ cd frontend && npx expo start
 
 **Decision Rationale:**
 
-After reviewing all memory files (product vision, domain model, matching logic, momentum system, reputation system), concluded that Kriya needs custom backend logic that's too complex for pure Supabase:
+After reviewing all memory files (product vision, domain model, matching logic, momentum system, reputation system), concluded that Kria needs custom backend logic that's too complex for pure Supabase:
 
 1. **Complex matching algorithms:**
    - Multi-factor scoring (trust, distance, category, pay, recency)
@@ -497,7 +497,7 @@ Supabase (Auth + DB + Realtime + Storage)
 
 **What Changed:**
 - Created `/backend/api/` FastAPI project with full structure
-- Added `kriya-api` service to Docker Compose (runs in Docker, NOT locally)
+- Added `kria-api` service to Docker Compose (runs in Docker, NOT locally)
 - Implemented JWT auth middleware validating Supabase tokens
 - Implemented gig matching algorithm (`POST /api/v1/gigs/match`)
 - Health check endpoints: `GET /health` and `GET /health/db`
@@ -520,7 +520,7 @@ backend/api/
 ```
 
 **Docker Integration:**
-- `kriya-api` service added to `docker-compose.yml`
+- `kria-api` service added to `docker-compose.yml`
 - Dev override in `docker-compose.dev.yml` adds port 8000 + `--reload` + volume mount
 - Connects to `supabase-db:5432` and `supabase-kong:8000` by Docker service name
 - Env vars sourced from `.env.development` (JWT_SECRET, SUPABASE_SERVICE_ROLE_KEY, etc.)
@@ -568,8 +568,8 @@ docker-compose --env-file .env.development -f docker-compose.yml -f docker-compo
 
 **Dev auth overhaul (multiple iterations):**
 - Replaced phone+password mock auth with **email-based mock auth**
-- Email derived from phone digits only: `{digits}@kriya.dev` (handles `+91...` vs `91...` formatting)
-- Constant password `kriya-dev-2026` (not derived from phone input)
+- Email derived from phone digits only: `{digits}@kria.dev` (handles `+91...` vs `91...` formatting)
+- Constant password `kria-dev-2026` (not derived from phone input)
 - `signInWithPassword` attempted first; `signUp` only for new users; explicit `signInWithPassword` after `signUp` if no session returned
 
 **Auth store improvements:**
@@ -602,8 +602,8 @@ frontend/stores/authStore.ts            (dev auth overhaul, stale session handli
 frontend/lib/supabase.ts                (SecureStore adapter fix)
 frontend/.env                           (EXPO_PUBLIC_API_URL added)
 backend/supabase/migrations/20260214000004_fix_handle_new_user.sql  (new)
-docker-compose.yml                      (JWT_SECRET defaults aligned, kriya-api service added)
-docker-compose.dev.yml                  (kriya-api port + hot-reload)
+docker-compose.yml                      (JWT_SECRET defaults aligned, kria-api service added)
+docker-compose.dev.yml                  (kria-api port + hot-reload)
 memory/debugging.md                     (new)
 memory/tech_decisions.md                (Docker section updated)
 memory/core.md                          (debugging.md added to reading list)
@@ -673,7 +673,7 @@ memory/changelog.md            (this entry)
 ### Alembic Migration System
 
 **What Changed:**
-- Replaced fragile bash `supabase-db-migrations` service with Alembic running inside the `kriya-api` container
+- Replaced fragile bash `supabase-db-migrations` service with Alembic running inside the `kria-api` container
 - Migrations now run automatically on every container start via `start.sh` entrypoint; already-applied ones are skipped
 - Added `alembic` and `psycopg2-binary` to `requirements.txt`
 - Old SQL files in `backend/supabase/migrations/` kept as reference but no longer executed
@@ -710,7 +710,7 @@ docker-compose --env-file .env.development -f docker-compose.yml -f docker-compo
 **Adding future migrations:**
 ```bash
 # Generate a new empty migration file
-docker-compose exec kriya-api alembic revision -m "describe_your_change"
+docker-compose exec kria-api alembic revision -m "describe_your_change"
 # Edit the generated file in backend/api/alembic/versions/
 # Restart (or it will auto-apply on next container start)
 ```

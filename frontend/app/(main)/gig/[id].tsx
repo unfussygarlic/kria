@@ -216,7 +216,7 @@ export default function GigDetailScreen() {
             style={styles.primaryButton}
             onPress={() => router.push(`/(main)/gig/applicants/${id}`)}
           >
-            <Feather name="users" size={20} color={T.textInverse} />
+            <Feather name="users" size={20} color={T.ctaText} />
             <Text style={styles.primaryButtonText}>Manage Applicants</Text>
           </Pressable>
         ) : (
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     color: T.text,
   },
   primaryButton: {
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     height: 56,
     borderRadius: 12,
     justifyContent: "center",
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     backgroundColor: T.textMuted,
   },
   primaryButtonText: {
-    color: T.textInverse,
+    color: T.ctaText,
     fontSize: 18,
     fontWeight: "600",
   },

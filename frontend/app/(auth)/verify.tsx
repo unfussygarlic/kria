@@ -212,12 +212,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   otpBoxActive: {
-    borderColor: T.primary,
+    borderColor: T.selBorder,
     borderWidth: 2,
-    backgroundColor: T.primary50,
+    backgroundColor: T.selBg,
   },
   otpBoxFilled: {
-    borderColor: T.primary300,
+    borderColor: T.primary,
     backgroundColor: T.surface,
   },
   otpBoxError: {
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   cursor: {
     width: 2,
     height: 24,
-    backgroundColor: T.primary,
+    backgroundColor: T.selText,
     borderRadius: 1,
   },
   // Invisible — positioned off-screen so the keyboard never overlaps the UI

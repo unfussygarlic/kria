@@ -483,13 +483,13 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
     paddingHorizontal: 20,
     paddingVertical: 8,
-    backgroundColor: T.primary50,
+    backgroundColor: T.ctaBg,
     borderRadius: 8,
   },
   pickerDoneText: {
     fontSize: 15,
     fontWeight: "600",
-    color: T.primary,
+    color: T.ctaText,
   },
 
   genderRow: {
@@ -507,8 +507,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   genderCardSelected: {
-    borderColor: T.primary,
-    backgroundColor: T.primary50,
+    borderColor: T.selBorder,
+    backgroundColor: T.selBg,
   },
   genderEmoji: {
     fontSize: 28,
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     color: T.textSub,
   },
   genderLabelSelected: {
-    color: T.primary,
+    color: T.selText,
   },
 
   error: {
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     height: 56,
     borderRadius: 12,
     justifyContent: "center",
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   buttonText: {
-    color: T.textInverse,
+    color: T.ctaText,
     fontSize: 18,
     fontWeight: "600",
   },

@@ -1,4 +1,4 @@
-# Kriya - Auto Memory
+# Kria - Auto Memory
 
 ## Critical: Always Read debugging.md
 `memory/debugging.md` contains known issues that WILL waste hours if ignored.
@@ -23,7 +23,7 @@ Kong 2.8.1 does NOT substitute `${VAR}` in kong.yml (`_transform: true` is NOT e
 
 ## Dev Auth (Mock OTP)
 - OTP is always `123456` in development
-- Uses email `{digits_only}@kriya.dev` + password `kriya-dev-2026` under the hood
+- Uses email `{digits_only}@kria.dev` + password `kria-dev-2026` under the hood
 - Phone formatting (`+91...` vs `91...`) is normalized by stripping non-digits
 - Config: `EXPO_PUBLIC_APP_ENV=development` in `frontend/.env`
 

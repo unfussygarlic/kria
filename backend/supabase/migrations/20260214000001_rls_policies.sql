@@ -1,4 +1,4 @@
--- Kriya RLS Policies
+-- Kria RLS Policies
 -- Row Level Security for all tables
 -- Created: 2026-02-14
 

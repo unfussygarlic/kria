@@ -1,4 +1,4 @@
--- Kriya Database Schema
+-- Kria Database Schema
 -- Event Staffing & Brand Activation Platform
 -- Created: 2026-02-14
 

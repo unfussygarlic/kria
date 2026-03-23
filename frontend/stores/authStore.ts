@@ -7,10 +7,10 @@ import { Session } from "@supabase/supabase-js";
 // We use a fake email derived from the phone so Supabase email+password auth
 // can be used without sending real SMS. GOTRUE_MAILER_AUTOCONFIRM=true handles
 // confirmation automatically.
-const DEV_PASSWORD = "kriya-dev-2026";
+const DEV_PASSWORD = "kria-dev-2026";
 function devEmail(phone: string) {
   // Strip all non-digits so +91-8148095499 and 918148095499 map to the same email
-  return `${phone.replace(/\D/g, "")}@kriya.dev`;
+  return `${phone.replace(/\D/g, "")}@kria.dev`;
 }
 
 interface AuthState {

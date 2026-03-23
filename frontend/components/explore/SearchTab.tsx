@@ -386,8 +386,8 @@ const styles = StyleSheet.create({
     borderColor: T.border,
   },
   filterChipOn: {
-    backgroundColor: T.primary,
-    borderColor: T.primary,
+    backgroundColor: T.selBg,
+    borderColor: T.selBorder,
   },
   filterChipText: {
     fontSize: 13,
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   filterChipTextOn: {
-    color: T.textInverse,
+    color: T.selText,
     fontWeight: "700",
   },
 
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   typeBadgeGig: {
-    backgroundColor: T.primary50,
+    backgroundColor: T.selBg,
   },
   typeBadgeEvent: {
     backgroundColor: "#FEF3C7",
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   typeBadgeGigText: {
-    color: T.primary,
+    color: T.selText,
   },
   typeBadgeEventText: {
     color: "#B45309",

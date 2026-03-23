@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Kriya",
-    "slug": "kriya",
+    "name": "Kria",
+    "slug": "kria",
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "kriya",
+    "scheme": "kria",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
@@ -18,14 +18,14 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.kriya.app"
+      "bundleIdentifier": "com.kria.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2563EB"
       },
-      "package": "com.kriya.app"
+      "package": "com.kria.app"
     },
     "web": {
       "bundler": "metro",

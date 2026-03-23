@@ -158,7 +158,7 @@ export function RatingModal({
             disabled={score === 0 || submitting}
           >
             {submitting ? (
-              <ActivityIndicator color={T.textInverse} />
+              <ActivityIndicator color={T.ctaText} />
             ) : (
               <Text style={styles.submitText}>Submit Rating</Text>
             )}
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   submitBtn: {
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     borderRadius: 10,
     height: 48,
     justifyContent: "center",
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   submitText: {
-    color: T.textInverse,
+    color: T.ctaText,
     fontWeight: "700",
     fontSize: 15,
   },

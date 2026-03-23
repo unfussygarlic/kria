@@ -160,15 +160,15 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   categoryChipActive: {
-    backgroundColor: T.primary100,
-    borderColor: T.primary,
+    backgroundColor: T.selBg,
+    borderColor: T.selBorder,
   },
   categoryText: {
     fontSize: 14,
     color: T.textSub,
   },
   categoryTextActive: {
-    color: T.primary,
+    color: T.selText,
     fontWeight: "600",
   },
   list: {

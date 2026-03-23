@@ -85,7 +85,7 @@ function SeekerTab() {
 
   const getStatusChip = (item: AcceptedGigItem) => {
     if (!item.assignment_status || item.assignment_status === "assigned") {
-      return { label: "Upcoming", color: T.primary, bg: T.primary50 };
+      return { label: "Upcoming", color: T.selText, bg: T.selBg };
     }
     if (item.assignment_status === "completed") {
       return { label: "Done", color: T.success, bg: "#DCFCE7" };
@@ -172,7 +172,7 @@ function SeekerTab() {
                 disabled={otpSubmitting === item.gig_id}
               >
                 {otpSubmitting === item.gig_id ? (
-                  <ActivityIndicator size="small" color={T.textInverse} />
+                  <ActivityIndicator size="small" color={T.ctaText} />
                 ) : (
                   <Text style={styles.otpConfirmText}>Confirm</Text>
                 )}
@@ -183,7 +183,7 @@ function SeekerTab() {
             </View>
           ) : (
             <Pressable style={styles.enterOtpBtn} onPress={() => setOtpExpanded(item.gig_id)}>
-              <Feather name="key" size={14} color={T.primary} />
+              <Feather name="key" size={14} color={T.ctaText} />
               <Text style={styles.enterOtpText}>Enter OTP</Text>
             </Pressable>
           )
@@ -195,7 +195,7 @@ function SeekerTab() {
             style={styles.rateBtn}
             onPress={() => setRatingTarget(item)}
           >
-            <Feather name="star" size={14} color={T.textInverse} />
+            <Feather name="star" size={14} color={T.ctaText} />
             <Text style={styles.rateBtnText}>Rate Finder</Text>
           </Pressable>
         )}
@@ -226,7 +226,7 @@ function SeekerTab() {
             </View>
           ) : (
             <View style={styles.center}>
-              <Feather name="briefcase" size={48} color={T.primary200} />
+              <Feather name="briefcase" size={48} color={T.primary} />
               <Text style={styles.emptyTitle}>No accepted gigs</Text>
               <Text style={styles.emptySubtitle}>
                 Gigs you've been accepted for will appear here.
@@ -272,7 +272,7 @@ function EventCard({ event, onPress }: { event: MyEventSummary; onPress: () => v
     <Pressable style={styles.eventCard} onPress={onPress}>
       <View style={styles.eventHeader}>
         <View style={styles.eventIconWrap}>
-          <Feather name="calendar" size={20} color={T.primary} />
+          <Feather name="calendar" size={20} color={T.avatarText} />
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={styles.eventTitle} numberOfLines={1}>{event.title}</Text>
@@ -367,7 +367,7 @@ function FinderTab() {
           </View>
         ) : (
           <View style={styles.center}>
-            <Feather name="layers" size={48} color={T.primary200} />
+            <Feather name="layers" size={48} color={T.primary} />
             <Text style={styles.emptyTitle}>Nothing posted yet</Text>
             <Text style={styles.emptySubtitle}>
               Tap the + to post a gig or create an event.
@@ -395,7 +395,7 @@ export default function SpaceScreen() {
           <Feather
             name={isFinder ? "layers" : "briefcase"}
             size={14}
-            color="rgba(255,255,255,0.5)"
+            color={T.textMuted}
           />
           <Text style={styles.roleLabel}>
             {isFinder ? L.FINDER : L.SEEKER}
@@ -429,7 +429,8 @@ const styles = StyleSheet.create({
   roleLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.5)",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: T.textMuted,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
@@ -518,14 +519,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: T.primary100,
+    backgroundColor: T.avatarBg,
     justifyContent: "center",
     alignItems: "center",
   },
   posterAvatarText: {
     fontSize: 11,
     fontWeight: "700",
-    color: T.primary,
+    color: T.avatarText,
   },
   posterName: {
     fontSize: 12,
@@ -550,15 +551,15 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: T.primary50,
+    backgroundColor: T.ctaBg,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: T.primary200,
+    borderColor: T.ctaBg,
   },
   enterOtpText: {
     fontSize: 13,
     fontWeight: "600",
-    color: T.primary,
+    color: T.ctaText,
   },
   otpEntry: {
     flexDirection: "row",
@@ -581,13 +582,13 @@ const styles = StyleSheet.create({
   otpConfirmBtn: {
     height: 40,
     paddingHorizontal: 14,
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
   otpConfirmText: {
-    color: T.textInverse,
+    color: T.ctaText,
     fontWeight: "700",
     fontSize: 13,
   },
@@ -607,7 +608,7 @@ const styles = StyleSheet.create({
   rateBtnText: {
     fontSize: 13,
     fontWeight: "700",
-    color: T.textInverse,
+    color: T.ctaText,
   },
   ratedRow: {
     flexDirection: "row",
@@ -638,7 +639,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: T.primary50,
+    backgroundColor: T.avatarBg,
     justifyContent: "center",
     alignItems: "center",
   },

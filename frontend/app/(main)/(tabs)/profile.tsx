@@ -52,7 +52,7 @@ export default function ProfileScreen() {
         <View style={styles.badges}>
           {profile?.is_student && (
             <View style={styles.badge}>
-              <Feather name="book" size={12} color={T.primary} />
+              <Feather name="book" size={12} color={T.selText} />
               <Text style={styles.badgeText}>Student</Text>
             </View>
           )}
@@ -196,7 +196,7 @@ export default function ProfileScreen() {
       </Pressable>
 
       {/* App Version */}
-      <Text style={styles.version}>Kriya v1.0.0</Text>
+      <Text style={styles.version}>Kria v1.0.0</Text>
     </ScrollView>
   );
 }
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: T.primary100,
+    backgroundColor: T.avatarBg,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 32,
     fontWeight: "bold",
-    color: T.primary,
+    color: T.avatarText,
   },
   name: {
     fontSize: 24,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: T.primary50,
+    backgroundColor: T.selBg,
   },
   verifiedBadge: {
     backgroundColor: "#DCFCE7",
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: "600",
-    color: T.primary,
+    color: T.selText,
   },
 
   // ── Completion card ──────────────────────────────────────────
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 10,
     borderWidth: 1,
-    borderColor: T.primary100,
+    borderColor: T.primary,
   },
   completionRow: {
     flexDirection: "row",

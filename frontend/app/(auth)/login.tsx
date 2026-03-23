@@ -51,12 +51,12 @@ export default function LoginScreen() {
       >
         {/* ── Gradient Hero ─────────────────────────────────────────────── */}
         <LinearGradient
-          colors={["#F97316", "#EA580C", "#C2410C"]}
+          colors={T.gradBrand}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
-          <Text style={styles.logo}>Kriya</Text>
+          <Text style={styles.logo}>Kria</Text>
           <Text style={styles.tagline}>Event gigs for students</Text>
         </LinearGradient>
 
@@ -90,7 +90,7 @@ export default function LoginScreen() {
             disabled={isLoading}
           >
             <LinearGradient
-              colors={["#F97316", "#EA580C", "#C2410C"]}
+              colors={T.gradBrand}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.button}
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: {
-    color: "#fff",
+    color: T.textInverse,
     fontSize: rf(17),
     fontWeight: "700",
     letterSpacing: 0.3,

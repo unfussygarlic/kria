@@ -1,4 +1,4 @@
-# Kriya Backend - Development Dockerfile
+# Kria Backend - Development Dockerfile
 # For Edge Functions development
 # Main Supabase services run via docker-compose
 

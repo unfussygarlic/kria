@@ -225,7 +225,7 @@ export default function EditProfileScreen() {
           >
             <View style={styles.navRowLeft}>
               <View style={styles.navIcon}>
-                <Feather name="zap" size={16} color={T.primary} />
+                <Feather name="zap" size={16} color={T.avatarText} />
               </View>
               <View>
                 <Text style={styles.navRowTitle}>Skills</Text>
@@ -384,7 +384,7 @@ export default function EditProfileScreen() {
                       {opt.label}
                     </Text>
                     {eduDraft?.degree === opt.value && (
-                      <Feather name="check" size={16} color={T.primary} />
+                      <Feather name="check" size={16} color={T.selText} />
                     )}
                   </Pressable>
                 ))}
@@ -483,7 +483,7 @@ function WorkForm({
         onPress={() => onChange({ ...draft, to_year: isCurrently ? CURRENT_YEAR : null })}
       >
         <View style={[styles.checkbox, isCurrently && styles.checkboxOn]}>
-          {isCurrently && <Feather name="check" size={12} color={T.textInverse} />}
+          {isCurrently && <Feather name="check" size={12} color={T.selText} />}
         </View>
         <Text style={styles.currentlyLabel}>Currently working here</Text>
       </Pressable>
@@ -677,15 +677,15 @@ const styles = StyleSheet.create({
     borderColor: T.border,
   },
   chipOn: {
-    backgroundColor: T.primary100,
-    borderColor: T.primary,
+    backgroundColor: T.selBg,
+    borderColor: T.selBorder,
   },
   chipText: {
     fontSize: 13,
     color: T.textSub,
   },
   chipTextOn: {
-    color: T.primary,
+    color: T.selText,
     fontWeight: "600",
   },
 
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: T.primary100,
+    backgroundColor: T.avatarBg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   studentBadge: {
-    backgroundColor: T.primary100,
+    backgroundColor: T.selBg,
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
   studentBadgeText: {
     fontSize: 10,
     fontWeight: "700",
-    color: T.primary,
+    color: T.selText,
   },
 
   // ── Add button ──
@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: T.primary200,
+    borderColor: T.primary,
     borderStyle: "dashed",
     alignSelf: "flex-start",
   },
@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
     backgroundColor: T.bg,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: T.primary200,
+    borderColor: T.primary,
     padding: 14,
     gap: 12,
   },
@@ -823,8 +823,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxOn: {
-    backgroundColor: T.primary,
-    borderColor: T.primary,
+    backgroundColor: T.selBg,
+    borderColor: T.selBorder,
   },
   currentlyLabel: {
     fontSize: 13,
@@ -853,13 +853,13 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     borderRadius: 8,
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     alignItems: "center",
     justifyContent: "center",
   },
   saveBtnText: {
     fontSize: 14,
-    color: T.textInverse,
+    color: T.ctaText,
     fontWeight: "700",
   },
 
@@ -908,14 +908,14 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   pickerItemSelected: {
-    backgroundColor: T.primary50,
+    backgroundColor: T.selBg,
   },
   pickerItemText: {
     fontSize: 15,
     color: T.text,
   },
   pickerItemTextSelected: {
-    color: T.primary,
+    color: T.selText,
     fontWeight: "600",
   },
 
@@ -932,7 +932,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   button: {
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     height: 54,
     borderRadius: 12,
     justifyContent: "center",
@@ -943,7 +943,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: T.textInverse,
+    color: T.ctaText,
     fontSize: 17,
     fontWeight: "600",
   },

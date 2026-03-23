@@ -137,7 +137,7 @@ export default function PostGigScreen() {
             disabled={!category}
           >
             <Text style={styles.nextButtonText}>Next</Text>
-            <Feather name="arrow-right" size={20} color={T.textInverse} />
+            <Feather name="arrow-right" size={20} color={T.ctaText} />
           </Pressable>
         </StickyFooter>
       </View>
@@ -220,7 +220,7 @@ export default function PostGigScreen() {
             disabled={!title}
           >
             <Text style={styles.nextButtonText}>Next</Text>
-            <Feather name="arrow-right" size={20} color={T.textInverse} />
+            <Feather name="arrow-right" size={20} color={T.ctaText} />
           </Pressable>
         </StickyFooter>
       </KeyboardAvoidingView>
@@ -365,7 +365,7 @@ export default function PostGigScreen() {
             disabled={!payAmount || !venueName || !eventDate}
           >
             <Text style={styles.nextButtonText}>Next</Text>
-            <Feather name="arrow-right" size={20} color={T.textInverse} />
+            <Feather name="arrow-right" size={20} color={T.ctaText} />
           </Pressable>
         </StickyFooter>
       </KeyboardAvoidingView>
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     borderColor: T.border,
   },
   categoryCardSelected: {
-    backgroundColor: T.primary50,
+    backgroundColor: T.selBg,
   },
   categoryIcon: {
     width: 48,
@@ -578,15 +578,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   payTypeOptionSelected: {
-    backgroundColor: T.primary100,
-    borderColor: T.primary,
+    backgroundColor: T.selBg,
+    borderColor: T.selBorder,
   },
   payTypeText: {
     fontSize: 12,
     color: T.textSub,
   },
   payTypeTextSelected: {
-    color: T.primary,
+    color: T.selText,
     fontWeight: "600",
   },
   genderContainer: {
@@ -603,15 +603,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   genderOptionSelected: {
-    backgroundColor: T.primary100,
-    borderColor: T.primary,
+    backgroundColor: T.selBg,
+    borderColor: T.selBorder,
   },
   genderText: {
     fontSize: 14,
     color: T.textSub,
   },
   genderTextSelected: {
-    color: T.primary,
+    color: T.selText,
     fontWeight: "600",
   },
   chipContainer: {
@@ -628,15 +628,15 @@ const styles = StyleSheet.create({
     borderColor: T.border,
   },
   chipSelected: {
-    backgroundColor: T.primary100,
-    borderColor: T.primary,
+    backgroundColor: T.selBg,
+    borderColor: T.selBorder,
   },
   chipText: {
     fontSize: 14,
     color: T.textSub,
   },
   chipTextSelected: {
-    color: T.primary,
+    color: T.selText,
     fontWeight: "600",
   },
   nextButton: {
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     height: 56,
     borderRadius: 12,
   },
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   nextButtonText: {
-    color: T.textInverse,
+    color: T.ctaText,
     fontSize: 18,
     fontWeight: "600",
   },
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: T.textInverse,
+    color: T.ctaText,
     fontSize: 18,
     fontWeight: "600",
   },

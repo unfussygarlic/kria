@@ -245,8 +245,8 @@ export function SwipeableJobCard({
         ]}
         pointerEvents="none"
       >
-        <Feather name={canApply ? "check-circle" : "lock"} size={52} color="#fff" />
-        <Text style={styles.overlayText}>{canApply ? "Apply" : "Finder Mode"}</Text>
+        <Feather name={canApply ? "check-circle" : "lock"} size={52} color={canApply ? "#000" : "#fff"} />
+        <Text style={[styles.overlayText, { color: canApply ? "#000" : "#fff" }]}>{canApply ? "Apply" : "Finder Mode"}</Text>
       </Animated.View>
 
       {/* ➡️ Next overlay (always rendered in circular carousel) */}
@@ -275,33 +275,34 @@ const styles = StyleSheet.create({
   },
   applyOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(22, 163, 74, 0.90)",
+    backgroundColor: "rgba(212,255,0,0.92)",    // Lime apply overlay
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
     gap: 12,
   },
   applyOverlayBlocked: {
-    backgroundColor: "rgba(107, 114, 128, 0.90)",
+    backgroundColor: "rgba(30,30,30,0.92)",     // Dark glass for Finder Mode
   },
   nextOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(234, 88, 12, 0.85)", // T.primary overlay
+    backgroundColor: "rgba(18,18,18,0.85)",     // Obsidian nav overlay
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
   },
   prevOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(234, 88, 12, 0.85)", // T.primary overlay
+    backgroundColor: "rgba(18,18,18,0.85)",     // Obsidian nav overlay
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
   },
   overlayText: {
-    color: "#fff",
+    color: "#000",
     fontSize: 26,
-    fontWeight: "800",
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: 0.5,
   },
 });
