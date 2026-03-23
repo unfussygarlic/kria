@@ -33,6 +33,7 @@ const NAV_THRESHOLD   = W * 0.25;  // horizontal px to trigger navigation
 interface SwipeableJobCardProps {
   gig: Gig;
   posterMomentum?: number;
+  canApply?: boolean;
   onApply: () => void;
   onNext: () => void;
   onPrev: () => void;
@@ -41,6 +42,7 @@ interface SwipeableJobCardProps {
 export function SwipeableJobCard({
   gig,
   posterMomentum,
+  canApply = true,
   onApply,
   onNext,
   onPrev,
@@ -236,11 +238,15 @@ export function SwipeableJobCard({
 
       {/* ⬆️ Apply overlay */}
       <Animated.View
-        style={[styles.applyOverlay, { opacity: applyOpacity }]}
+        style={[
+          styles.applyOverlay,
+          !canApply && styles.applyOverlayBlocked,
+          { opacity: applyOpacity },
+        ]}
         pointerEvents="none"
       >
-        <Feather name="check-circle" size={52} color="#fff" />
-        <Text style={styles.overlayText}>Apply</Text>
+        <Feather name={canApply ? "check-circle" : "lock"} size={52} color="#fff" />
+        <Text style={styles.overlayText}>{canApply ? "Apply" : "Finder Mode"}</Text>
       </Animated.View>
 
       {/* ➡️ Next overlay (always rendered in circular carousel) */}
@@ -274,6 +280,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 12,
+  },
+  applyOverlayBlocked: {
+    backgroundColor: "rgba(107, 114, 128, 0.90)",
   },
   nextOverlay: {
     ...StyleSheet.absoluteFillObject,

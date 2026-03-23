@@ -3,6 +3,8 @@ import { View } from "react-native";
 import { Tabs, router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { T } from "@/constants/colors";
+import { L } from "@/constants/labels";
+import { useAuthStore } from "@/stores/authStore";
 import {
   useFabDial,
   FloatingFab,
@@ -12,20 +14,20 @@ import {
 
 // ── Static data ───────────────────────────────────────────────────────────────
 
-const FAB_OPTIONS: SpeedDialOption[] = [
+const FINDER_FAB_OPTIONS: SpeedDialOption[] = [
   {
-    label: "Create an Event",
+    label: L.ACTION_CREATE_EVENT,
     icon: "calendar",
     onPress: () => router.push("/(main)/event/create"),
   },
   {
-    label: "Post a Gig",
+    label: L.ACTION_POST_GIG,
     icon: "briefcase",
     onPress: () => router.push("/(main)/post"),
   },
 ];
 
-// ── Static screen options — module-level so references never change ───────────
+// ── Static screen options ─────────────────────────────────────────────────────
 
 const SCREEN_OPTIONS = {
   headerShown: false,
@@ -50,25 +52,24 @@ const SCREEN_OPTIONS = {
 } as const;
 
 const HOME_OPT = {
-  title: "Home",
+  title: L.TAB_HOME,
   tabBarIcon: ({ color, size }: any) => <Feather name="home" size={size} color={color} />,
 };
 const EXPLORE_OPT = {
-  title: "Explore",
+  title: L.TAB_EXPLORE,
   tabBarIcon: ({ color, size }: any) => <Feather name="compass" size={size} color={color} />,
 };
 const SPACE_OPT = {
-  title: "My Space",
+  title: L.TAB_SPACE,
   tabBarIcon: ({ color, size }: any) => <Feather name="layers" size={size} color={color} />,
 };
 const ARENA_OPT = {
-  title: "Arena",
+  title: L.TAB_ARENA,
   tabBarIcon: ({ color, size }: any) => <Feather name="zap" size={size} color={color} />,
 };
 const HIDDEN = { href: null } as const;
 
 // An inert spacer so the center slot exists in the tab bar layout.
-// Has no press handler — the real FAB button floats above it.
 const POST_SPACER = () => <View style={{ flex: 1 }} pointerEvents="none" />;
 const POST_OPT = {
   title: "",
@@ -76,14 +77,29 @@ const POST_OPT = {
   tabBarButton: POST_SPACER,
 };
 
-// ── TabsNavigator — zero props ────────────────────────────────────────────────
+// ── Seeker tabs — no FAB ──────────────────────────────────────────────────────
 //
-// Zero props means React.memo is an absolute guarantee: this component will
-// NEVER re-render after its initial mount, regardless of what changes in the
-// parent. Pressing the FAB only changes TabsLayout's local state; memo() stops
-// that change right here and nothing inside Tabs is ever touched.
+// memo() with zero props: never re-renders from parent state.
 
-const TabsNavigator = memo(function TabsNavigator() {
+const SeekerTabsNavigator = memo(function SeekerTabsNavigator() {
+  return (
+    <Tabs screenOptions={SCREEN_OPTIONS}>
+      <Tabs.Screen name="home"        options={HOME_OPT} />
+      <Tabs.Screen name="explore"     options={EXPLORE_OPT} />
+      <Tabs.Screen name="post"        options={HIDDEN} />
+      <Tabs.Screen name="space"       options={SPACE_OPT} />
+      <Tabs.Screen name="arena"       options={ARENA_OPT} />
+      <Tabs.Screen name="chat"        options={HIDDEN} />
+      <Tabs.Screen name="search"      options={HIDDEN} />
+      <Tabs.Screen name="profile"     options={HIDDEN} />
+      <Tabs.Screen name="personality" options={HIDDEN} />
+    </Tabs>
+  );
+});
+
+// ── Finder tabs — with FAB ────────────────────────────────────────────────────
+
+const FinderTabsNavigator = memo(function FinderTabsNavigator() {
   return (
     <Tabs screenOptions={SCREEN_OPTIONS}>
       <Tabs.Screen name="home"        options={HOME_OPT} />
@@ -102,33 +118,25 @@ const TabsNavigator = memo(function TabsNavigator() {
 // ── Layout ────────────────────────────────────────────────────────────────────
 
 export default function TabsLayout() {
-  const dial = useFabDial(FAB_OPTIONS.length);
+  const activeRole = useAuthStore((s) => s.activeRole);
+  const isFinder = activeRole === "finder";
 
-  // Ref pattern keeps onPress stable across renders without stale closure.
+  const dial = useFabDial(FINDER_FAB_OPTIONS.length);
+
   const toggleRef = useRef(dial.toggle);
   toggleRef.current = dial.toggle;
   const stablePress = useCallback(() => toggleRef.current(), []);
 
   return (
     <View style={{ flex: 1 }}>
-      {/*
-       * TabsNavigator has zero props — memo() guarantees it never re-renders.
-       * FAB dial state changes do NOT reach it.
-       */}
-      <TabsNavigator />
+      {isFinder ? <FinderTabsNavigator /> : <SeekerTabsNavigator />}
 
-      {/*
-       * FloatingFab: absolutely positioned circle button rendered OUTSIDE
-       * React Navigation. Pressing it has zero interaction with the navigator.
-       * memo() + stable props → also never re-renders.
-       */}
-      <FloatingFab onPress={stablePress} rotation={dial.rotation} />
-
-      {/*
-       * FabOverlay: the only component that re-renders when dial.open changes.
-       * Backdrop + pills, no Modal, always mounted, pointerEvents-controlled.
-       */}
-      <FabOverlay dial={dial} options={FAB_OPTIONS} />
+      {isFinder && (
+        <>
+          <FloatingFab onPress={stablePress} rotation={dial.rotation} />
+          <FabOverlay dial={dial} options={FINDER_FAB_OPTIONS} />
+        </>
+      )}
     </View>
   );
 }

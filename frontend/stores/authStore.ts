@@ -18,6 +18,7 @@ interface AuthState {
   profile: Profile | null;
   isLoading: boolean;
   isOnboarded: boolean;
+  activeRole: "seeker" | "finder" | null;
 
   // Actions
   initialize: () => Promise<void>;
@@ -27,6 +28,7 @@ interface AuthState {
   fetchProfile: () => Promise<boolean>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: string | null }>;
   setOnboarded: (value: boolean) => void;
+  setActiveRole: (role: "seeker" | "finder") => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -34,6 +36,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   profile: null,
   isLoading: true,
   isOnboarded: false,
+  activeRole: null,
 
   initialize: async () => {
     try {
@@ -61,7 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (session) {
         await get().fetchProfile();
       } else {
-        set({ profile: null, isOnboarded: false });
+        set({ profile: null, isOnboarded: false, activeRole: null });
       }
     });
   },
@@ -136,7 +139,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ session: null, profile: null, isOnboarded: false });
+    set({ session: null, profile: null, isOnboarded: false, activeRole: null });
+  },
+
+  setActiveRole: (role) => {
+    set({ activeRole: role });
   },
 
   fetchProfile: async () => {

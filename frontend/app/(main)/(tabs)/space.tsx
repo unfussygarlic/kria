@@ -15,16 +15,16 @@ import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGigStore } from "@/stores/gigStore";
+import { useAuthStore } from "@/stores/authStore";
 import { Gig, MyEventSummary } from "@/types/database";
 import { T } from "@/constants/colors";
+import { L } from "@/constants/labels";
 import { JobCard, formatDate } from "@/components/gig/JobCard";
 import { RatingModal } from "@/components/ui/RatingModal";
 import { getMyAcceptedGigs, AcceptedGigItem } from "@/lib/api/gigs";
 import { verifyOtp } from "@/lib/api/ratings";
 
-// ── Tab types ─────────────────────────────────────────────────────────────────
-
-type SpaceTab = "seeker" | "finder";
+// ── Tab types (kept for compatibility) ───────────────────────────────────────
 
 // ── Poster tab items ──────────────────────────────────────────────────────────
 
@@ -384,34 +384,27 @@ function FinderTab() {
 
 export default function SpaceScreen() {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<SpaceTab>("seeker");
+  const activeRole = useAuthStore((s) => s.activeRole);
+  const isFinder = activeRole === "finder";
 
   return (
     <View style={styles.screen}>
-      {/* Header with tabs */}
+      {/* Header — role label, no tab switcher */}
       <LinearGradient colors={T.gradDark} style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <View style={styles.tabBar}>
-          <Pressable
-            style={[styles.tabBtn, activeTab === "seeker" && styles.tabBtnActive]}
-            onPress={() => setActiveTab("seeker")}
-          >
-            <Text style={[styles.tabBtnText, activeTab === "seeker" && styles.tabBtnTextActive]}>
-              Seeker
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[styles.tabBtn, activeTab === "finder" && styles.tabBtnActive]}
-            onPress={() => setActiveTab("finder")}
-          >
-            <Text style={[styles.tabBtnText, activeTab === "finder" && styles.tabBtnTextActive]}>
-              Finder
-            </Text>
-          </Pressable>
+        <View style={styles.roleRow}>
+          <Feather
+            name={isFinder ? "layers" : "briefcase"}
+            size={14}
+            color="rgba(255,255,255,0.5)"
+          />
+          <Text style={styles.roleLabel}>
+            {isFinder ? L.FINDER : L.SEEKER}
+          </Text>
         </View>
       </LinearGradient>
 
-      {/* Tab content */}
-      {activeTab === "seeker" ? <SeekerTab /> : <FinderTab />}
+      {/* Role-pinned content */}
+      {isFinder ? <FinderTab /> : <SeekerTab />}
     </View>
   );
 }
@@ -425,32 +418,20 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingBottom: 16,
+    justifyContent: "flex-end",
   },
-
-  // Tab pill (dark gradient header style)
-  tabBar: {
+  roleRow: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderRadius: 12,
-    padding: 3,
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: 8,
     alignItems: "center",
-    borderRadius: 10,
+    gap: 6,
   },
-  tabBtnActive: {
-    backgroundColor: T.textInverse,
-  },
-  tabBtnText: {
-    fontSize: 14,
+  roleLabel: {
+    fontSize: 13,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.6)",
-  },
-  tabBtnTextActive: {
-    color: T.text,
+    color: "rgba(255,255,255,0.5)",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
 
   // List

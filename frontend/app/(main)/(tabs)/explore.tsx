@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Pressable,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,6 +14,7 @@ import { useGigStore } from "@/stores/gigStore";
 import { useAuthStore } from "@/stores/authStore";
 import { Gig } from "@/types/database";
 import { T } from "@/constants/colors";
+import { L } from "@/constants/labels";
 import { SwipeableJobCard } from "@/components/gig/SwipeableJobCard";
 import { SearchTab } from "@/components/explore/SearchTab";
 import { Feather } from "@expo/vector-icons";
@@ -38,6 +40,9 @@ export default function ExploreScreen() {
     applyToGig,
   } = useGigStore();
   const profile = useAuthStore((s) => s.profile);
+  const activeRole = useAuthStore((s) => s.activeRole);
+  const isFinder = activeRole === "finder";
+  const canApply = !isFinder;
 
   const [activeTab, setActiveTab] = useState<Tab>("flames");
   const [availableGigs, setAvailableGigs] = useState<Gig[]>([]);
@@ -68,6 +73,10 @@ export default function ExploreScreen() {
 
   const handleApply = () => {
     if (!availableGigs[currentIndex]) return;
+    if (!canApply) {
+      Alert.alert("Finder Mode", L.EXPLORE_FINDER_APPLY_BLOCKED);
+      return;
+    }
     applyToGig(availableGigs[currentIndex].id, availableGigs[currentIndex]);
     setCurrentIndex((currentIndex + 1) % availableGigs.length);
   };
@@ -85,7 +94,7 @@ export default function ExploreScreen() {
         colors={T.gradDark}
         style={[styles.header, { paddingTop: insets.top + 16 }]}
       >
-        {/* Tab switcher */}
+        {/* Tab switcher — Search hidden for Finders */}
         <View style={styles.tabBar}>
           <Pressable
             style={[styles.tabBtn, activeTab === "flames" && styles.tabBtnActive]}
@@ -95,14 +104,16 @@ export default function ExploreScreen() {
               🔥 Flames
             </Text>
           </Pressable>
-          <Pressable
-            style={[styles.tabBtn, activeTab === "search" && styles.tabBtnActive]}
-            onPress={() => setActiveTab("search")}
-          >
-            <Text style={[styles.tabBtnText, activeTab === "search" && styles.tabBtnTextActive]}>
-              🔍 Search
-            </Text>
-          </Pressable>
+          {!isFinder && (
+            <Pressable
+              style={[styles.tabBtn, activeTab === "search" && styles.tabBtnActive]}
+              onPress={() => setActiveTab("search")}
+            >
+              <Text style={[styles.tabBtnText, activeTab === "search" && styles.tabBtnTextActive]}>
+                🔍 Search
+              </Text>
+            </Pressable>
+          )}
         </View>
       </LinearGradient>
 
@@ -130,6 +141,7 @@ export default function ExploreScreen() {
                   key={availableGigs[currentIndex].id}
                   gig={availableGigs[currentIndex]}
                   posterMomentum={posterScores[availableGigs[currentIndex].id]}
+                  canApply={canApply}
                   onApply={handleApply}
                   onNext={handleNext}
                   onPrev={handlePrev}

@@ -7,12 +7,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
 import { useMomentumStore } from "@/stores/momentumStore";
 import { T } from "@/constants/colors";
+import { L } from "@/constants/labels";
 import { rf, rw } from "@/constants/responsive";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const profile = useAuthStore((s) => s.profile);
+  const activeRole = useAuthStore((s) => s.activeRole);
   const { myMomentum, fetchMyMomentum } = useMomentumStore();
+
+  const isFinder = activeRole === "finder";
 
   const firstName = profile?.first_name || profile?.display_name || "there";
   const avatarLetter =
@@ -20,18 +24,16 @@ export default function HomeScreen() {
 
   const hour = new Date().getHours();
   const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    hour < 12 ? L.GREETING_MORNING : hour < 17 ? L.GREETING_AFTERNOON : L.GREETING_EVENING;
 
   useEffect(() => {
     fetchMyMomentum();
   }, []);
 
-  const workerScore = myMomentum?.worker.score ?? 0;
-  const finderScore = myMomentum?.poster.score ?? 0;
-  const topRole = finderScore >= workerScore ? "finder" : "seeker";
-  const topScore = myMomentum ? Math.max(workerScore, finderScore) : null;
-  const topBand = topRole === "finder" ? myMomentum?.poster.band_label : myMomentum?.worker.band_label;
-  const topColor = topRole === "finder" ? myMomentum?.poster.band_color : myMomentum?.worker.band_color;
+  // Show role-specific momentum score
+  const momentumData = isFinder ? myMomentum?.poster : myMomentum?.worker;
+  const topScore = momentumData?.score ?? null;
+  const topColor = momentumData?.band_color;
 
   return (
     <ScrollView
@@ -42,8 +44,8 @@ export default function HomeScreen() {
       {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: insets.top + rw(12) }]}>
         <View>
-          <Text style={styles.appName}>Kriya</Text>
-          <Text style={styles.tagline}>Your gig marketplace</Text>
+          <Text style={styles.appName}>{L.APP_NAME}</Text>
+          <Text style={styles.tagline}>{L.TAGLINE}</Text>
         </View>
         <Pressable
           style={styles.avatarButton}
@@ -58,14 +60,16 @@ export default function HomeScreen() {
         <Text style={styles.greetingText}>
           {greeting}, {firstName}!
         </Text>
-        <Text style={styles.greetingSub}>Here's what's happening today.</Text>
+        <Text style={styles.greetingSub}>
+          {isFinder ? L.GREETING_SUB_FINDER : L.GREETING_SUB_SEEKER}
+        </Text>
       </View>
 
       {/* ── Momentum section ── */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Your Momentum</Text>
+        <Text style={styles.sectionTitle}>{L.YOUR_MOMENTUM}</Text>
         <Pressable onPress={() => router.push("/(main)/(tabs)/arena")}>
-          <Text style={styles.sectionLink}>View details →</Text>
+          <Text style={styles.sectionLink}>{L.VIEW_DETAILS}</Text>
         </Pressable>
       </View>
       <Pressable
@@ -75,12 +79,12 @@ export default function HomeScreen() {
         <LinearGradient colors={["#2B2B2B", "#111111"]} style={styles.momentumGrad}>
           <View style={styles.momentumRoleRow}>
             <Feather
-              name={topRole === "finder" ? "layers" : "briefcase"}
+              name={isFinder ? "layers" : "briefcase"}
               size={13}
               color="rgba(255,255,255,0.5)"
             />
             <Text style={styles.momentumRoleLabel}>
-              {topRole === "finder" ? "Finder" : "Seeker"} · Top score
+              {isFinder ? L.FINDER : L.SEEKER} · Score
             </Text>
           </View>
           <Text style={[styles.momentumScore, { color: topColor ?? T.accent }]}>
@@ -93,66 +97,127 @@ export default function HomeScreen() {
       <Text style={[styles.sectionTitle, { paddingHorizontal: rw(20), marginBottom: rw(12) }]}>
         Quick Actions
       </Text>
-      <View style={styles.actionsGrid}>
-        <Pressable
-          style={[styles.actionCard, styles.actionCardPrimary]}
-          onPress={() => router.push("/(main)/(tabs)/explore")}
-        >
-          <Feather name="compass" size={rw(28)} color={T.textInverse} />
-          <Text style={[styles.actionLabel, { color: T.textInverse }]}>Explore Gigs</Text>
-          <Text style={[styles.actionSub, { color: "rgba(255,255,255,0.75)" }]}>
-            Find your next gig
-          </Text>
-        </Pressable>
 
-        <Pressable
-          style={[styles.actionCard, styles.actionCardDark]}
-          onPress={() => router.push("/(main)/post")}
-        >
-          <Feather name="briefcase" size={rw(28)} color={T.textInverse} />
-          <Text style={[styles.actionLabel, { color: T.textInverse }]}>Post a Gig</Text>
-          <Text style={[styles.actionSub, { color: "rgba(255,255,255,0.6)" }]}>
-            Hire someone today
-          </Text>
-        </Pressable>
+      {isFinder ? <FinderActions /> : <SeekerActions />}
 
+      {/* ── Create event banner — Finder only ── */}
+      {isFinder && (
         <Pressable
-          style={[styles.actionCard, styles.actionCardMid]}
-          onPress={() => router.push("/(main)/(tabs)/space")}
+          style={styles.eventBanner}
+          onPress={() => router.push("/(main)/event/create")}
         >
-          <Feather name="layers" size={rw(28)} color={T.text} />
-          <Text style={[styles.actionLabel, { color: T.text }]}>My Space</Text>
-          <Text style={[styles.actionSub, { color: T.textSub }]}>
-            Your posts &amp; gigs
-          </Text>
+          <View>
+            <Text style={styles.eventBannerTitle}>{L.ACTION_HOST_EVENT}</Text>
+            <Text style={styles.eventBannerSub}>{L.ACTION_HOST_EVENT_SUB}</Text>
+          </View>
+          <Feather name="calendar" size={rw(32)} color={T.primary} />
         </Pressable>
+      )}
+    </ScrollView>
+  );
+}
 
-        <Pressable
-          style={[styles.actionCard, styles.actionCardAccent]}
-          onPress={() => router.push("/(main)/(tabs)/arena")}
-        >
-          <Feather name="zap" size={rw(28)} color={T.text} />
-          <Text style={[styles.actionLabel, { color: T.text }]}>Arena</Text>
-          <Text style={[styles.actionSub, { color: T.textSub }]}>
-            Your FICO scores
-          </Text>
-        </Pressable>
-      </View>
+// ── Seeker quick actions ───────────────────────────────────────────────────────
 
-      {/* ── Create event banner ── */}
+function SeekerActions() {
+  return (
+    <View style={styles.actionsGrid}>
       <Pressable
-        style={styles.eventBanner}
+        style={[styles.actionCard, styles.actionCardPrimary]}
+        onPress={() => router.push("/(main)/(tabs)/explore")}
+      >
+        <Feather name="compass" size={rw(28)} color={T.textInverse} />
+        <Text style={[styles.actionLabel, { color: T.textInverse }]}>{L.ACTION_EXPLORE_GIGS}</Text>
+        <Text style={[styles.actionSub, { color: "rgba(255,255,255,0.75)" }]}>
+          {L.ACTION_FIND_NEXT_GIG}
+        </Text>
+      </Pressable>
+
+      <Pressable
+        style={[styles.actionCard, styles.actionCardMid]}
+        onPress={() => router.push("/(main)/(tabs)/space")}
+      >
+        <Feather name="layers" size={rw(28)} color={T.text} />
+        <Text style={[styles.actionLabel, { color: T.text }]}>{L.ACTION_MY_SPACE}</Text>
+        <Text style={[styles.actionSub, { color: T.textSub }]}>
+          My applications
+        </Text>
+      </Pressable>
+
+      <Pressable
+        style={[styles.actionCard, styles.actionCardAccent]}
+        onPress={() => router.push("/(main)/(tabs)/arena")}
+      >
+        <Feather name="zap" size={rw(28)} color={T.text} />
+        <Text style={[styles.actionLabel, { color: T.text }]}>{L.ACTION_ARENA}</Text>
+        <Text style={[styles.actionSub, { color: T.textSub }]}>
+          {L.ACTION_ARENA_SUB}
+        </Text>
+      </Pressable>
+
+      <Pressable
+        style={[styles.actionCard, styles.actionCardDark]}
+        onPress={() => router.push("/(main)/(tabs)/explore")}
+      >
+        <Feather name="search" size={rw(28)} color={T.textInverse} />
+        <Text style={[styles.actionLabel, { color: T.textInverse }]}>Search Gigs</Text>
+        <Text style={[styles.actionSub, { color: "rgba(255,255,255,0.6)" }]}>
+          Filter by category
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// ── Finder quick actions ───────────────────────────────────────────────────────
+
+function FinderActions() {
+  return (
+    <View style={styles.actionsGrid}>
+      <Pressable
+        style={[styles.actionCard, styles.actionCardDark]}
+        onPress={() => router.push("/(main)/post")}
+      >
+        <Feather name="briefcase" size={rw(28)} color={T.textInverse} />
+        <Text style={[styles.actionLabel, { color: T.textInverse }]}>{L.ACTION_POST_GIG}</Text>
+        <Text style={[styles.actionSub, { color: "rgba(255,255,255,0.6)" }]}>
+          {L.ACTION_HIRE_TODAY}
+        </Text>
+      </Pressable>
+
+      <Pressable
+        style={[styles.actionCard, styles.actionCardPrimary]}
         onPress={() => router.push("/(main)/event/create")}
       >
-        <View>
-          <Text style={styles.eventBannerTitle}>Host an Event</Text>
-          <Text style={styles.eventBannerSub}>
-            Create an event and post multiple gigs at once
-          </Text>
-        </View>
-        <Feather name="calendar" size={rw(32)} color={T.primary} />
+        <Feather name="calendar" size={rw(28)} color={T.textInverse} />
+        <Text style={[styles.actionLabel, { color: T.textInverse }]}>{L.ACTION_CREATE_EVENT}</Text>
+        <Text style={[styles.actionSub, { color: "rgba(255,255,255,0.75)" }]}>
+          Bundle multiple gigs
+        </Text>
       </Pressable>
-    </ScrollView>
+
+      <Pressable
+        style={[styles.actionCard, styles.actionCardMid]}
+        onPress={() => router.push("/(main)/(tabs)/space")}
+      >
+        <Feather name="layers" size={rw(28)} color={T.text} />
+        <Text style={[styles.actionLabel, { color: T.text }]}>{L.ACTION_MY_SPACE}</Text>
+        <Text style={[styles.actionSub, { color: T.textSub }]}>
+          {L.ACTION_MY_SPACE_SUB}
+        </Text>
+      </Pressable>
+
+      <Pressable
+        style={[styles.actionCard, styles.actionCardAccent]}
+        onPress={() => router.push("/(main)/(tabs)/arena")}
+      >
+        <Feather name="zap" size={rw(28)} color={T.text} />
+        <Text style={[styles.actionLabel, { color: T.text }]}>{L.ACTION_ARENA}</Text>
+        <Text style={[styles.actionSub, { color: T.textSub }]}>
+          {L.ACTION_ARENA_SUB}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 

@@ -1,12 +1,12 @@
 /**
  * Arena — Trust & Momentum Hub
  * ─────────────────────────────
- * Tabs: Seeker (worker) | Finder (poster)
- * Each tab shows the speedometer gauge + signal stats for that role.
- * Tapping the gauge opens the full Momentum Breakdown modal.
+ * Shows momentum score pinned to the user's active session role.
+ * Seeker → worker score. Finder → poster score.
+ * No tab switcher — role is set at login.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -21,18 +21,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { T } from "@/constants/colors";
-import { MOMENTUM_ROLES, getBand } from "@/constants/momentum";
+import { L } from "@/constants/labels";
+import { getBand } from "@/constants/momentum";
 import { rf, rw } from "@/constants/responsive";
+import { useAuthStore } from "@/stores/authStore";
 import { useMomentumStore } from "@/stores/momentumStore";
 import { SpeedometerGauge } from "@/components/momentum/SpeedometerGauge";
 import { MomentumBreakdown } from "@/components/momentum/MomentumBreakdown";
 
-type Role = "worker" | "poster";
+type InternalRole = "worker" | "poster";
 
 export default function ArenaScreen() {
   const insets = useSafeAreaInsets();
-  const [activeRole, setActiveRole] = useState<Role>("worker");
+  const activeRole = useAuthStore((s) => s.activeRole);
   const [showBreakdown, setShowBreakdown] = useState(false);
+
+  // Map session role → internal momentum role key
+  const internalRole: InternalRole = activeRole === "finder" ? "poster" : "worker";
 
   const myMomentum = useMomentumStore((s) => s.myMomentum);
   const myBreakdown = useMomentumStore((s) => s.myBreakdown);
@@ -55,33 +60,25 @@ export default function ArenaScreen() {
   }, [fetchMyMomentum]);
 
   const activeScore =
-    activeRole === "worker"
+    internalRole === "worker"
       ? (myMomentum?.worker.score ?? 500)
       : (myMomentum?.poster.score ?? 500);
 
-  const activeBand = getBand(activeScore);
-  const activeData = activeRole === "worker" ? myMomentum?.worker : myMomentum?.poster;
+  const activeData = internalRole === "worker" ? myMomentum?.worker : myMomentum?.poster;
+
+  const roleLabel = activeRole === "finder" ? L.FINDER : L.SEEKER;
 
   return (
     <View style={styles.screen}>
-      {/* ── Header with role tabs ── */}
+      {/* ── Header — role label, no tab switcher ── */}
       <LinearGradient colors={T.gradDark} style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <View style={styles.tabBar}>
-          {(["worker", "poster"] as Role[]).map((role) => {
-            const cfg = MOMENTUM_ROLES[role];
-            const isActive = activeRole === role;
-            return (
-              <Pressable
-                key={role}
-                style={[styles.tabBtn, isActive && styles.tabBtnActive]}
-                onPress={() => setActiveRole(role)}
-              >
-                <Text style={[styles.tabBtnText, isActive && styles.tabBtnTextActive]}>
-                  {cfg.tabLabel}
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View style={styles.roleRow}>
+          <Feather
+            name={activeRole === "finder" ? "layers" : "briefcase"}
+            size={rw(14)}
+            color="rgba(255,255,255,0.5)"
+          />
+          <Text style={styles.roleLabel}>{roleLabel} · Momentum</Text>
         </View>
       </LinearGradient>
 
@@ -93,7 +90,6 @@ export default function ArenaScreen() {
           <RefreshControl refreshing={isLoadingMy} onRefresh={handleRefresh} tintColor={T.primary} />
         }
       >
-
         {/* ── Gauge ── */}
         <View style={styles.gaugeCard}>
           {isLoadingMy && !myMomentum ? (
@@ -112,7 +108,7 @@ export default function ArenaScreen() {
 
         {/* ── Stats grid ── */}
         {activeData && (
-          <StatsGrid role={activeRole} score={activeData.score} gigCount={activeData.gig_count} />
+          <StatsGrid role={internalRole} score={activeData.score} gigCount={activeData.gig_count} />
         )}
 
         {/* ── How Momentum works ── */}
@@ -124,7 +120,7 @@ export default function ArenaScreen() {
         visible={showBreakdown}
         onClose={() => setShowBreakdown(false)}
         breakdown={myBreakdown}
-        activeRole={activeRole}
+        activeRole={internalRole}
         isLoading={isLoadingBreakdown}
       />
     </View>
@@ -133,16 +129,16 @@ export default function ArenaScreen() {
 
 // ── Stats grid ────────────────────────────────────────────────────────────────
 
-function StatsGrid({ role, score, gigCount }: { role: Role; score: number; gigCount: number }) {
+function StatsGrid({ role, score, gigCount }: { role: InternalRole; score: number; gigCount: number }) {
   const band = getBand(score);
 
   const workerStats = [
-    { label: "Gigs Done", value: gigCount.toString(), icon: "briefcase" as const },
-    { label: "Score Band", value: band.label, color: band.color, icon: "award" as const },
+    { label: L.GIGS_DONE, value: gigCount.toString(), icon: "briefcase" as const },
+    { label: L.SCORE_BAND, value: band.label, color: band.color, icon: "award" as const },
   ];
   const posterStats = [
-    { label: "Gigs Posted", value: gigCount.toString(), icon: "layers" as const },
-    { label: "Score Band", value: band.label, color: band.color, icon: "award" as const },
+    { label: L.GIGS_POSTED, value: gigCount.toString(), icon: "layers" as const },
+    { label: L.SCORE_BAND, value: band.label, color: band.color, icon: "award" as const },
   ];
 
   const stats = role === "worker" ? workerStats : posterStats;
@@ -250,8 +246,21 @@ const styles = StyleSheet.create({
     backgroundColor: T.bg,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingHorizontal: rw(20),
+    paddingBottom: rw(16),
+    justifyContent: "flex-end",
+  },
+  roleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rw(6),
+  },
+  roleLabel: {
+    fontSize: rf(13),
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.5)",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   scroll: {
     flex: 1,
@@ -260,31 +269,6 @@ const styles = StyleSheet.create({
     padding: rw(20),
     paddingBottom: rw(40),
     gap: rw(16),
-  },
-
-  // Tab pill (dark gradient header style)
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderRadius: 12,
-    padding: 3,
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: "center",
-    borderRadius: 10,
-  },
-  tabBtnActive: {
-    backgroundColor: T.textInverse,
-  },
-  tabBtnText: {
-    fontSize: rf(14),
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.6)",
-  },
-  tabBtnTextActive: {
-    color: T.text,
   },
   gaugeCard: {
     backgroundColor: T.surface,
