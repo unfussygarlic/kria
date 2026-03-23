@@ -28,6 +28,7 @@ interface GigState {
   error: string | null;
   filters: GigFilters;
   seenGigIds: Set<string>;    // Track all gig IDs shown to user
+  posterScores: Record<string, number>; // gigId → poster's momentum score
 
   // Actions
   fetchGigs: (filters?: GigFilters, location?: MatchGigsParams) => Promise<void>;
@@ -54,6 +55,7 @@ export const useGigStore = create<GigState>((set, get) => ({
   error: null,
   filters: {},
   seenGigIds: new Set(),
+  posterScores: {},
 
   fetchGigs: async (filters?: GigFilters, location?: MatchGigsParams) => {
     set({ isLoading: true, error: null, seenGigIds: new Set() });
@@ -67,9 +69,17 @@ export const useGigStore = create<GigState>((set, get) => ({
         excluded_ids: [], // Fresh start
       });
 
-      const gigIds: string[] =
-        matchResult.data?.gigs.map((g) => g.gig_id) ?? [];
+      const matchedGigs = matchResult.data?.gigs ?? [];
+      const gigIds: string[] = matchedGigs.map((g) => g.gig_id);
       const hasMore = matchResult.data?.has_more ?? false;
+
+      // Build posterScores map: gigId → poster momentum score
+      const posterScores: Record<string, number> = {};
+      for (const mg of matchedGigs) {
+        if (mg.poster_score != null) {
+          posterScores[mg.gig_id] = mg.poster_score;
+        }
+      }
 
       // Step 2: Fetch full gig data from Supabase
       let query = supabase.from("gigs").select("*");
@@ -118,7 +128,7 @@ export const useGigStore = create<GigState>((set, get) => ({
       // Track all seen IDs
       const seenGigIds = new Set(gigs.map((g) => g.id));
 
-      set({ gigs, seenGigIds, hasMore, isLoading: false });
+      set({ gigs, seenGigIds, hasMore, posterScores, isLoading: false });
     } catch {
       set({ error: "Failed to fetch gigs", isLoading: false });
     }
@@ -141,9 +151,17 @@ export const useGigStore = create<GigState>((set, get) => ({
         excluded_ids: Array.from(seenGigIds),
       });
 
-      const gigIds: string[] =
-        matchResult.data?.gigs.map((g) => g.gig_id) ?? [];
+      const matchedGigs = matchResult.data?.gigs ?? [];
+      const gigIds: string[] = matchedGigs.map((g) => g.gig_id);
       const hasMore = matchResult.data?.has_more ?? false;
+
+      // Collect new poster scores
+      const newPosterScores: Record<string, number> = {};
+      for (const mg of matchedGigs) {
+        if (mg.poster_score != null) {
+          newPosterScores[mg.gig_id] = mg.poster_score;
+        }
+      }
 
       if (gigIds.length === 0) {
         set({ hasMore: false, isFetchingMore: false });
@@ -178,12 +196,13 @@ export const useGigStore = create<GigState>((set, get) => ({
           ? updatedGigs.slice(-MAX_IN_MEMORY) // Keep most recent 50
           : updatedGigs;
 
-      set({
+      set((state) => ({
         gigs: finalGigs,
         seenGigIds: updatedSeenIds,
         hasMore,
+        posterScores: { ...state.posterScores, ...newPosterScores },
         isFetchingMore: false,
-      });
+      }));
     } catch {
       set({ error: "Failed to fetch more gigs", isFetchingMore: false });
     }

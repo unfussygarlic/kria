@@ -125,7 +125,7 @@ export const POSTER_SIGNAL_LABELS: Record<string, { label: string; description: 
     description: "Track record of paying workers fully and on time",
   },
   poster_rating: {
-    label: "Poster rating",
+    label: "Finder rating",
     description: "Average rating received from workers after gigs",
   },
   accuracy_rate: {

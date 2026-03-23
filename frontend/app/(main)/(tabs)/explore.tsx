@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
   Dimensions,
+  Pressable,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,15 +14,14 @@ import { useAuthStore } from "@/stores/authStore";
 import { Gig } from "@/types/database";
 import { T } from "@/constants/colors";
 import { SwipeableJobCard } from "@/components/gig/SwipeableJobCard";
+import { SearchTab } from "@/components/explore/SearchTab";
 import { Feather } from "@expo/vector-icons";
-import { useState } from "react";
 
 const { width: SCREEN_W } = Dimensions.get("window");
-
-/** Width of each card — 85% of screen, centered */
 const CARD_W = SCREEN_W * 0.85;
+const PREFETCH_THRESHOLD = 10;
 
-const PREFETCH_THRESHOLD = 10; // Fetch more when 10 cards remaining
+type Tab = "flames" | "search";
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
@@ -31,6 +31,7 @@ export default function ExploreScreen() {
     isLoading,
     hasMore,
     isFetchingMore,
+    posterScores,
     fetchGigs,
     fetchMoreGigs,
     fetchMyApplications,
@@ -38,6 +39,7 @@ export default function ExploreScreen() {
   } = useGigStore();
   const profile = useAuthStore((s) => s.profile);
 
+  const [activeTab, setActiveTab] = useState<Tab>("flames");
   const [availableGigs, setAvailableGigs] = useState<Gig[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -48,87 +50,103 @@ export default function ExploreScreen() {
 
   useEffect(() => {
     const appliedIds = new Set(myApplications.map((a) => a.gig.id));
-    const filtered = gigs.filter((g) => !appliedIds.has(g.id) && g.poster_id !== profile?.id);
+    const filtered = gigs.filter(
+      (g) => !appliedIds.has(g.id) && g.poster_id !== profile?.id
+    );
     setAvailableGigs(filtered);
-    // Reset index if out of bounds
     if (currentIndex >= filtered.length && filtered.length > 0) {
       setCurrentIndex(filtered.length - 1);
     }
   }, [gigs, myApplications, profile?.id]);
 
-  // Prefetch logic: Fetch more when approaching end of deck
   useEffect(() => {
     const cardsRemaining = availableGigs.length - currentIndex;
     if (cardsRemaining <= PREFETCH_THRESHOLD && hasMore && !isFetchingMore) {
-      console.log(`🔄 Prefetching: ${cardsRemaining} cards remaining`);
       fetchMoreGigs();
     }
   }, [currentIndex, availableGigs.length, hasMore, isFetchingMore, fetchMoreGigs]);
 
-  const currentGig = availableGigs[currentIndex];
-
-  /** ⬆️ Apply — fire-and-forget API call, move to next */
   const handleApply = () => {
-    if (!currentGig) return;
-    applyToGig(currentGig.id, currentGig); // optimistic update in store
-    // Move to next (circular)
+    if (!availableGigs[currentIndex]) return;
+    applyToGig(availableGigs[currentIndex].id, availableGigs[currentIndex]);
     setCurrentIndex((currentIndex + 1) % availableGigs.length);
   };
 
-  /** ➡️ Next job (circular) */
-  const handleNext = () => {
+  const handleNext = () =>
     setCurrentIndex((currentIndex + 1) % availableGigs.length);
-  };
 
-  /** ⬅️ Previous job (circular) */
-  const handlePrev = () => {
+  const handlePrev = () =>
     setCurrentIndex((currentIndex - 1 + availableGigs.length) % availableGigs.length);
-  };
-
-  // ── Loading state ──────────────────────────────────────────────────────────
-  if (isLoading && availableGigs.length === 0) {
-    return (
-      <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={T.primary} />
-      </View>
-    );
-  }
 
   return (
     <View style={styles.screen}>
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <LinearGradient colors={T.gradDark} style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.headerTitle}>Explore Jobs</Text>
-        {profile?.city ? (
-          <View style={styles.locationChip}>
-            <Feather name="map-pin" size={12} color={T.accentLight} />
-            <Text style={styles.locationText}>{profile.city}</Text>
-          </View>
-        ) : null}
+      {/* ── Header ── */}
+      <LinearGradient
+        colors={T.gradDark}
+        style={[styles.header, { paddingTop: insets.top + 16 }]}
+      >
+        {/* Tab switcher */}
+        <View style={styles.tabBar}>
+          <Pressable
+            style={[styles.tabBtn, activeTab === "flames" && styles.tabBtnActive]}
+            onPress={() => setActiveTab("flames")}
+          >
+            <Text style={[styles.tabBtnText, activeTab === "flames" && styles.tabBtnTextActive]}>
+              🔥 Flames
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.tabBtn, activeTab === "search" && styles.tabBtnActive]}
+            onPress={() => setActiveTab("search")}
+          >
+            <Text style={[styles.tabBtnText, activeTab === "search" && styles.tabBtnTextActive]}>
+              🔍 Search
+            </Text>
+          </Pressable>
+        </View>
       </LinearGradient>
 
-      {/* ── Card area (centered) ──────────────────────────────────────────── */}
-      <View style={styles.deckArea}>
-        {availableGigs.length === 0 ? (
-          <View style={styles.center}>
-            <Feather name="check-circle" size={52} color={T.primary200} />
-            <Text style={styles.emptyTitle}>You're all caught up!</Text>
-            <Text style={styles.emptySubtitle}>
-              No more gigs nearby right now. Check back soon.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.deckCenter}>
-            <SwipeableJobCard
-              key={currentGig.id}
-              gig={currentGig}
-              onApply={handleApply}
-              onNext={handleNext}
-              onPrev={handlePrev}
-            />
-          </View>
-        )}
-      </View>
+      {/* ── Content ── */}
+      {activeTab === "search" ? (
+        <SearchTab />
+      ) : (
+        <>
+          {isLoading && availableGigs.length === 0 ? (
+            <View style={styles.center}>
+              <ActivityIndicator size="large" color={T.primary} />
+            </View>
+          ) : availableGigs.length === 0 ? (
+            <View style={styles.center}>
+              <Feather name="check-circle" size={52} color={T.primary200} />
+              <Text style={styles.emptyTitle}>You're all caught up!</Text>
+              <Text style={styles.emptySubtitle}>
+                No more gigs nearby right now. Check back soon.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.deckArea}>
+              <View style={styles.deckCenter}>
+                <SwipeableJobCard
+                  key={availableGigs[currentIndex].id}
+                  gig={availableGigs[currentIndex]}
+                  posterMomentum={posterScores[availableGigs[currentIndex].id]}
+                  onApply={handleApply}
+                  onNext={handleNext}
+                  onPrev={handlePrev}
+                />
+              </View>
+
+              {/* User location */}
+              {profile?.city && (
+                <View style={styles.locationPill}>
+                  <Feather name="map-pin" size={15} color={T.primary} />
+                  <Text style={styles.locationPillText}>{profile.city}</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </>
+      )}
     </View>
   );
 }
@@ -146,46 +164,62 @@ const styles = StyleSheet.create({
     gap: 16,
   },
 
-  // ── Header
+  // Header
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: T.textInverse,
-  },
-  locationChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-  },
-  locationText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: T.accentLight,
+    paddingBottom: 14,
   },
 
-  // ── Deck area (centered vertically and horizontally)
+  // Tab switcher
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderRadius: 12,
+    padding: 3,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  tabBtnActive: {
+    backgroundColor: T.textInverse,
+  },
+  tabBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.6)",
+  },
+  tabBtnTextActive: {
+    color: T.text,
+  },
+
+  // Flames deck
   deckArea: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    gap: 24,
   },
   deckCenter: {
     width: CARD_W,
     alignItems: "stretch",
   },
 
-  // ── Empty state
+  // Location
+  locationPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  locationPillText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: T.textSub,
+  },
+
+  // Empty state
   emptyTitle: {
     fontSize: 20,
     fontWeight: "700",

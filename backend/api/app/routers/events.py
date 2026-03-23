@@ -96,11 +96,14 @@ async def _insert_job(db: AsyncSession, *, event: dict, poster_id: str, job: Job
 
 async def _fetch_event_with_jobs(event_id: str, db: AsyncSession) -> EventResponse:
     """Fetch event row + its jobs with application counts."""
+    from fastapi import HTTPException, status as http_status
     event_row = await db.execute(
         text("SELECT * FROM events WHERE id = :id"),
         {"id": event_id},
     )
     event = event_row.mappings().first()
+    if not event:
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Event not found.")
 
     jobs_row = await db.execute(
         text("""
@@ -136,6 +139,7 @@ async def _fetch_event_with_jobs(event_id: str, db: AsyncSession) -> EventRespon
 
     return EventResponse(
         id=str(event["id"]),
+        poster_id=str(event["poster_id"]),
         title=event["title"],
         description=event["description"],
         venue_name=event["venue_name"],
@@ -250,8 +254,7 @@ async def get_event(
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ) -> EventResponse:
-    """Return full event detail with all jobs. Caller must be the poster."""
-    await _assert_event_owner(event_id, current_user.user_id, db)
+    """Return full event detail with all jobs. Accessible to any authenticated user."""
     return await _fetch_event_with_jobs(event_id, db)
 
 

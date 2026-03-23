@@ -32,6 +32,7 @@ const NAV_THRESHOLD   = W * 0.25;  // horizontal px to trigger navigation
 
 interface SwipeableJobCardProps {
   gig: Gig;
+  posterMomentum?: number;
   onApply: () => void;
   onNext: () => void;
   onPrev: () => void;
@@ -39,6 +40,7 @@ interface SwipeableJobCardProps {
 
 export function SwipeableJobCard({
   gig,
+  posterMomentum,
   onApply,
   onNext,
   onPrev,
@@ -230,7 +232,7 @@ export function SwipeableJobCard({
       style={[styles.card, animatedStyle]}
       {...pan.panHandlers}
     >
-      <JobCard gig={gig} variant="explore" />
+      <JobCard gig={gig} variant="explore" posterMomentum={posterMomentum} />
 
       {/* ⬆️ Apply overlay */}
       <Animated.View

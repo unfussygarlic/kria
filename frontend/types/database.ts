@@ -285,7 +285,7 @@ export interface Database {
           worker_consistency_score: number;
           worker_penalty_points: number;
           worker_gig_count: number;
-          // Poster signals
+          // Finder signals
           poster_payment_rate: number;
           poster_rating: number;
           poster_accuracy_rate: number;
@@ -431,6 +431,7 @@ export interface EventJobSummary {
 
 export interface EventResponse {
   id: string;
+  poster_id: string;
   title: string;
   description: string | null;
   venue_name: string;

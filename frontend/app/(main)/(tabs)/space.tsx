@@ -24,7 +24,7 @@ import { verifyOtp } from "@/lib/api/ratings";
 
 // ── Tab types ─────────────────────────────────────────────────────────────────
 
-type SpaceTab = "seeker" | "poster";
+type SpaceTab = "seeker" | "finder";
 
 // ── Poster tab items ──────────────────────────────────────────────────────────
 
@@ -196,13 +196,13 @@ function SeekerTab() {
             onPress={() => setRatingTarget(item)}
           >
             <Feather name="star" size={14} color={T.textInverse} />
-            <Text style={styles.rateBtnText}>Rate Poster</Text>
+            <Text style={styles.rateBtnText}>Rate Finder</Text>
           </Pressable>
         )}
         {item.assignment_status === "completed" && item.has_been_rated && (
           <View style={styles.ratedRow}>
             <Feather name="check-circle" size={13} color={T.success} />
-            <Text style={styles.ratedText}>You rated this poster</Text>
+            <Text style={styles.ratedText}>You rated this finder</Text>
           </View>
         )}
       </View>
@@ -308,9 +308,9 @@ function EventCard({ event, onPress }: { event: MyEventSummary; onPress: () => v
   );
 }
 
-// ── Poster tab ────────────────────────────────────────────────────────────────
+// ── Finder tab ────────────────────────────────────────────────────────────────
 
-function PosterTab() {
+function FinderTab() {
   const {
     myPostedGigs,
     myPostedEvents,
@@ -388,35 +388,30 @@ export default function SpaceScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* Header */}
+      {/* Header with tabs */}
       <LinearGradient colors={T.gradDark} style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.headerTitle}>My Space</Text>
+        <View style={styles.tabBar}>
+          <Pressable
+            style={[styles.tabBtn, activeTab === "seeker" && styles.tabBtnActive]}
+            onPress={() => setActiveTab("seeker")}
+          >
+            <Text style={[styles.tabBtnText, activeTab === "seeker" && styles.tabBtnTextActive]}>
+              Seeker
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.tabBtn, activeTab === "finder" && styles.tabBtnActive]}
+            onPress={() => setActiveTab("finder")}
+          >
+            <Text style={[styles.tabBtnText, activeTab === "finder" && styles.tabBtnTextActive]}>
+              Finder
+            </Text>
+          </Pressable>
+        </View>
       </LinearGradient>
 
-      {/* Tab row */}
-      <View style={styles.tabRow}>
-        <Pressable
-          style={[styles.tab, activeTab === "seeker" && styles.tabActive]}
-          onPress={() => setActiveTab("seeker")}
-        >
-          <Feather name="briefcase" size={14} color={activeTab === "seeker" ? T.primary : T.textMuted} />
-          <Text style={[styles.tabLabel, activeTab === "seeker" && styles.tabLabelActive]}>
-            Seeker
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, activeTab === "poster" && styles.tabActive]}
-          onPress={() => setActiveTab("poster")}
-        >
-          <Feather name="layers" size={14} color={activeTab === "poster" ? T.primary : T.textMuted} />
-          <Text style={[styles.tabLabel, activeTab === "poster" && styles.tabLabelActive]}>
-            Poster
-          </Text>
-        </Pressable>
-      </View>
-
       {/* Tab content */}
-      {activeTab === "seeker" ? <SeekerTab /> : <PosterTab />}
+      {activeTab === "seeker" ? <SeekerTab /> : <FinderTab />}
     </View>
   );
 }
@@ -430,51 +425,32 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: T.textInverse,
+    paddingBottom: 14,
   },
 
-  // Tab row
-  tabRow: {
+  // Tab pill (dark gradient header style)
+  tabBar: {
     flexDirection: "row",
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-    backgroundColor: T.bg,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: T.border,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderRadius: 12,
     padding: 3,
-    gap: 3,
   },
-  tab: {
+  tabBtn: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
     paddingVertical: 8,
-    borderRadius: 8,
+    alignItems: "center",
+    borderRadius: 10,
   },
-  tabActive: {
-    backgroundColor: T.surface,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
+  tabBtnActive: {
+    backgroundColor: T.textInverse,
   },
-  tabLabel: {
-    fontSize: 13,
+  tabBtnText: {
+    fontSize: 14,
     fontWeight: "600",
-    color: T.textMuted,
+    color: "rgba(255,255,255,0.6)",
   },
-  tabLabelActive: {
-    color: T.primary,
+  tabBtnTextActive: {
+    color: T.text,
   },
 
   // List

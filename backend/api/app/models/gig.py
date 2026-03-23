@@ -80,6 +80,7 @@ class ScoredGig(BaseModel):
     pay_type: PayType
     poster_id: UUID
     event_date: date | None = None
+    poster_score: int | None = None
 
 
 class GigMatchResponse(BaseModel):

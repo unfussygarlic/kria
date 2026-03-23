@@ -17,6 +17,7 @@ export interface MatchedGig {
   pay_type: string;
   poster_id: string;
   event_date: string | null;
+  poster_score: number | null;
 }
 
 interface MatchGigsResponse {

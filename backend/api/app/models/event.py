@@ -63,6 +63,7 @@ class EventJobSummary(BaseModel):
 class EventResponse(BaseModel):
     """Full event with all jobs."""
     id: str
+    poster_id: str
     title: str
     description: Optional[str]
     venue_name: str

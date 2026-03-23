@@ -16,10 +16,11 @@ import { T, CategoryColors } from "@/constants/colors";
 import { GigCategories } from "@/constants/config";
 import { StickyFooter } from "@/components/ui/StickyFooter";
 import { formatDate, formatTime, formatPay } from "@/components/gig/JobCard";
+import { useAuthStore } from "@/stores/authStore";
 
 // ── Job row inside event ──────────────────────────────────────────────────────
 
-function EventJobRow({ job, onPress }: { job: EventJobSummary; onPress: () => void }) {
+function EventJobRow({ job, onPress, isFinder }: { job: EventJobSummary; onPress: () => void; isFinder: boolean }) {
   const catColor = CategoryColors[job.category] || T.textMuted;
   const catLabel = GigCategories.find((c) => c.value === job.category)?.label ?? job.category;
   const spotsLeft = job.slots_total - job.slots_filled;
@@ -45,7 +46,7 @@ function EventJobRow({ job, onPress }: { job: EventJobSummary; onPress: () => vo
             {spotsLeft} spots left
           </Text>
         </View>
-        {job.application_count > 0 ? (
+        {isFinder && job.application_count > 0 ? (
           <View style={styles.applicantsChip}>
             <Feather name="user-check" size={11} color={T.primary} />
             <Text style={styles.applicantsText}>
@@ -64,6 +65,7 @@ function EventJobRow({ job, onPress }: { job: EventJobSummary; onPress: () => vo
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const profile = useAuthStore((s) => s.profile);
   const [event, setEvent] = useState<EventResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -102,6 +104,7 @@ export default function EventDetailScreen() {
     );
   }
 
+  const isFinder = event.poster_id === profile?.id;
   const totalApplicants = event.jobs.reduce((s, j) => s + j.application_count, 0);
 
   return (
@@ -141,12 +144,21 @@ export default function EventDetailScreen() {
               </Text>
               <Text style={styles.summaryLabel}>Total Slots</Text>
             </View>
-            <View style={styles.summaryChip}>
-              <Text style={[styles.summaryValue, { color: T.primary }]}>
-                {totalApplicants}
-              </Text>
-              <Text style={styles.summaryLabel}>Applicants</Text>
-            </View>
+            {isFinder ? (
+              <View style={styles.summaryChip}>
+                <Text style={[styles.summaryValue, { color: T.primary }]}>
+                  {totalApplicants}
+                </Text>
+                <Text style={styles.summaryLabel}>Applicants</Text>
+              </View>
+            ) : (
+              <View style={styles.summaryChip}>
+                <Text style={styles.summaryValue}>
+                  {event.jobs.reduce((s, j) => s + (j.slots_total - j.slots_filled), 0)}
+                </Text>
+                <Text style={styles.summaryLabel}>Open Slots</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -157,21 +169,28 @@ export default function EventDetailScreen() {
             <EventJobRow
               key={job.id}
               job={job}
-              onPress={() => router.push(`/(main)/gig/applicants/${job.id}`)}
+              isFinder={isFinder}
+              onPress={() =>
+                isFinder
+                  ? router.push(`/(main)/gig/applicants/${job.id}`)
+                  : router.push(`/(main)/gig/${job.id}` as any)
+              }
             />
           ))}
         </View>
       </ScrollView>
 
-      <StickyFooter>
-        <Pressable
-          style={styles.addJobButton}
-          onPress={() => router.push(`/(main)/event/add-job?eventId=${id}`)}
-        >
-          <Feather name="plus" size={20} color={T.textInverse} />
-          <Text style={styles.addJobText}>Add Another Job</Text>
-        </Pressable>
-      </StickyFooter>
+      {isFinder && (
+        <StickyFooter>
+          <Pressable
+            style={styles.addJobButton}
+            onPress={() => router.push(`/(main)/event/add-job?eventId=${id}`)}
+          >
+            <Feather name="plus" size={20} color={T.textInverse} />
+            <Text style={styles.addJobText}>Add Another Job</Text>
+          </Pressable>
+        </StickyFooter>
+      )}
     </View>
   );
 }

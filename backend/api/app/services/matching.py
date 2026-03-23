@@ -217,6 +217,20 @@ async def _avg_pay_by_category(db: AsyncSession) -> dict[str, float]:
     return {row[0]: float(row[1]) for row in result}
 
 
+async def _poster_momentum_scores(db: AsyncSession, poster_ids: set) -> dict[str, int]:
+    if not poster_ids:
+        return {}
+    result = await db.execute(
+        text("""
+            SELECT user_id, poster_score
+            FROM momentum_profiles
+            WHERE user_id = ANY(:ids)
+        """),
+        {"ids": list(poster_ids)},
+    )
+    return {str(row[0]): int(row[1]) for row in result}
+
+
 async def _poster_avg_ratings(db: AsyncSession, poster_ids: set) -> dict:
     if not poster_ids:
         return {}
@@ -250,6 +264,7 @@ async def match_gigs_for_worker(
 
     poster_ids = {g.poster_id for g in gigs}
     poster_ratings = await _poster_avg_ratings(db, poster_ids)
+    poster_scores = await _poster_momentum_scores(db, poster_ids)
 
     scored: list[tuple[float, float | None, GigRow]] = []
     for gig in gigs:
@@ -287,6 +302,7 @@ async def match_gigs_for_worker(
             pay_type=g.pay_type,
             poster_id=g.poster_id,
             event_date=g.event_date,
+            poster_score=poster_scores.get(str(g.poster_id)),
         )
         for s, d, g in paginated
     ]

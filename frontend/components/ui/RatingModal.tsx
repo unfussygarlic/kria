@@ -52,11 +52,11 @@ export function RatingModal({
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const label = ratingType === "worker_rating" ? "Rate Worker" : "Rate Poster";
+  const label = ratingType === "worker_rating" ? "Rate Worker" : "Rate Finder";
   const prompt =
     ratingType === "worker_rating"
       ? `How was ${rateeName}'s performance?`
-      : `How was ${rateeName} as a poster?`;
+      : `How was ${rateeName} as a finder?`;
 
   const handleSubmit = async () => {
     if (score === 0) {

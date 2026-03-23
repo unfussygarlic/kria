@@ -64,9 +64,25 @@ export default function ArenaScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* ── Header ── */}
+      {/* ── Header with role tabs ── */}
       <LinearGradient colors={T.gradDark} style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.headerTitle}>Arena</Text>
+        <View style={styles.tabBar}>
+          {(["worker", "poster"] as Role[]).map((role) => {
+            const cfg = MOMENTUM_ROLES[role];
+            const isActive = activeRole === role;
+            return (
+              <Pressable
+                key={role}
+                style={[styles.tabBtn, isActive && styles.tabBtnActive]}
+                onPress={() => setActiveRole(role)}
+              >
+                <Text style={[styles.tabBtnText, isActive && styles.tabBtnTextActive]}>
+                  {cfg.tabLabel}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </LinearGradient>
 
       <ScrollView
@@ -77,29 +93,6 @@ export default function ArenaScreen() {
           <RefreshControl refreshing={isLoadingMy} onRefresh={handleRefresh} tintColor={T.primary} />
         }
       >
-        {/* ── Role tabs ── */}
-        <View style={styles.tabRow}>
-          {(["worker", "poster"] as Role[]).map((role) => {
-            const cfg = MOMENTUM_ROLES[role];
-            const isActive = activeRole === role;
-            return (
-              <Pressable
-                key={role}
-                style={[styles.tab, isActive && styles.tabActive]}
-                onPress={() => setActiveRole(role)}
-              >
-                <Feather
-                  name={cfg.icon}
-                  size={rw(14)}
-                  color={isActive ? T.primary : T.textMuted}
-                />
-                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-                  {cfg.tabLabel}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
 
         {/* ── Gauge ── */}
         <View style={styles.gaugeCard}>
@@ -258,12 +251,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: T.textInverse,
+    paddingBottom: 14,
   },
   scroll: {
     flex: 1,
@@ -273,34 +261,30 @@ const styles = StyleSheet.create({
     paddingBottom: rw(40),
     gap: rw(16),
   },
-  tabRow: {
+
+  // Tab pill (dark gradient header style)
+  tabBar: {
     flexDirection: "row",
-    backgroundColor: T.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: rw(4),
-    gap: rw(4),
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderRadius: 12,
+    padding: 3,
   },
-  tab: {
+  tabBtn: {
     flex: 1,
-    flexDirection: "row",
+    paddingVertical: 8,
     alignItems: "center",
-    justifyContent: "center",
-    gap: rw(6),
-    paddingVertical: rw(10),
     borderRadius: 10,
   },
-  tabActive: {
-    backgroundColor: T.primary50,
+  tabBtnActive: {
+    backgroundColor: T.textInverse,
   },
-  tabLabel: {
+  tabBtnText: {
     fontSize: rf(14),
     fontWeight: "600",
-    color: T.textMuted,
+    color: "rgba(255,255,255,0.6)",
   },
-  tabLabelActive: {
-    color: T.primary,
+  tabBtnTextActive: {
+    color: T.text,
   },
   gaugeCard: {
     backgroundColor: T.surface,

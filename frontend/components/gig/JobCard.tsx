@@ -69,7 +69,7 @@ export function JobCard({ gig, variant, applicationCount, posterMomentum, onPres
       pointerEvents={isExplore ? "none" : "auto"}
     >
       {/* Header row: category badge + optional boost */}
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, isExplore && styles.headerRowExplore]}>
         <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
           <Text style={styles.categoryText}>{getCategoryLabel(gig.category)}</Text>
         </View>
@@ -79,7 +79,7 @@ export function JobCard({ gig, variant, applicationCount, posterMomentum, onPres
             <Text style={styles.boostText}>Boosted</Text>
           </View>
         )}
-        {/* Poster Momentum — shown on explore cards so workers can trust the poster */}
+        {/* Finder Momentum — shown on explore cards so workers can trust the finder */}
         {isExplore && posterMomentum !== undefined && (
           <MomentumBadge score={posterMomentum} variant="chip" />
         )}
@@ -92,44 +92,50 @@ export function JobCard({ gig, variant, applicationCount, posterMomentum, onPres
 
       {/* Company */}
       {gig.company_name ? (
-        <Text style={styles.company} numberOfLines={1}>{gig.company_name}</Text>
+        <Text style={[styles.company, isExplore && styles.companyExplore]} numberOfLines={1}>{gig.company_name}</Text>
+      ) : null}
+
+      {/* Description (explore only) */}
+      {isExplore && gig.description ? (
+        <Text style={styles.description} numberOfLines={4}>{gig.description}</Text>
       ) : null}
 
       {/* Pay — prominent on explore */}
-      <View style={styles.payRow}>
+      <View style={[styles.payRow, isExplore && styles.payRowExplore]}>
         <Text style={[styles.payAmount, isExplore && styles.payAmountExplore]}>
           {formatPay(gig.pay_amount, gig.pay_type)}
         </Text>
       </View>
 
       {/* Details grid */}
-      <View style={styles.details}>
-        <View style={styles.detailItem}>
-          <Feather name="calendar" size={13} color={T.textMuted} />
-          <Text style={styles.detailText}>
+      <View style={[styles.details, isExplore && styles.detailsExplore]}>
+        <View style={[styles.detailItem, isExplore && styles.detailItemExplore]}>
+          <Feather name="calendar" size={isExplore ? 15 : 13} color={isExplore ? T.primary : T.textMuted} />
+          <Text style={[styles.detailText, isExplore && styles.detailTextExplore]}>
             {formatDate(gig.event_date)}
             {gig.is_multi_day && gig.event_end_date ? ` – ${formatDate(gig.event_end_date)}` : ""}
           </Text>
         </View>
-        <View style={styles.detailItem}>
-          <Feather name="clock" size={13} color={T.textMuted} />
-          <Text style={styles.detailText}>
+        <View style={[styles.detailItem, isExplore && styles.detailItemExplore]}>
+          <Feather name="clock" size={isExplore ? 15 : 13} color={isExplore ? T.primary : T.textMuted} />
+          <Text style={[styles.detailText, isExplore && styles.detailTextExplore]}>
             {formatTime(gig.shift_start_time)} – {formatTime(gig.shift_end_time)}
+            {gig.report_time ? ` · Report ${formatTime(gig.report_time)}` : ""}
           </Text>
         </View>
-        <View style={styles.detailItem}>
-          <Feather name="map-pin" size={13} color={T.textMuted} />
-          <Text style={styles.detailText} numberOfLines={1}>
+        <View style={[styles.detailItem, isExplore && styles.detailItemExplore]}>
+          <Feather name="map-pin" size={isExplore ? 15 : 13} color={isExplore ? T.primary : T.textMuted} />
+          <Text style={[styles.detailText, isExplore && styles.detailTextExplore]} numberOfLines={1}>
             {gig.venue_name}, {gig.city}
           </Text>
         </View>
       </View>
 
       {/* Footer */}
-      <View style={styles.footer}>
-        <View style={styles.slotsChip}>
-          <Feather name="users" size={12} color={spotsLeft <= 3 ? T.secondary : T.textMuted} />
-          <Text style={[styles.slotsText, spotsLeft <= 3 && styles.slotsUrgent]}>
+      <View style={[styles.footer, isExplore && styles.footerExplore]}>
+        <View style={[styles.slotsChip, isExplore && styles.slotsChipExplore]}>
+          <Feather name="users" size={isExplore ? 15 : 12} color={spotsLeft <= 3 ? T.secondary : (isExplore ? T.text : T.textMuted)} />
+          <Text style={[styles.slotsText, isExplore && styles.slotsTextExplore, spotsLeft <= 3 && styles.slotsUrgent]}>
             {spotsLeft} {spotsLeft === 1 ? "spot" : "spots"} left
           </Text>
         </View>
@@ -145,9 +151,9 @@ export function JobCard({ gig, variant, applicationCount, posterMomentum, onPres
         ) : null}
       </View>
 
-      {/* Language tags (explore only) */}
-      {isExplore && gig.languages_required.length > 0 ? (
-        <View style={styles.tagsRow}>
+      {/* Tags + requirements (explore only) */}
+      {isExplore ? (
+        <View style={[styles.tagsRow, styles.tagsRowExplore]}>
           {gig.languages_required.slice(0, 3).map((lang) => (
             <View key={lang} style={styles.tag}>
               <Text style={styles.tagText}>{lang}</Text>
@@ -156,6 +162,23 @@ export function JobCard({ gig, variant, applicationCount, posterMomentum, onPres
           {gig.gender_preference !== "any" ? (
             <View style={[styles.tag, styles.tagGender]}>
               <Text style={styles.tagText}>{gig.gender_preference} only</Text>
+            </View>
+          ) : null}
+          {gig.dress_code ? (
+            <View style={styles.tagReq}>
+              <Feather name="scissors" size={10} color={T.textSub} />
+              <Text style={styles.tagReqText}>{gig.dress_code}</Text>
+            </View>
+          ) : null}
+          {gig.experience_required ? (
+            <View style={styles.tagReq}>
+              <Feather name="award" size={10} color={T.textSub} />
+              <Text style={styles.tagReqText}>Experience required</Text>
+            </View>
+          ) : null}
+          {gig.requirements_note ? (
+            <View style={[styles.tagReq, styles.tagReqNote]}>
+              <Text style={styles.tagReqText} numberOfLines={2}>{gig.requirements_note}</Text>
             </View>
           ) : null}
         </View>
@@ -200,6 +223,9 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 10,
   },
+  headerRowExplore: {
+    justifyContent: "center",
+  },
   categoryBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -234,14 +260,28 @@ const styles = StyleSheet.create({
   titleExplore: {
     fontSize: 26,
     lineHeight: 34,
+    textAlign: "center",
   },
   company: {
     fontSize: 13,
     color: T.textSub,
     marginTop: 2,
   },
+  companyExplore: {
+    textAlign: "center",
+  },
+  description: {
+    fontSize: 14,
+    color: T.textSub,
+    lineHeight: 20,
+    marginTop: 10,
+    textAlign: "center",
+  },
   payRow: {
     marginTop: 10,
+  },
+  payRowExplore: {
+    alignItems: "center",
   },
   payAmount: {
     fontSize: 22,
@@ -250,20 +290,34 @@ const styles = StyleSheet.create({
   },
   payAmountExplore: {
     fontSize: 32,
+    textAlign: "center",
   },
   details: {
     marginTop: 14,
     gap: 8,
+  },
+  detailsExplore: {
+    gap: 10,
   },
   detailItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
+  detailItemExplore: {
+    justifyContent: "center",
+  },
   detailText: {
     fontSize: 13,
     color: T.textSub,
     flex: 1,
+  },
+  detailTextExplore: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: T.text,
+    flex: 0,
+    textAlign: "center",
   },
   footer: {
     flexDirection: "row",
@@ -274,18 +328,29 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: T.border,
   },
+  footerExplore: {
+    justifyContent: "center",
+  },
   slotsChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
   },
+  slotsChipExplore: {
+    gap: 7,
+  },
   slotsText: {
     fontSize: 13,
     color: T.textSub,
   },
+  slotsTextExplore: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: T.text,
+  },
   slotsUrgent: {
     color: T.secondary,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   applicantsChip: {
     flexDirection: "row",
@@ -303,6 +368,9 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 14,
   },
+  tagsRowExplore: {
+    justifyContent: "center",
+  },
   tag: {
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -315,6 +383,26 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 12,
     color: T.primary,
+    fontWeight: "500",
+  },
+  tagReq: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: T.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  tagReqNote: {
+    flex: 1,
+    flexShrink: 1,
+  },
+  tagReqText: {
+    fontSize: 12,
+    color: T.textSub,
     fontWeight: "500",
     textTransform: "capitalize",
   },

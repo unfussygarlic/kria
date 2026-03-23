@@ -12,6 +12,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useLocalSearchParams, Stack, router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import {
   getApplicants,
@@ -44,6 +46,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 
 export default function ApplicantsScreen() {
   const { gigId } = useLocalSearchParams<{ gigId: string }>();
+  const insets = useSafeAreaInsets();
   const [applicants, setApplicants] = useState<ApplicantListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -222,13 +225,7 @@ export default function ApplicantsScreen() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerTitle: "Applicants",
-          headerTintColor: T.primary,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
       {/* ── Detail Modal ── */}
       <Modal
@@ -283,6 +280,18 @@ export default function ApplicantsScreen() {
       )}
 
       <View style={styles.container}>
+        {/* ── Custom header ── */}
+        <LinearGradient
+          colors={T.gradDark}
+          style={[styles.appHeader, { paddingTop: insets.top + 16 }]}
+        >
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={T.textInverse} />
+          </Pressable>
+          <Text style={styles.appHeaderTitle}>Applicants</Text>
+          <View style={{ width: 38 }} />
+        </LinearGradient>
+
         {loading ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={T.primary} />
@@ -672,6 +681,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: T.bg,
+  },
+
+  // ── App header ──
+  appHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+  },
+  backBtn: {
+    padding: 4,
+    width: 38,
+  },
+  appHeaderTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: T.textInverse,
+    flex: 1,
+    textAlign: "center",
   },
   center: {
     flex: 1,
