@@ -16,7 +16,7 @@ export default function Footer() {
       <KriaWordmark size={20} />
       <div style={{ display: "flex", gap: 32 }}>
         {[t.footer.privacy, t.footer.terms, t.footer.contact].map(item => (
-          <a key={item} href="#" style={{
+          <a key={item} href="mailto:support@trykria.com" style={{
             fontSize: 13, color: "rgba(255,255,255,0.25)", textDecoration: "none", transition: "color 0.2s",
           }}
           onMouseEnter={e => { e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
