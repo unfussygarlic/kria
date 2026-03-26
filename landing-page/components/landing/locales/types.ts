@@ -1,0 +1,96 @@
+export type ChatItem =
+  | { kind: "msg"; from: "seeker" | "finder"; text: string; time: string; file?: true }
+  | { kind: "divider"; text: string };
+
+export type GigCardStrings = {
+  title: string;
+  company: string;
+  date: string;
+  location: string;
+  category: string;
+};
+
+export type Translations = {
+  nav: {
+    joinWaitlist: string;
+  };
+  hero: {
+    eyebrow: string;
+    headlineLine1: string;
+    headlineLine2: string;
+    sub: string;
+    seekerLabel: string;
+    finderLabel: string;
+    seekerHint: string;
+    finderHint: string;
+    cta: string;
+  };
+  whyKria: {
+    sectionLabel: string;
+    headline: string;
+    headlineHighlight: string;
+    chatHeader: string;
+    chatSubtitle: string;
+    replayBtn: string;
+    thread: ChatItem[];
+    stepsLabel: string;
+    steps: [
+      { n: string; title: string; sub: string },
+      { n: string; title: string; sub: string },
+      { n: string; title: string; sub: string },
+    ];
+    totalTimeLabel: string;
+    totalTimeValue: string;
+    vsLabel: string;
+    vsValue: string;
+    stats: [
+      { value: string; unit: string; desc: string },
+      { value: string; unit: string; desc: string },
+      { value: string; unit: string; desc: string },
+    ];
+  };
+  momentum: {
+    sectionLabel: string;
+    headline: string;
+    headlineHighlight: string;
+    sub: string;
+    points: [string, string, string];
+    bands: {
+      Critical: string;
+      Developing: string;
+      Active: string;
+      Trusted: string;
+      Elite: string;
+    };
+  };
+  waitlist: {
+    headline: string;
+    headlineHighlight: string;
+    sub: string;
+    disclaimer: string;
+  };
+  form: {
+    emailPlaceholder: string;
+    commentPlaceholder: string;
+    submitBtn: string;
+    joiningBtn: string;
+    errorEmail: string;
+    successTitle: string;
+    successSub: string;
+  };
+  footer: {
+    privacy: string;
+    terms: string;
+    contact: string;
+    copyright: string;
+  };
+  phone: {
+    seekerHint: string;
+    finderHint: string;
+    apply: string;
+    skip: string;
+    next: string;
+    spotsOpen: string;
+  };
+  gigCards: [GigCardStrings, GigCardStrings, GigCardStrings];
+};

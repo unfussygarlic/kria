@@ -3,9 +3,11 @@
 import WaitlistForm from "../WaitlistForm";
 import { LIME } from "../constants";
 import { useFadeIn } from "../utils";
+import { useT } from "../LanguageContext";
 
 export default function SectionWaitlist() {
   const { ref, visible } = useFadeIn(0.1);
+  const t = useT();
 
   return (
     <section id="waitlist" ref={ref} style={{
@@ -38,23 +40,23 @@ export default function SectionWaitlist() {
             fontSize: "clamp(40px, 5.5vw, 72px)", fontWeight: 900,
             letterSpacing: "-0.04em", lineHeight: 1.0, margin: 0, color: "#fff",
           }}>
-            You&apos;re{" "}
+            {t.waitlist.headline}{" "}
             <span style={{
               background: `linear-gradient(90deg,${LIME},#b8e000)`,
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
             }}>
-              early.
+              {t.waitlist.headlineHighlight}
             </span>
           </h2>
           <p style={{ fontSize: 17, color: "rgba(255,255,255,0.42)", margin: 0, lineHeight: 1.6 }}>
-            kria is rolling out city by city. Drop your email and we&apos;ll reach out when we launch near you.
+            {t.waitlist.sub}
           </p>
         </div>
 
         <WaitlistForm />
 
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.18)", margin: 0 }}>
-          No spam. No pitch decks. Just a heads-up when we&apos;re live.
+          {t.waitlist.disclaimer}
         </p>
       </div>
     </section>

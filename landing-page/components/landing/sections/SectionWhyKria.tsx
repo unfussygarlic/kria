@@ -3,39 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { LIME } from "../constants";
 import { useWindowWidth } from "../utils";
+import { useT } from "../LanguageContext";
 
-// ── Chat thread data ───────────────────────────────────────────────────────────
-type ChatItem =
-  | { kind: "msg"; from: "seeker" | "finder"; text: string; time: string; file?: boolean }
-  | { kind: "divider"; text: string };
-
-const THREAD: ChatItem[] = [
-  { kind: "msg",     from: "seeker",  text: "Hi! I'd like to apply for the Event Bartender role.",          time: "Mon  9:14 AM" },
-  { kind: "divider", text: "2 days pass…" },
-  { kind: "msg",     from: "seeker",  text: "Just following up on my application 🙏",                       time: "Wed  11:02 AM" },
-  { kind: "divider", text: "1 day later…" },
-  { kind: "msg",     from: "finder",  text: "Hey! Can you send your CV and a cover letter?",                 time: "Thu  3:45 PM" },
-  { kind: "msg",     from: "seeker",  text: "Of course! Sending now.",                                      time: "Thu  3:52 PM", file: true },
-  { kind: "divider", text: "4 days pass…" },
-  { kind: "msg",     from: "finder",  text: "Hi, we've decided to go with another candidate. Thanks!",      time: "Mon  2:18 PM" },
-  { kind: "msg",     from: "seeker",  text: "Oh… okay. Thanks anyway.",                                     time: "Mon  2:31 PM" },
-];
-
-// ── kria steps ─────────────────────────────────────────────────────────────────
-const STEPS = [
-  { n: "01", title: "Open kria",    sub: "Browse live gigs near you"    },
-  { n: "02", title: "Swipe up",     sub: "One gesture to apply"         },
-  { n: "03", title: "You're hired", sub: "Confirmation in seconds"      },
-];
-
-// ── Stats ──────────────────────────────────────────────────────────────────────
-const STATS = [
-  { value: "6",   unit: "days",  desc: "Average wait for a callback on gig platforms" },
-  { value: "8",   unit: "steps", desc: "To land a single shift the old way"           },
-  { value: "90",  unit: "sec",   desc: "Average time to apply on kria"                },
-];
-
-// ── helpers ────────────────────────────────────────────────────────────────────
 function FileChip() {
   return (
     <div style={{
@@ -52,18 +21,18 @@ function FileChip() {
   );
 }
 
-// ── Component ──────────────────────────────────────────────────────────────────
 export default function SectionWhyKria() {
-  const sectionRef  = useRef<HTMLElement>(null);
-  const [revealed, setRevealed] = useState(-1); // how many thread items shown
+  const sectionRef = useRef<HTMLElement>(null);
+  const [revealed, setRevealed] = useState(-1);
   const [played, setPlayed]     = useState(false);
   const width    = useWindowWidth();
   const isMobile = width < 860;
+  const t        = useT();
 
-  // Stagger delays: dividers fast, messages slightly slower
-  const DELAYS = THREAD.map((item) =>
-    item.kind === "divider" ? 320 : 480
-  );
+  const THREAD = t.whyKria.thread;
+
+  // Stagger: dividers fast, messages slightly slower
+  const DELAYS = THREAD.map(item => item.kind === "divider" ? 320 : 480);
 
   const play = () => {
     setRevealed(-1);
@@ -85,6 +54,13 @@ export default function SectionWhyKria() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [played]);
 
+  // Re-play when language changes
+  useEffect(() => {
+    setPlayed(false);
+    setRevealed(-1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
+
   return (
     <section ref={sectionRef} style={{
       padding: isMobile ? "80px 24px" : "120px 48px",
@@ -97,20 +73,19 @@ export default function SectionWhyKria() {
           fontSize: 12, fontWeight: 700, letterSpacing: "0.1em",
           color: "rgba(255,255,255,0.28)", margin: "0 0 16px", textTransform: "uppercase",
         }}>
-          Why we built this
+          {t.whyKria.sectionLabel}
         </p>
         <h2 style={{
           fontSize: "clamp(28px, 4.5vw, 56px)", fontWeight: 900,
           letterSpacing: "-0.03em", lineHeight: 1.05, margin: 0, color: "#fff",
           maxWidth: 680,
         }}>
-          Nobody has time{" "}
+          {t.whyKria.headline}{" "}
           <span style={{
-            position: "relative", display: "inline-block",
             background: "linear-gradient(90deg,rgba(255,80,80,0.85),rgba(255,120,60,0.85))",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           }}>
-            for this.
+            {t.whyKria.headlineHighlight}
           </span>
         </h2>
       </div>
@@ -146,8 +121,12 @@ export default function SectionWhyKria() {
               </svg>
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.7)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Employer · Hiring for Bar Shift</p>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", margin: 0 }}>The old way</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.7)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {t.whyKria.chatHeader}
+              </p>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", margin: 0 }}>
+                {t.whyKria.chatSubtitle}
+              </p>
             </div>
             {/* Replay */}
             <button
@@ -165,7 +144,7 @@ export default function SectionWhyKria() {
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/>
               </svg>
-              Replay
+              {t.whyKria.replayBtn}
             </button>
           </div>
 
@@ -177,8 +156,7 @@ export default function SectionWhyKria() {
               if (item.kind === "divider") {
                 return (
                   <div key={i} style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    margin: "8px 0",
+                    display: "flex", alignItems: "center", gap: 10, margin: "8px 0",
                     opacity: visible ? 1 : 0,
                     transform: visible ? "none" : "translateY(4px)",
                     transition: "opacity 0.4s ease, transform 0.4s ease",
@@ -204,23 +182,17 @@ export default function SectionWhyKria() {
 
               return (
                 <div key={i} style={{
-                  display: "flex",
-                  flexDirection: "column",
+                  display: "flex", flexDirection: "column",
                   alignItems: isSeeker ? "flex-start" : "flex-end",
                   opacity: visible ? (isLast ? 0.45 : 1) : 0,
                   transform: visible ? "none" : `translateY(8px) translateX(${isSeeker ? "-6px" : "6px"})`,
                   transition: "opacity 0.4s ease, transform 0.4s ease",
                 }}>
                   <div style={{
-                    maxWidth: "78%",
-                    padding: "9px 13px",
+                    maxWidth: "78%", padding: "9px 13px",
                     borderRadius: isSeeker ? "4px 16px 16px 16px" : "16px 4px 16px 16px",
-                    background: isSeeker
-                      ? "rgba(255,255,255,0.07)"
-                      : "rgba(212,255,0,0.08)",
-                    border: isSeeker
-                      ? "1px solid rgba(255,255,255,0.08)"
-                      : `1px solid rgba(212,255,0,0.12)`,
+                    background: isSeeker ? "rgba(255,255,255,0.07)" : "rgba(212,255,0,0.08)",
+                    border: isSeeker ? "1px solid rgba(255,255,255,0.08)" : `1px solid rgba(212,255,0,0.12)`,
                   }}>
                     <p style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", margin: 0, lineHeight: 1.5 }}>
                       {item.text}
@@ -242,13 +214,12 @@ export default function SectionWhyKria() {
             fontSize: 12, fontWeight: 700, letterSpacing: "0.07em",
             textTransform: "uppercase", margin: "0 0 4px", color: "rgba(212,255,0,0.6)",
           }}>
-            The kria way
+            {t.whyKria.stepsLabel}
           </p>
 
-          {STEPS.map((step, i) => (
+          {t.whyKria.steps.map((step, i) => (
             <div key={step.n} style={{
-              padding: "18px 20px",
-              borderRadius: 16,
+              padding: "18px 20px", borderRadius: 16,
               border: `1px solid rgba(212,255,0,${0.14 - i * 0.02})`,
               background: `rgba(212,255,0,${0.04 - i * 0.005})`,
               display: "flex", alignItems: "center", gap: 16,
@@ -286,9 +257,9 @@ export default function SectionWhyKria() {
             transform: revealed >= THREAD.length - 1 ? "none" : "translateY(6px)",
             transition: "opacity 0.5s ease 0.6s, transform 0.5s ease 0.6s",
           }}>
-            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Total time</span>
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>{t.whyKria.totalTimeLabel}</span>
             <span style={{ fontSize: 18, fontWeight: 800, color: LIME, letterSpacing: "-0.02em" }}>
-              ~90 seconds
+              {t.whyKria.totalTimeValue}
             </span>
           </div>
 
@@ -301,9 +272,9 @@ export default function SectionWhyKria() {
             opacity: revealed >= THREAD.length - 1 ? 1 : 0,
             transition: "opacity 0.5s ease 0.8s",
           }}>
-            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>vs the old way</span>
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>{t.whyKria.vsLabel}</span>
             <span style={{ fontSize: 18, fontWeight: 800, color: "rgba(255,100,100,0.8)", letterSpacing: "-0.02em" }}>
-              ~6 days
+              {t.whyKria.vsValue}
             </span>
           </div>
         </div>
@@ -313,13 +284,11 @@ export default function SectionWhyKria() {
       <div style={{
         display: "grid",
         gridTemplateColumns: width >= 500 ? "repeat(3, 1fr)" : "1fr",
-        gap: 16,
-        marginTop: 40,
+        gap: 16, marginTop: 40,
       }}>
-        {STATS.map(({ value, unit, desc }, i) => (
+        {t.whyKria.stats.map(({ value, unit, desc }, i) => (
           <div key={desc} style={{
-            padding: "24px",
-            borderRadius: 18,
+            padding: "24px", borderRadius: 18,
             border: "1px solid rgba(255,255,255,0.06)",
             background: "rgba(255,255,255,0.02)",
             opacity: revealed >= THREAD.length - 1 ? 1 : 0,

@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import { LIME } from "./constants";
+import { useT } from "./LanguageContext";
 
 export default function WaitlistForm() {
-  const [email, setEmail]     = useState("");
+  const [email,   setEmail]   = useState("");
   const [comment, setComment] = useState("");
-  const [status, setStatus]   = useState<"idle" | "loading" | "done">("idle");
-  const [error, setError]     = useState("");
+  const [status,  setStatus]  = useState<"idle" | "loading" | "done">("idle");
+  const [error,   setError]   = useState("");
+  const t = useT();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Enter a valid email address.");
+      setError(t.form.errorEmail);
       return;
     }
     setError("");
@@ -41,9 +43,9 @@ export default function WaitlistForm() {
           </svg>
         </div>
         <div>
-          <p style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: 0 }}>You&apos;re on the list.</p>
+          <p style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: 0 }}>{t.form.successTitle}</p>
           <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", margin: "8px 0 0" }}>
-            We&apos;ll reach out when kria launches in your city.
+            {t.form.successSub}
           </p>
         </div>
       </div>
@@ -55,16 +57,15 @@ export default function WaitlistForm() {
       display: "flex", flexDirection: "column", gap: 12,
       width: "100%", maxWidth: 480,
     }}>
-      {/* Email field */}
+      {/* Email */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <input
           type="email"
-          placeholder="your@email.com"
+          placeholder={t.form.emailPlaceholder}
           value={email}
           onChange={e => { setEmail(e.target.value); setError(""); }}
           style={{
-            width: "100%", padding: "14px 18px",
-            borderRadius: 14,
+            width: "100%", padding: "14px 18px", borderRadius: 14,
             border: `1px solid ${error ? "rgba(255,80,80,0.5)" : "rgba(255,255,255,0.1)"}`,
             background: "rgba(255,255,255,0.04)",
             color: "#fff", fontSize: 15, outline: "none",
@@ -74,7 +75,6 @@ export default function WaitlistForm() {
           onFocus={e => { if (!error) e.currentTarget.style.borderColor = "rgba(212,255,0,0.35)"; }}
           onBlur={e => { if (!error) e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
         />
-        {/* Error inline below input — not absolute, no overlap */}
         {error && (
           <p style={{ fontSize: 12, color: "rgba(255,100,100,0.85)", margin: 0, paddingLeft: 4 }}>
             {error}
@@ -82,15 +82,14 @@ export default function WaitlistForm() {
         )}
       </div>
 
-      {/* Comment field */}
+      {/* Comment */}
       <textarea
-        placeholder="Anything you want us to know? (optional)"
+        placeholder={t.form.commentPlaceholder}
         value={comment}
         onChange={e => setComment(e.target.value)}
         rows={3}
         style={{
-          width: "100%", padding: "14px 18px",
-          borderRadius: 14,
+          width: "100%", padding: "14px 18px", borderRadius: 14,
           border: "1px solid rgba(255,255,255,0.1)",
           background: "rgba(255,255,255,0.04)",
           color: "#fff", fontSize: 15,
@@ -123,9 +122,9 @@ export default function WaitlistForm() {
               style={{ animation: "spin 0.8s linear infinite" }}>
               <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" />
             </svg>
-            Joining...
+            {t.form.joiningBtn}
           </>
-        ) : "Join the Waitlist →"}
+        ) : t.form.submitBtn}
       </button>
     </form>
   );

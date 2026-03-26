@@ -7,12 +7,14 @@ import SectionHero from "./landing/sections/SectionHero";
 import SectionWhyKria from "./landing/sections/SectionWhyKria";
 import SectionMomentum from "./landing/sections/SectionMomentum";
 import SectionWaitlist from "./landing/sections/SectionWaitlist";
+import { LanguageProvider } from "./landing/LanguageContext";
 import type { Role } from "./landing/constants";
 
 export default function LandingPage() {
   const [role, setRole] = useState<Role>("seeker");
 
   return (
+    <LanguageProvider>
     <>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
@@ -74,5 +76,6 @@ export default function LandingPage() {
         </div>
       </div>
     </>
+    </LanguageProvider>
   );
 }

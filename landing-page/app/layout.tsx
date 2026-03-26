@@ -15,6 +15,11 @@ export const metadata: Metadata = {
   title: "kria — Work without the wait.",
   description:
     "kria is a swipe-based gig marketplace where workers and businesses connect instantly. No resumes. No waiting. Just swipe.",
+  icons: {
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
+  },
   openGraph: {
     title: "kria — Work without the wait.",
     description: "A gig economy app that works like Tinder for jobs.",
