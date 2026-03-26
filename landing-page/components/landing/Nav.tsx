@@ -1,8 +1,12 @@
 "use client";
 import { LIME } from "./constants";
 import KriaWordmark from "./KriaWordmark";
+import { useWindowWidth } from "./utils";
 
 export default function Nav() {
+  const width = useWindowWidth();
+  const isMobile = width < 640;
+
   const scrollToWaitlist = () => {
     document.getElementById("waitlist")?.scrollIntoView({ behavior: "smooth" });
   };
@@ -12,7 +16,7 @@ export default function Nav() {
       position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
       zIndex: 20,
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      maxWidth: 1160, padding: "28px 48px",
+      maxWidth: 1160, padding: isMobile ? "20px 24px" : "28px 48px",
       width: "100%",
     }}>
       <KriaWordmark size={22} />
