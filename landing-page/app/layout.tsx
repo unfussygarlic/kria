@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Inter, Comfortaa } from "next/font/google";
 import "./globals.css";
 
@@ -32,7 +33,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${inter.className} ${comfortaa.variable} h-full`}>
-      <body className="min-h-full bg-[#0B0F0A]">{children}</body>
+      <body className="min-h-full bg-[#0B0F0A]">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
