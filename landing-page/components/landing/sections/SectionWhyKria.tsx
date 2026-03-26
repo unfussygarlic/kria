@@ -4,273 +4,344 @@ import { useState, useEffect, useRef } from "react";
 import { LIME } from "../constants";
 import { useWindowWidth } from "../utils";
 
-const OLD_STEPS = [
-  { text: "Find a job board that has gig work", time: "~10 min" },
-  { text: "Create an account", time: "~5 min" },
-  { text: "Upload your resume", time: "~15 min" },
-  { text: "Fill out a long application", time: "~20 min" },
-  { text: "Wait for your application to be reviewed", time: "1–3 days" },
-  { text: "Get a callback (if you're lucky)", time: "2–5 days" },
-  { text: "Schedule an interview", time: "+1 day" },
-  { text: "Wait for a decision", time: "+2 days" },
+// ── Chat thread data ───────────────────────────────────────────────────────────
+type ChatItem =
+  | { kind: "msg"; from: "seeker" | "finder"; text: string; time: string; file?: boolean }
+  | { kind: "divider"; text: string };
+
+const THREAD: ChatItem[] = [
+  { kind: "msg",     from: "seeker",  text: "Hi! I'd like to apply for the Event Bartender role.",          time: "Mon  9:14 AM" },
+  { kind: "divider", text: "2 days pass…" },
+  { kind: "msg",     from: "seeker",  text: "Just following up on my application 🙏",                       time: "Wed  11:02 AM" },
+  { kind: "divider", text: "1 day later…" },
+  { kind: "msg",     from: "finder",  text: "Hey! Can you send your CV and a cover letter?",                 time: "Thu  3:45 PM" },
+  { kind: "msg",     from: "seeker",  text: "Of course! Sending now.",                                      time: "Thu  3:52 PM", file: true },
+  { kind: "divider", text: "4 days pass…" },
+  { kind: "msg",     from: "finder",  text: "Hi, we've decided to go with another candidate. Thanks!",      time: "Mon  2:18 PM" },
+  { kind: "msg",     from: "seeker",  text: "Oh… okay. Thanks anyway.",                                     time: "Mon  2:31 PM" },
 ];
 
-const NEW_STEPS = [
-  { text: "Open kria", sub: "Seeker or Finder" },
-  { text: "Browse shifts near you", sub: "Live gigs, real pay" },
-  { text: "Swipe up to apply", sub: "One gesture. Done." },
-  { text: "Show up and work", sub: "Same day, sometimes" },
+// ── kria steps ─────────────────────────────────────────────────────────────────
+const STEPS = [
+  { n: "01", title: "Open kria",    sub: "Browse live gigs near you"    },
+  { n: "02", title: "Swipe up",     sub: "One gesture to apply"         },
+  { n: "03", title: "You're hired", sub: "Confirmation in seconds"      },
 ];
 
-// Total time for old way animation: 8 steps × 550ms = 4.4s
-// Total time for new way animation: 4 steps × 120ms = 0.48s
-const OLD_DELAY = 550;
-const NEW_DELAY = 120;
+// ── Stats ──────────────────────────────────────────────────────────────────────
+const STATS = [
+  { value: "6",   unit: "days",  desc: "Average wait for a callback on gig platforms" },
+  { value: "8",   unit: "steps", desc: "To land a single shift the old way"           },
+  { value: "90",  unit: "sec",   desc: "Average time to apply on kria"                },
+];
 
+// ── helpers ────────────────────────────────────────────────────────────────────
+function FileChip() {
+  return (
+    <div style={{
+      display: "inline-flex", alignItems: "center", gap: 6,
+      padding: "5px 10px", borderRadius: 8, marginTop: 4,
+      background: "rgba(255,255,255,0.08)",
+      border: "1px solid rgba(255,255,255,0.12)",
+    }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>CV.pdf</span>
+    </div>
+  );
+}
+
+// ── Component ──────────────────────────────────────────────────────────────────
 export default function SectionWhyKria() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [hasPlayed, setHasPlayed] = useState(false);
-  const [oldVisible, setOldVisible] = useState<number>(-1); // index of last visible step
-  const [newVisible, setNewVisible] = useState<number>(-1);
-  const [showResult, setShowResult] = useState(false);
-  const width = useWindowWidth();
-  const isMobile = width < 720;
+  const sectionRef  = useRef<HTMLElement>(null);
+  const [revealed, setRevealed] = useState(-1); // how many thread items shown
+  const [played, setPlayed]     = useState(false);
+  const width    = useWindowWidth();
+  const isMobile = width < 860;
 
-  const runAnimation = () => {
-    setOldVisible(-1);
-    setNewVisible(-1);
-    setShowResult(false);
+  // Stagger delays: dividers fast, messages slightly slower
+  const DELAYS = THREAD.map((item) =>
+    item.kind === "divider" ? 320 : 480
+  );
 
-    // New way: fast
-    NEW_STEPS.forEach((_, i) => {
-      setTimeout(() => setNewVisible(i), i * NEW_DELAY);
+  const play = () => {
+    setRevealed(-1);
+    let acc = 200;
+    THREAD.forEach((_, i) => {
+      acc += DELAYS[i];
+      setTimeout(() => setRevealed(i), acc);
     });
-
-    // Old way: slow
-    OLD_STEPS.forEach((_, i) => {
-      setTimeout(() => setOldVisible(i), i * OLD_DELAY);
-    });
-
-    // Result after old finishes
-    setTimeout(() => setShowResult(true), OLD_STEPS.length * OLD_DELAY + 400);
   };
 
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting && !hasPlayed) {
-          setHasPlayed(true);
-          setTimeout(runAnimation, 300);
-          obs.disconnect();
-        }
-      },
-      { threshold: 0.2 }
-    );
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !played) { setPlayed(true); play(); obs.disconnect(); }
+    }, { threshold: 0.15 });
     obs.observe(el);
     return () => obs.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasPlayed]);
+  }, [played]);
 
   return (
     <section ref={sectionRef} style={{
       padding: isMobile ? "80px 24px" : "120px 48px",
       maxWidth: 1160, margin: "0 auto", width: "100%",
     }}>
-      {/* Header */}
-      <div style={{ marginBottom: 56, display: "flex", flexDirection: "column", gap: 12 }}>
-        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", color: "rgba(255,255,255,0.28)", margin: 0, textTransform: "uppercase" }}>
+
+      {/* ── Header ── */}
+      <div style={{ marginBottom: 56 }}>
+        <p style={{
+          fontSize: 12, fontWeight: 700, letterSpacing: "0.1em",
+          color: "rgba(255,255,255,0.28)", margin: "0 0 16px", textTransform: "uppercase",
+        }}>
           Why we built this
         </p>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-          <h2 style={{
-            fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 900,
-            letterSpacing: "-0.03em", lineHeight: 1.1, margin: 0, color: "#fff",
+        <h2 style={{
+          fontSize: "clamp(28px, 4.5vw, 56px)", fontWeight: 900,
+          letterSpacing: "-0.03em", lineHeight: 1.05, margin: 0, color: "#fff",
+          maxWidth: 680,
+        }}>
+          Nobody has time{" "}
+          <span style={{
+            position: "relative", display: "inline-block",
+            background: "linear-gradient(90deg,rgba(255,80,80,0.85),rgba(255,120,60,0.85))",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           }}>
-            Gig hiring has{" "}
-            <span style={{
-              background: "linear-gradient(90deg,rgba(255,80,80,0.9),rgba(255,120,80,0.9))",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            }}>
-              8 steps.
-            </span>
-            {" "}Ours has{" "}
-            <span style={{
-              background: `linear-gradient(90deg,${LIME},#b8e000)`,
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            }}>
-              4.
-            </span>
-          </h2>
-          <button
-            onClick={runAnimation}
-            style={{
-              padding: "8px 18px", borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.1)",
-              background: "rgba(255,255,255,0.04)",
-              color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600,
-              cursor: "pointer", transition: "all 0.2s", fontFamily: "inherit",
-              display: "flex", alignItems: "center", gap: 6,
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = "rgba(255,255,255,0.7)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="1 4 1 10 7 10" />
-              <path d="M3.51 15a9 9 0 1 0 .49-3" />
-            </svg>
-            Replay
-          </button>
-        </div>
+            for this.
+          </span>
+        </h2>
       </div>
 
-      {/* Race columns */}
+      {/* ── Main grid ── */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-        gap: isMobile ? 40 : 48,
+        gridTemplateColumns: isMobile ? "1fr" : "1.1fr 0.9fr",
+        gap: isMobile ? 32 : 40,
         alignItems: "start",
       }}>
 
-        {/* Old way */}
-        <div>
+        {/* ── Left: chat thread ── */}
+        <div style={{
+          borderRadius: 24,
+          border: "1px solid rgba(255,255,255,0.07)",
+          background: "rgba(255,255,255,0.02)",
+          overflow: "hidden",
+        }}>
+          {/* Chat header */}
           <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            marginBottom: 16,
+            padding: "14px 18px",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            display: "flex", alignItems: "center", gap: 10,
           }}>
-            <p style={{
-              fontSize: 12, fontWeight: 700, letterSpacing: "0.07em",
-              textTransform: "uppercase", margin: 0,
-              color: "rgba(255,100,100,0.6)",
+            <div style={{
+              width: 32, height: 32, borderRadius: 99, flexShrink: 0,
+              background: "rgba(255,255,255,0.06)",
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              The old way
-            </p>
-            {showResult && (
-              <span style={{
-                fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 99,
-                background: "rgba(255,80,80,0.1)", color: "rgba(255,100,100,0.7)",
-                border: "1px solid rgba(255,80,80,0.2)",
-                animation: "fadeInUp 0.4s ease forwards",
-              }}>
-                ~7 days
-              </span>
-            )}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+              </svg>
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.7)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Employer · Hiring for Bar Shift</p>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", margin: 0 }}>The old way</p>
+            </div>
+            {/* Replay */}
+            <button
+              onClick={() => { setPlayed(false); setTimeout(() => { setPlayed(true); play(); }, 50); }}
+              style={{
+                marginLeft: "auto", padding: "5px 12px", borderRadius: 8,
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "transparent", color: "rgba(255,255,255,0.3)",
+                fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                display: "flex", alignItems: "center", gap: 5, transition: "all 0.2s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = "rgba(255,255,255,0.6)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.3)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/>
+              </svg>
+              Replay
+            </button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {OLD_STEPS.map((step, i) => (
-              <div key={step.text} style={{
-                display: "flex", alignItems: "center", gap: 12,
-                padding: "11px 14px", borderRadius: 11,
-                border: "1px solid rgba(255,255,255,0.05)",
-                background: i <= oldVisible ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.01)",
-                opacity: i <= oldVisible ? 1 : 0.18,
-                transform: i <= oldVisible ? "translateX(0)" : "translateX(-6px)",
-                transition: "opacity 0.35s ease, transform 0.35s ease, background 0.3s",
-              }}>
-                <div style={{
-                  width: 20, height: 20, borderRadius: 99, flexShrink: 0,
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  background: i <= oldVisible ? "rgba(255,255,255,0.06)" : "transparent",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  transition: "all 0.3s",
+          {/* Messages */}
+          <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6, minHeight: 340 }}>
+            {THREAD.map((item, i) => {
+              const visible = i <= revealed;
+
+              if (item.kind === "divider") {
+                return (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    margin: "8px 0",
+                    opacity: visible ? 1 : 0,
+                    transform: visible ? "none" : "translateY(4px)",
+                    transition: "opacity 0.4s ease, transform 0.4s ease",
+                  }}>
+                    <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, letterSpacing: "0.06em",
+                      color: "rgba(255,100,100,0.5)", textTransform: "uppercase",
+                      padding: "3px 10px", borderRadius: 99,
+                      background: "rgba(255,80,80,0.06)",
+                      border: "1px solid rgba(255,80,80,0.12)",
+                      whiteSpace: "nowrap",
+                    }}>
+                      {item.text}
+                    </span>
+                    <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+                  </div>
+                );
+              }
+
+              const isSeeker = item.from === "seeker";
+              const isLast   = i === THREAD.length - 1;
+
+              return (
+                <div key={i} style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: isSeeker ? "flex-start" : "flex-end",
+                  opacity: visible ? (isLast ? 0.45 : 1) : 0,
+                  transform: visible ? "none" : `translateY(8px) translateX(${isSeeker ? "-6px" : "6px"})`,
+                  transition: "opacity 0.4s ease, transform 0.4s ease",
                 }}>
-                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "monospace" }}>
-                    {String(i + 1).padStart(2, "0")}
+                  <div style={{
+                    maxWidth: "78%",
+                    padding: "9px 13px",
+                    borderRadius: isSeeker ? "4px 16px 16px 16px" : "16px 4px 16px 16px",
+                    background: isSeeker
+                      ? "rgba(255,255,255,0.07)"
+                      : "rgba(212,255,0,0.08)",
+                    border: isSeeker
+                      ? "1px solid rgba(255,255,255,0.08)"
+                      : `1px solid rgba(212,255,0,0.12)`,
+                  }}>
+                    <p style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", margin: 0, lineHeight: 1.5 }}>
+                      {item.text}
+                    </p>
+                    {item.file && <FileChip />}
+                  </div>
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginTop: 3, paddingLeft: 4 }}>
+                    {item.time}
                   </span>
                 </div>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", flex: 1 }}>
-                  {step.text}
-                </span>
-                <span style={{
-                  fontSize: 10, color: "rgba(255,100,100,0.45)", fontFamily: "monospace",
-                  flexShrink: 0, opacity: i <= oldVisible ? 1 : 0,
-                  transition: "opacity 0.3s",
-                }}>
-                  {step.time}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        {/* Kria way */}
-        <div>
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            marginBottom: 16,
+        {/* ── Right: kria way ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <p style={{
+            fontSize: 12, fontWeight: 700, letterSpacing: "0.07em",
+            textTransform: "uppercase", margin: "0 0 4px", color: "rgba(212,255,0,0.6)",
           }}>
-            <p style={{
-              fontSize: 12, fontWeight: 700, letterSpacing: "0.07em",
-              textTransform: "uppercase", margin: 0, color: "rgba(212,255,0,0.6)",
+            The kria way
+          </p>
+
+          {STEPS.map((step, i) => (
+            <div key={step.n} style={{
+              padding: "18px 20px",
+              borderRadius: 16,
+              border: `1px solid rgba(212,255,0,${0.14 - i * 0.02})`,
+              background: `rgba(212,255,0,${0.04 - i * 0.005})`,
+              display: "flex", alignItems: "center", gap: 16,
+              opacity: revealed >= 0 ? 1 : 0,
+              transform: revealed >= 0 ? "none" : "translateY(10px)",
+              transition: `opacity 0.5s ease ${i * 120 + 200}ms, transform 0.5s ease ${i * 120 + 200}ms`,
             }}>
-              The kria way
-            </p>
-            {showResult && (
               <span style={{
-                fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 99,
-                background: "rgba(212,255,0,0.1)", color: LIME,
-                border: `1px solid rgba(212,255,0,0.25)`,
-                animation: "fadeInUp 0.4s ease forwards",
-              }}>
-                ~90 seconds
-              </span>
-            )}
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {NEW_STEPS.map((step, i) => (
-              <div key={step.text} style={{
-                display: "flex", alignItems: "center", gap: 14,
-                padding: "14px 16px", borderRadius: 13,
-                border: `1px solid ${i <= newVisible ? "rgba(212,255,0,0.18)" : "rgba(255,255,255,0.04)"}`,
-                background: i <= newVisible ? "rgba(212,255,0,0.04)" : "rgba(255,255,255,0.01)",
-                opacity: i <= newVisible ? 1 : 0.15,
-                transform: i <= newVisible ? "translateX(0)" : "translateX(6px)",
-                transition: "opacity 0.3s ease, transform 0.3s ease, border-color 0.3s, background 0.3s",
-              }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 99, flexShrink: 0,
-                  background: i <= newVisible ? LIME : "rgba(255,255,255,0.06)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: i <= newVisible ? `0 0 14px rgba(212,255,0,0.3)` : "none",
-                  transition: "all 0.3s",
-                }}>
-                  <span style={{
-                    fontSize: 12, fontWeight: 800,
-                    color: i <= newVisible ? "#000" : "rgba(255,255,255,0.2)",
-                    transition: "color 0.3s",
-                  }}>{i + 1}</span>
-                </div>
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: i <= newVisible ? "#fff" : "rgba(255,255,255,0.3)", margin: 0, transition: "color 0.3s" }}>
-                    {step.text}
-                  </p>
-                  <p style={{ fontSize: 11, color: i <= newVisible ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.15)", margin: 0, transition: "color 0.3s" }}>
-                    {step.sub}
-                  </p>
-                </div>
+                fontSize: 13, fontWeight: 800, fontFamily: "monospace",
+                color: LIME, opacity: 0.5, flexShrink: 0, minWidth: 24,
+              }}>{step.n}</span>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0 }}>{step.title}</p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", margin: "2px 0 0" }}>{step.sub}</p>
               </div>
-            ))}
-
-            {/* Done flash */}
-            {newVisible >= NEW_STEPS.length - 1 && (
               <div style={{
-                padding: "12px 16px", borderRadius: 13,
-                border: `1px solid rgba(212,255,0,0.3)`,
-                background: "rgba(212,255,0,0.07)",
-                display: "flex", alignItems: "center", gap: 10,
-                animation: "fadeInUp 0.4s ease forwards",
+                width: 28, height: 28, borderRadius: 99, flexShrink: 0,
+                background: "rgba(212,255,0,0.1)",
+                display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={LIME} strokeWidth="2.5" strokeLinecap="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={LIME} strokeWidth="2.5" strokeLinecap="round">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
-                <span style={{ fontSize: 14, fontWeight: 700, color: LIME }}>You&apos;re hired.</span>
               </div>
-            )}
+            </div>
+          ))}
+
+          {/* Time badge */}
+          <div style={{
+            padding: "14px 20px", borderRadius: 16,
+            border: `1px solid rgba(212,255,0,0.2)`,
+            background: "rgba(212,255,0,0.06)",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            opacity: revealed >= THREAD.length - 1 ? 1 : 0,
+            transform: revealed >= THREAD.length - 1 ? "none" : "translateY(6px)",
+            transition: "opacity 0.5s ease 0.6s, transform 0.5s ease 0.6s",
+          }}>
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Total time</span>
+            <span style={{ fontSize: 18, fontWeight: 800, color: LIME, letterSpacing: "-0.02em" }}>
+              ~90 seconds
+            </span>
+          </div>
+
+          {/* vs callout */}
+          <div style={{
+            padding: "14px 20px", borderRadius: 16,
+            border: "1px solid rgba(255,80,80,0.12)",
+            background: "rgba(255,80,80,0.04)",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            opacity: revealed >= THREAD.length - 1 ? 1 : 0,
+            transition: "opacity 0.5s ease 0.8s",
+          }}>
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>vs the old way</span>
+            <span style={{ fontSize: 18, fontWeight: 800, color: "rgba(255,100,100,0.8)", letterSpacing: "-0.02em" }}>
+              ~6 days
+            </span>
           </div>
         </div>
+      </div>
+
+      {/* ── Stats row ── */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: width >= 500 ? "repeat(3, 1fr)" : "1fr",
+        gap: 16,
+        marginTop: 40,
+      }}>
+        {STATS.map(({ value, unit, desc }, i) => (
+          <div key={desc} style={{
+            padding: "24px",
+            borderRadius: 18,
+            border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(255,255,255,0.02)",
+            opacity: revealed >= THREAD.length - 1 ? 1 : 0,
+            transform: revealed >= THREAD.length - 1 ? "none" : "translateY(12px)",
+            transition: `opacity 0.5s ease ${i * 100 + 800}ms, transform 0.5s ease ${i * 100 + 800}ms`,
+          }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 8 }}>
+              <span style={{
+                fontSize: 44, fontWeight: 900, lineHeight: 1,
+                color: i === 2 ? LIME : "rgba(255,100,100,0.75)",
+                letterSpacing: "-0.04em",
+              }}>{value}</span>
+              <span style={{
+                fontSize: 16, fontWeight: 700,
+                color: i === 2 ? "rgba(212,255,0,0.5)" : "rgba(255,100,100,0.4)",
+              }}>{unit}</span>
+            </div>
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", margin: 0, lineHeight: 1.5 }}>
+              {desc}
+            </p>
+          </div>
+        ))}
       </div>
     </section>
   );

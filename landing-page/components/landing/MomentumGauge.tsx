@@ -62,9 +62,10 @@ export default function MomentumGauge({ score, animate }: { score: number; anima
         - Labels row:    y ≈ 158 (bottom edge)
         Nothing escapes the viewBox.
       */}
+      <div style={{ width: "100%", maxWidth: 300 }}>
       <svg
-        width="300"
-        height="158"
+        width="100%"
+        height="auto"
         viewBox="0 0 300 158"
         style={{ display: "block", overflow: "hidden" }}
       >
@@ -128,6 +129,7 @@ export default function MomentumGauge({ score, animate }: { score: number; anima
           textAnchor="middle"
         >850</text>
       </svg>
+      </div>
 
       {/* Score — completely outside the SVG, no chance of overlap */}
       <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
