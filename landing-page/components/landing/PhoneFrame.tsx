@@ -3,12 +3,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { LIME, SURFACE, SURFACE2, GIG_CARDS, type Role } from "./constants";
 import KriaWordmark from "./KriaWordmark";
+import { useT } from "./LanguageContext";
 
-const THRESHOLD_X = 75;  // px horizontal to trigger nav
-const THRESHOLD_Y = 65;  // px upward to trigger apply
+const THRESHOLD_X = 75;
+const THRESHOLD_Y = 65;
 
 // ── Card content ──────────────────────────────────────────────────────────────
-function CardContent({ card, role }: { card: typeof GIG_CARDS[0]; role: Role }) {
+function CardContent({ index, role }: { index: number; role: Role }) {
+  const t    = useT();
+  const data = GIG_CARDS[index];    // structural: pay, categoryColor, spots
+  const str  = t.gigCards[index];   // translatable: title, company, date, location, category
+
   return (
     <div style={{
       height: "100%", borderRadius: 20, padding: "14px 14px 10px",
@@ -23,34 +28,34 @@ function CardContent({ card, role }: { card: typeof GIG_CARDS[0]; role: Role }) 
         <span style={{
           fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
           padding: "3px 9px", borderRadius: 99,
-          background: `${card.categoryColor}18`, color: card.categoryColor,
+          background: `${data.categoryColor}18`, color: data.categoryColor,
           pointerEvents: "none",
         }}>
-          {card.category.toUpperCase()}
+          {str.category.toUpperCase()}
         </span>
         <span style={{
           fontSize: 12, fontWeight: 700, color: LIME,
           background: "rgba(212,255,0,0.1)", padding: "2px 8px", borderRadius: 8,
           pointerEvents: "none",
         }}>
-          {card.pay}
+          {data.pay}
         </span>
       </div>
 
       {/* title */}
       <div style={{ pointerEvents: "none" }}>
-        <p style={{ fontSize: 17, fontWeight: 800, color: "#fff", lineHeight: 1.2, margin: 0 }}>{card.title}</p>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "3px 0 0" }}>{card.company}</p>
+        <p style={{ fontSize: 17, fontWeight: 800, color: "#fff", lineHeight: 1.2, margin: 0 }}>{str.title}</p>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "3px 0 0" }}>{str.company}</p>
       </div>
 
       {/* details */}
       <div style={{ display: "flex", flexDirection: "column", gap: 7, pointerEvents: "none" }}>
         {[
-          { d: "M8 6h13M8 12h13M3 6h.01M3 12h.01", text: card.date },
-          { d: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z", text: card.location },
-          { d: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", text: `${card.spots} spots open`, accent: true },
+          { d: "M8 6h13M8 12h13M3 6h.01M3 12h.01", text: str.date },
+          { d: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z", text: str.location },
+          { d: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", text: `${data.spots} ${t.phone.spotsOpen}`, accent: true },
         ].map(({ d, text, accent }) => (
-          <div key={text} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <div key={d} style={{ display: "flex", alignItems: "center", gap: 7 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
               stroke={accent ? LIME : "rgba(212,255,0,0.55)"}
               strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -76,7 +81,7 @@ function CardContent({ card, role }: { card: typeof GIG_CARDS[0]; role: Role }) 
           <polyline points="18 15 12 9 6 15" />
         </svg>
         <span style={{ fontSize: 11, color: "rgba(212,255,0,0.5)", fontWeight: 500 }}>
-          {role === "seeker" ? "Swipe up to apply" : "Finder mode · browse only"}
+          {role === "seeker" ? t.phone.seekerHint : t.phone.finderHint}
         </span>
       </div>
     </div>
@@ -85,6 +90,8 @@ function CardContent({ card, role }: { card: typeof GIG_CARDS[0]; role: Role }) 
 
 // ── Phone frame ───────────────────────────────────────────────────────────────
 export default function PhoneFrame({ role }: { role: Role }) {
+  const t = useT();
+
   const [index, setIndex]       = useState(0);
   const [offset, setOffset]     = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -97,6 +104,9 @@ export default function PhoneFrame({ role }: { role: Role }) {
   const cur   = index % total;
   const next1 = (index + 1) % total;
   const next2 = (index + 2) % total;
+
+  // suppress unused warning — kept for future use
+  void next1; void next2;
 
   // ── fly-off then advance index ────────────────────────────────────────────
   const flyOff = useCallback((dir: "left" | "right" | "up") => {
@@ -126,7 +136,7 @@ export default function PhoneFrame({ role }: { role: Role }) {
     }
   }, [dragging, offset, flyOff]);
 
-  // ── attach non-passive touchmove so we can preventDefault ────────────────
+  // ── non-passive touchmove ─────────────────────────────────────────────────
   useEffect(() => {
     const el = stackRef.current;
     if (!el) return;
@@ -179,7 +189,7 @@ export default function PhoneFrame({ role }: { role: Role }) {
     : 0;
   const navLeft = offset.x < 0;
 
-  // ── back card scale (subtly rises as top card is dragged) ─────────────────
+  // ── back card scale ───────────────────────────────────────────────────────
   const dragProgress = Math.min(
     Math.max(Math.abs(offset.x) / THRESHOLD_X, Math.abs(offset.y) / THRESHOLD_Y),
     1
@@ -258,9 +268,9 @@ export default function PhoneFrame({ role }: { role: Role }) {
           transition: (dragging || flyDir) ? "none" : "transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275)",
           willChange: "transform",
         }}>
-          <CardContent card={GIG_CARDS[cur]} role={role} />
+          <CardContent index={cur} role={role} />
 
-          {/* Apply overlay (swipe up) */}
+          {/* Apply overlay */}
           {applyOpacity > 0 && (
             <div style={{
               position: "absolute", inset: 0, borderRadius: 20,
@@ -277,12 +287,12 @@ export default function PhoneFrame({ role }: { role: Role }) {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round">
                   <polyline points="18 15 12 9 6 15" />
                 </svg>
-                <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>APPLY</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>{t.phone.apply}</span>
               </div>
             </div>
           )}
 
-          {/* Skip overlay (swipe left/right) */}
+          {/* Skip/Next overlay */}
           {navOpacity > 0 && (
             <div style={{
               position: "absolute", inset: 0, borderRadius: 20,
@@ -293,11 +303,8 @@ export default function PhoneFrame({ role }: { role: Role }) {
               padding: "0 18px",
               pointerEvents: "none",
             }}>
-              <span style={{
-                fontSize: 22, fontWeight: 900,
-                color: navLeft ? "#8097ff" : "#ff7351",
-              }}>
-                {navLeft ? "SKIP" : "NEXT"}
+              <span style={{ fontSize: 22, fontWeight: 900, color: navLeft ? "#8097ff" : "#ff7351" }}>
+                {navLeft ? t.phone.skip : t.phone.next}
               </span>
             </div>
           )}
@@ -310,8 +317,8 @@ export default function PhoneFrame({ role }: { role: Role }) {
         paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.05)",
       }}>
         {[
-          { label: "←", primary: false, action: () => !flyDir && flyOff("left") },
-          { label: "↑", primary: true,  action: () => !flyDir && flyOff("up")   },
+          { label: "←", primary: false, action: () => !flyDir && flyOff("left")  },
+          { label: "↑", primary: true,  action: () => !flyDir && flyOff("up")    },
           { label: "→", primary: false, action: () => !flyDir && flyOff("right") },
         ].map(({ label, primary, action }) => (
           <button

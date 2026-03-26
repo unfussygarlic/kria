@@ -2,19 +2,20 @@
 
 import MomentumGauge from "../MomentumGauge";
 import { LIME, BANDS } from "../constants";
-import { useFadeIn } from "../utils";
-import { useWindowWidth } from "../utils";
+import { useFadeIn, useWindowWidth } from "../utils";
+import { useT } from "../LanguageContext";
 
-const POINTS = [
-  { icon: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z", text: "Seekers with higher scores surface first to Finders." },
-  { icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75", text: "Finders are scored too. Workers see your track record." },
-  { icon: "M13 2L3 14h9l-1 8 10-12h-9l1-8z", text: "No-shows drop fast. Consistency climbs slow. That's the point." },
+const POINT_ICONS = [
+  "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+  "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
+  "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
 ];
 
 export default function SectionMomentum() {
   const { ref, visible } = useFadeIn(0.15);
-  const width = useWindowWidth();
+  const width    = useWindowWidth();
   const isMobile = width < 860;
+  const t        = useT();
 
   return (
     <section ref={ref} style={{
@@ -59,7 +60,7 @@ export default function SectionMomentum() {
                 background: `${b.color}0e`,
                 color: b.color,
               }}>
-                {b.label}
+                {t.momentum.bands[b.label as keyof typeof t.momentum.bands]}
                 <span style={{ marginLeft: 6, opacity: 0.5, fontSize: 10 }}>
                   {b.range[0]}–{b.range[1]}
                 </span>
@@ -74,34 +75,34 @@ export default function SectionMomentum() {
             fontSize: 12, fontWeight: 700, letterSpacing: "0.1em",
             color: "rgba(255,255,255,0.28)", margin: 0, textTransform: "uppercase",
           }}>
-            Momentum Score
+            {t.momentum.sectionLabel}
           </p>
           <h2 style={{
             fontSize: "clamp(28px, 3.8vw, 50px)", fontWeight: 900,
             letterSpacing: "-0.03em", lineHeight: 1.1, margin: 0, color: "#fff",
           }}>
-            Your reputation shows up{" "}
+            {t.momentum.headline}{" "}
             <span style={{
               background: `linear-gradient(90deg,${LIME},#b8e000)`,
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
             }}>
-              before you do.
+              {t.momentum.headlineHighlight}
             </span>
           </h2>
           <p style={{ fontSize: 16, lineHeight: 1.7, color: "rgba(255,255,255,0.48)", margin: 0 }}>
-            Every gig completed, every shift filled — it all builds your Momentum Score. A single 300–850 trust index that replaces ratings, reviews, and gut instinct.
+            {t.momentum.sub}
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 4 }}>
-            {POINTS.map(({ icon, text }) => (
-              <div key={text} style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            {t.momentum.points.map((text, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
                 <div style={{
                   width: 34, height: 34, borderRadius: 10, flexShrink: 0,
                   background: "rgba(212,255,0,0.08)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={LIME} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d={icon} />
+                    <path d={POINT_ICONS[i]} />
                   </svg>
                 </div>
                 <p style={{ fontSize: 14, color: "rgba(255,255,255,0.52)", margin: 0, lineHeight: 1.65, paddingTop: 7 }}>

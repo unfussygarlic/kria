@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import PhoneFrame from "../PhoneFrame";
 import { LIME, type Role } from "../constants";
 import { useWindowWidth } from "../utils";
+import { useT } from "../LanguageContext";
 
 export default function SectionHero({ role, setRole }: { role: Role; setRole: (r: Role) => void }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
-  const width = useWindowWidth();
+  const width    = useWindowWidth();
   const isMobile = width < 860;
+  const t        = useT();
 
   return (
     <section style={{
@@ -74,15 +76,15 @@ export default function SectionHero({ role, setRole }: { role: Role; setRole: (r
               animation: "pulseOpacity 2s ease-in-out infinite",
             }} />
             <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(212,255,0,0.8)", letterSpacing: "0.05em" }}>
-              PRIVATE BETA · LAUNCHING SOON
+              {t.hero.eyebrow}
             </span>
           </div>
 
           {/* Headline */}
           <h1 style={{ margin: 0 }}>
             {[
-              { text: "Work without", lime: false },
-              { text: "the wait.", lime: true },
+              { text: t.hero.headlineLine1, lime: false },
+              { text: t.hero.headlineLine2, lime: true  },
             ].map(({ text, lime }) => (
               <span key={text} style={{
                 display: "block",
@@ -101,7 +103,7 @@ export default function SectionHero({ role, setRole }: { role: Role; setRole: (r
             fontSize: 17, lineHeight: 1.7,
             color: "rgba(255,255,255,0.5)", margin: 0, maxWidth: 400,
           }}>
-            kria is a swipe‑based gig marketplace. Businesses post shifts, workers find them in seconds — no resumes, no back-and-forth.
+            {t.hero.sub}
           </p>
 
           {/* Role toggle */}
@@ -111,7 +113,7 @@ export default function SectionHero({ role, setRole }: { role: Role; setRole: (r
             border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 14, padding: 4, gap: 4,
           }}>
-            {(["seeker", "finder"] as Role[]).map(r => (
+            {([["seeker", t.hero.seekerLabel], ["finder", t.hero.finderLabel]] as [Role, string][]).map(([r, label]) => (
               <button key={r} onClick={() => setRole(r)} style={{
                 padding: "9px 22px", borderRadius: 10,
                 border: "none", cursor: "pointer",
@@ -122,15 +124,13 @@ export default function SectionHero({ role, setRole }: { role: Role; setRole: (r
                   ? { background: LIME, color: "#000", boxShadow: "0 0 18px rgba(212,255,0,0.3)" }
                   : { background: "transparent", color: "rgba(255,255,255,0.38)" }),
               }}>
-                {r === "seeker" ? "I'm a Seeker" : "I'm a Finder"}
+                {label}
               </button>
             ))}
           </div>
 
           <p style={{ fontSize: 13, color: "rgba(255,255,255,0.25)", margin: 0, fontWeight: 500 }}>
-            {role === "seeker"
-              ? "Browse shifts near you. Swipe up to apply instantly."
-              : "Post a gig in 60 seconds. Browse verified workers."}
+            {role === "seeker" ? t.hero.seekerHint : t.hero.finderHint}
           </p>
 
           {/* CTA */}
@@ -155,7 +155,7 @@ export default function SectionHero({ role, setRole }: { role: Role; setRole: (r
               e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            Get Early Access
+            {t.hero.cta}
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round">
               <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
             </svg>
