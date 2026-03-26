@@ -42,7 +42,7 @@ function EventJobRow({ job, onPress, isFinder }: { job: EventJobSummary; onPress
           <Text style={styles.jobMetaSep}>·</Text>
           <Text style={styles.jobMetaText}>{formatPay(job.pay_amount, job.pay_type)}</Text>
           <Text style={styles.jobMetaSep}>·</Text>
-          <Text style={[styles.jobMetaText, spotsLeft <= 3 && { color: T.secondary }]}>
+          <Text style={[styles.jobMetaText, spotsLeft <= 3 && { color: T.tertiary }]}>
             {spotsLeft} spots left
           </Text>
         </View>
@@ -186,7 +186,7 @@ export default function EventDetailScreen() {
             style={styles.addJobButton}
             onPress={() => router.push(`/(main)/event/add-job?eventId=${id}`)}
           >
-            <Feather name="plus" size={20} color={T.textInverse} />
+            <Feather name="plus" size={20} color={T.ctaText} />
             <Text style={styles.addJobText}>Add Another Job</Text>
           </Pressable>
         </StickyFooter>
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   applicantsText: { fontSize: 12, color: T.primary, fontWeight: "600" },
   // Footer
   addJobButton: {
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     height: 54,
     borderRadius: 12,
     flexDirection: "row",
@@ -273,14 +273,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  addJobText: { color: T.textInverse, fontSize: 17, fontWeight: "600" },
+  addJobText: { color: T.ctaText, fontSize: 17, fontWeight: "600" },
   // Error
   errorText: { fontSize: 15, color: T.error, textAlign: "center" },
   retryBtn: {
     paddingHorizontal: 24,
     paddingVertical: 10,
-    backgroundColor: T.primary50,
+    backgroundColor: T.ctaBg,
     borderRadius: 10,
   },
-  retryText: { fontSize: 15, fontWeight: "600", color: T.primary },
+  retryText: { fontSize: 15, fontWeight: "600", color: T.ctaText },
 });

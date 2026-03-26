@@ -34,46 +34,45 @@ export const MOMENTUM_BANDS: MomentumBand[] = [
     label: "Critical",
     min: 300,
     max: 449,
-    color: "#DC2626",
-    bgColor: "#FEE2E2",
-    textColor: "#B91C1C",
+    color: "#ff7351",              // Coral
+    bgColor: "rgba(255,115,81,0.15)",
+    textColor: "#ff9070",
   },
   {
     key: "developing",
-    label: "Developing",
+    label: "Stagnant",
     min: 450,
     max: 599,
-    color: "#F05A28",   // burnt orange — on-brand
-    bgColor: "#FFF4EE",
-    textColor: "#E03E0E",
+    color: "#777575",              // Muted gray
+    bgColor: "rgba(119,117,117,0.15)",
+    textColor: "#adaaaa",
   },
   {
     key: "established",
-    label: "Established",
+    label: "Active",
     min: 600,
     max: 699,
-    color: "#FFC83D",   // signal yellow
-    bgColor: "#FFFBEB",
-    textColor: "#B45309",
+    color: "#c0c0c0",              // Silver
+    bgColor: "rgba(192,192,192,0.15)",
+    textColor: "#c0c0c0",
   },
   {
     key: "trusted",
-    label: "Trusted",
+    label: "Surging",
     min: 700,
     max: 799,
-    color: "#16A34A",
-    bgColor: "#DCFCE7",
-    textColor: "#15803D",
+    color: "#D4FF00",              // Electric lime
+    bgColor: "rgba(212,255,0,0.15)",
+    textColor: "#D4FF00",
   },
   {
     key: "elite",
     label: "Elite",
     min: 800,
     max: 850,
-    // Note: blue is used ONLY for the elite band per product spec.
-    color: "#3B82F6",
-    bgColor: "#EFF6FF",
-    textColor: "#1D4ED8",
+    color: "#ffffff",              // Platinum white
+    bgColor: "rgba(255,255,255,0.12)",
+    textColor: "#ffffff",
   },
 ];
 

@@ -274,8 +274,8 @@ const styles = StyleSheet.create({
     borderColor: T.border,
   },
   typeCardSelected: {
-    backgroundColor: T.primary50,
-    borderColor: T.primary,
+    backgroundColor: T.selBg,
+    borderColor: T.selBorder,
   },
   typeLabel: {
     fontSize: 14,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     color: T.textSub,
   },
   typeLabelSelected: {
-    color: T.primary,
+    color: T.selText,
     fontWeight: "700",
   },
   formatHint: {
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    backgroundColor: T.primary,
+    backgroundColor: T.ctaBg,
     height: 54,
     borderRadius: 12,
     justifyContent: "center",
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   buttonText: {
-    color: T.textInverse,
+    color: T.ctaText,
     fontSize: 17,
     fontWeight: "600",
   },

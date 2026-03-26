@@ -1,4 +1,4 @@
--- Kriya Database Functions
+-- Kria Database Functions
 -- Auth triggers, momentum handling, gig lifecycle
 -- Created: 2026-02-14
 

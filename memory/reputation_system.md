@@ -1,4 +1,4 @@
-# Kriya - Reputation System
+# Kria - Reputation System
 
 **Last Updated:** 2026-02-14
 

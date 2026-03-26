@@ -1,18 +1,18 @@
-# Kriya - Product Vision
+# Kria - Product Vision
 
 **Last Updated:** 2026-02-14
 
 ## Core Idea
 
-Kriya is an **event staffing and brand activation platform** connecting young people (college students, ages 18-30) with short-term event gigs. Companies and event organizers post gigs; students and young professionals pick them up.
+Kria is an **event staffing and brand activation platform** connecting young people (college students, ages 18-30) with short-term event gigs. Companies and event organizers post gigs; students and young professionals pick them up.
 
 **NOT Urban Company.** We don't do home services, cleaning, plumbing, etc.
 
-**Think:** Bangalore Tech Summit needs 50 registration desk staff → posts on Kriya → college students apply → get hired → earn money + build reputation.
+**Think:** Bangalore Tech Summit needs 50 registration desk staff → posts on Kria → college students apply → get hired → earn money + build reputation.
 
 ## Name Meaning
 
-"Kriya" (Sanskrit: क्रिया) means "action" or "deed" — reflecting the app's focus on getting things done through community trust.
+"Kria" (Sanskrit: क्रिया) means "action" or "deed" — reflecting the app's focus on getting things done through community trust.
 
 ## Target Market
 

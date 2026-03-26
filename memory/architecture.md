@@ -1,4 +1,4 @@
-# Kriya - Architecture & Backend Strategy
+# Kria - Architecture & Backend Strategy
 
 **Last Updated:** 2026-02-14
 
@@ -6,7 +6,7 @@
 
 ### Overview
 
-Kriya uses a **hybrid architecture** combining Supabase's managed services with a custom FastAPI backend for complex business logic.
+Kria uses a **hybrid architecture** combining Supabase's managed services with a custom FastAPI backend for complex business logic.
 
 ```
 ┌─────────────────┐
@@ -274,16 +274,16 @@ Kriya uses a **hybrid architecture** combining Supabase's managed services with 
 
 ```bash
 # Terminal 1: Supabase (Docker)
-cd /home/halvis/Documents/projects/kriya
+cd /home/halvis/Documents/projects/kria
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 # Terminal 2: FastAPI Backend
-cd /home/halvis/Documents/projects/kriya/backend
+cd /home/halvis/Documents/projects/kria/backend
 source venv/bin/activate
 uvicorn app.main:app --reload --port 8000
 
 # Terminal 3: Mobile Frontend
-cd /home/halvis/Documents/projects/kriya/frontend
+cd /home/halvis/Documents/projects/kria/frontend
 npx expo start
 ```
 
@@ -381,7 +381,7 @@ If you had started with pure Supabase:
 4. **Keep Supabase** for auth, database, realtime
 5. **Gradual migration** (one feature at a time)
 
-For Kriya, we're starting with hybrid from day 1.
+For Kria, we're starting with hybrid from day 1.
 
 ---
 
@@ -400,7 +400,7 @@ For Kriya, we're starting with hybrid from day 1.
 - No external integrations
 - No background jobs
 
-Kriya needs more than CRUD, so hybrid is the right choice.
+Kria needs more than CRUD, so hybrid is the right choice.
 
 ---
 

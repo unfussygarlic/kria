@@ -1,4 +1,4 @@
-# Kriya - Tech Decisions
+# Kria - Tech Decisions
 
 **Last Updated:** 2026-02-14
 
@@ -66,7 +66,7 @@ See `memory/architecture.md` for full details.
 ## Project Structure
 
 ```
-/kriya
+/kria
 ├── memory/                     # AI agent memory system
 │   ├── core.md                 # Entry point - read first
 │   ├── product_vision.md

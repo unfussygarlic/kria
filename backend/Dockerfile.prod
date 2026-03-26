@@ -1,4 +1,4 @@
-# Kriya Backend - Production Dockerfile
+# Kria Backend - Production Dockerfile
 # For Edge Functions deployment validation
 # Database and core services run on Supabase Cloud
 

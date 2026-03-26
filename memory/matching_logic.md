@@ -1,4 +1,4 @@
-# Kriya - Matching Logic
+# Kria - Matching Logic
 
 **Last Updated:** 2026-02-14
 

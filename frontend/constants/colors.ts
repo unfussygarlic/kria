@@ -1,70 +1,82 @@
-// Kriya Color Palette
-// Theme: Burnt Orange + Graphite — bold, industrial, high-contrast
-// Light mode only - vibrant primary with dark neutrals
+// Kria Color Palette
+// Theme: Solar Flare — deep black, electric lime primary, white/obsidian secondary
+// Dark backgrounds, neon lime accent, glassmorphism surfaces
 //
 // Usage: import { T } from "@/constants/colors"
-//   T.primary     → burnt orange #F05A28
-//   T.graphite    → graphite black #111111
-//   T.bg          → background
-//   T.text        → primary text
-//   T.accent      → signal yellow #FFC83D
-//   T.gradBrand   → burnt orange gradient for LinearGradient
+//   T.primary     → electric lime #D4FF00
+//   T.secondary   → white #ffffff
+//   T.bg          → deep background #0e0e0e
+//   T.text        → white #ffffff
+//   T.gradBrand   → lime gradient
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Internal full palette (used to build T below; rarely imported directly)
+// Internal full palette
 // ─────────────────────────────────────────────────────────────────────────────
 
 const palette = {
-  // Primary - Burnt Orange
+  // Primary — Electric Lime
   primary: {
-    DEFAULT: "#F05A28",
-    50:  "#FFF4EE",
-    100: "#FFE6D5",
-    200: "#FFCBAA",
-    300: "#FFA574",
-    400: "#FF7A3C",
-    500: "#F05A28",
-    600: "#E03E0E",
-    700: "#B82F0C",
-    800: "#942812",
-    900: "#7A2412",
+    DEFAULT:   "#D4FF00",
+    container: "#c4ec00",
+    dim:       "#a8cc00",
+    fixed:     "#d1fc00",
+    50:  "#f9ffe0",
+    100: "#f2ffc0",
+    200: "#e8ff80",
+    300: "#D4FF00",
+    400: "#c4ec00",
+    500: "#a8cc00",
+    600: "#7a9600",
+    700: "#556800",
+    800: "#3c4a00",
+    900: "#2a3300",
   },
-  // Secondary - Graphite & Concrete Grays
+  // Secondary — White / Obsidian
   secondary: {
-    DEFAULT: "#2B2B2B",  // Concrete Gray
-    50:  "#F9F9F9",
-    100: "#F3F3F3",
-    200: "#E5E5E5",
-    300: "#D4D4D4",
-    400: "#A3A3A3",
-    500: "#6B7280",      // Steel Gray
-    600: "#2B2B2B",      // Concrete Gray
-    700: "#1F1F1F",
-    800: "#171717",
-    900: "#111111",      // Graphite Black
+    DEFAULT:   "#ffffff",
+    container: "#262626",   // obsidian — dark surface / CTA backgrounds
+    dim:       "#1a1919",   // deep obsidian
+    50:  "#f5f5f5",
+    100: "#ebebeb",
+    200: "#d4d4d4",
+    300: "#b0b0b0",
+    400: "#8a8a8a",
+    500: "#666666",
+    600: "#444444",
+    700: "#2c2c2c",
+    800: "#1a1a1a",
+    900: "#111111",
   },
-  // Accent - Signal Yellow
-  accent: {
-    DEFAULT: "#FFC83D",
-    light:   "#FFE89D",
-    dark:    "#E6A500",
+  // Tertiary — Amber
+  tertiary: {
+    DEFAULT:   "#ffeb9c",
+    container: "#fcdc43",
+    dim:       "#edce35",
   },
-  success: "#16A34A",
-  warning: "#FFC83D",  // Use Signal Yellow for warnings
-  error:   "#DC2626",
-  background: "#FAFAFA",
-  surface:    "#FFFFFF",
-  border:     "#E5E5E5",
-  // Graphite (primary dark)
-  graphite: "#111111",
-  concrete: "#2B2B2B",
-  steel:    "#6B7280",
+  // Error / Coral
+  error: "#ff7351",
+  // Backgrounds (darkest → lightest)
+  bg:      "#0e0e0e",
+  surface0: "#000000",
+  surface1: "#131313",
+  surface2: "#1a1919",
+  surface3: "#201f1f",
+  surface4: "#262626",
+  surface5: "#2c2c2c",
+  // Text
   text: {
-    primary:   "#111111",  // Graphite Black
-    secondary: "#2B2B2B",  // Concrete Gray
-    muted:     "#6B7280",  // Steel Gray
-    inverse:   "#FFFFFF",
+    primary:   "#ffffff",
+    secondary: "#adaaaa",
+    muted:     "#777575",
+    inverse:   "#000000",   // black on lime
+    onPrimary: "#000000",
   },
+  // Borders
+  border:       "rgba(255,255,255,0.10)",
+  borderStrong: "rgba(255,255,255,0.20)",
+  // Glass
+  glass:   "rgba(38,38,38,0.4)",
+  glassHi: "rgba(255,255,255,0.05)",
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -72,8 +84,10 @@ const palette = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const T = {
-  // ── Primary burnt orange
-  primary:    palette.primary.DEFAULT,
+  // ── Primary lime
+  primary:          palette.primary.DEFAULT,
+  primaryContainer: palette.primary.container,
+  primaryDim:       palette.primary.dim,
   primary50:  palette.primary[50],
   primary100: palette.primary[100],
   primary200: palette.primary[200],
@@ -85,8 +99,10 @@ export const T = {
   primary800: palette.primary[800],
   primary900: palette.primary[900],
 
-  // ── Secondary grays (graphite & concrete)
-  secondary:    palette.secondary.DEFAULT,
+  // ── Secondary white/obsidian
+  secondary:          palette.secondary.DEFAULT,
+  secondaryContainer: palette.secondary.container,
+  secondaryDim:       palette.secondary.dim,   // deep obsidian #1a1919
   secondary50:  palette.secondary[50],
   secondary100: palette.secondary[100],
   secondary200: palette.secondary[200],
@@ -98,85 +114,114 @@ export const T = {
   secondary800: palette.secondary[800],
   secondary900: palette.secondary[900],
 
-  // ── Named dark colors
-  graphite: palette.graphite,  // #111111
-  concrete: palette.concrete,  // #2B2B2B
-  steel:    palette.steel,     // #6B7280
+  // ── Tertiary amber
+  tertiary:          palette.tertiary.DEFAULT,
+  tertiaryContainer: palette.tertiary.container,
 
-  // ── Accent (Signal Yellow)
-  accent:      palette.accent.DEFAULT,
-  accentLight: palette.accent.light,
-  accentDark:  palette.accent.dark,
+  // ── Legacy aliases (keep old screens compiling)
+  graphite: palette.surface0,    // was #111111 → now #000000
+  concrete: palette.surface4,    // was #2B2B2B → now #262626
+  steel:    palette.text.muted,  // was #6B7280 → now #777575
+
+  // ── Accent = lime (replaces old signal yellow/cyan)
+  accent:      palette.primary.DEFAULT,
+  accentLight: palette.primary[200],
+  accentDark:  palette.primary.container,
 
   // ── Semantic
-  success: palette.success,
-  warning: palette.warning,
+  success: palette.primary.DEFAULT,  // lime for pay/success on dark
+  warning: palette.tertiary.DEFAULT, // amber for warnings
   error:   palette.error,
 
   // ── Surfaces
-  bg:      palette.background,
-  surface: palette.surface,
-  border:  palette.border,
+  bg:       palette.bg,
+  surface:  palette.surface2,   // general surface
+  surface1: palette.surface1,
+  surface2: palette.surface2,
+  surface3: palette.surface3,
+  surface4: palette.surface4,
+  border:   palette.border,
+  borderStrong: palette.borderStrong,
+
+  // ── Glass
+  glass:   palette.glass,
+  glassHi: palette.glassHi,
 
   // ── Text
-  text:        palette.text.primary,
-  textSub:     palette.text.secondary,
-  textMuted:   palette.text.muted,
-  textInverse: palette.text.inverse,
+  text:          palette.text.primary,
+  textSub:       palette.text.secondary,
+  textMuted:     palette.text.muted,
+  textInverse:   palette.text.inverse,
+  textOnPrimary: palette.text.onPrimary,
 
-  // ── Momentum (FICO-style trust score)
-  // Used for the "Momentum Boost" badge and generic momentum UI accents.
-  // Band-specific colors live in constants/momentum.ts.
-  momentum:      "#FFC83D",   // Signal yellow — boost / default Momentum accent
-  momentumLight: "#FFF0C0",   // Light yellow — boost badge background
+  // ── Semantic: selected / active option state
+  // Used for chips, cards, pills, option buttons when selected.
+  // Change these two lines to retheme every selected state in the app.
+  selBg:     palette.primary.DEFAULT,   // background of selected element  → lime
+  selText:   palette.text.onPrimary,    // text / icon on selBg             → black
+  selBorder: palette.primary.DEFAULT,   // border of selected element       → lime
 
-  // ── Gradient arrays (pass directly to LinearGradient colors prop)
-  gradBrand:    ["#FF7A3C", "#F05A28"] as const,           // Burnt orange gradient
-  gradFire:     ["#FFC83D", "#FF7A3C", "#F05A28"] as const, // Yellow to orange
-  gradDark:     ["#2B2B2B", "#111111"] as const,           // Concrete to graphite
-  gradPrimary:  ["#F05A28", "#E03E0E"] as const,           // Primary shades
-  gradAccent:   ["#FFE89D", "#FFC83D"] as const,           // Signal yellow gradient
+  // ── Semantic: avatar / initials circle
+  // Used for user initials circles throughout the app.
+  avatarBg:   palette.primary.DEFAULT,  // initials circle background       → lime
+  avatarText: palette.text.onPrimary,   // letter on avatarBg               → black
+
+  // ── Semantic: primary action button (non-gradient)
+  // Used for solid-background CTA buttons (submit, confirm, done).
+  ctaBg:   palette.primary.DEFAULT,     // solid button background          → lime
+  ctaText: palette.text.onPrimary,      // button label                     → black
+
+  // ── Momentum accent (lime)
+  momentum:      palette.primary.DEFAULT,
+  momentumLight: "rgba(212,255,0,0.15)",
+
+  // ── Gradient arrays
+  gradBrand:    ["#D4FF00", "#c4ec00"] as const,            // Lime gradient
+  gradObsidian:   ["#262626", "#1a1919"] as const,           // Obsidian gradient
+  gradLimeWhite: ["#D4FF00", "#ffffff"] as const,            // Lime → white (progress)
+  gradFire:     ["#ffeb9c", "#ff7351"] as const,            // Amber → coral
+  gradDark:     ["#1a1919", "#0e0e0e"] as const,            // Dark surface gradient
+  gradPrimary:  ["#D4FF00", "#c4ec00"] as const,            // Primary lime
+  gradAccent:   ["#D4FF00", "#ffffff"] as const,            // Lime to white
+  gradGlass:    ["rgba(38,38,38,0.7)", "rgba(20,20,20,0.9)"] as const,
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Category colors — burnt orange, graphite, and warm neutrals
+// Category colors — neon/vibrant on black
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const CategoryColors: Record<string, string> = {
-  registration_desk: "#F05A28",  // Primary burnt orange
-  ushering:          "#FF7A3C",  // Light burnt orange
-  booth_staff:       "#E03E0E",  // Dark burnt orange
-  brand_ambassador:  "#FFC83D",  // Signal yellow
-  sampling:          "#FFA574",  // Light orange
-  lead_generation:   "#B82F0C",  // Deep orange
-  hospitality:       "#942812",  // Dark orange-brown
-  tech_support:      "#6B7280",  // Steel gray
-  photography:       "#DC2626",  // Red
-  social_media:      "#FFE89D",  // Light yellow
-  anchoring:         "#F05A28",  // Primary burnt orange
-  promotional:       "#FFC83D",  // Signal yellow
-  general_support:   "#2B2B2B",  // Concrete gray
-  other:             "#6B7280",  // Steel gray
+  registration_desk: "#D4FF00",  // Lime
+  ushering:          "#a0a0a0",  // Silver
+  booth_staff:       "#c4ec00",  // Lime dim
+  brand_ambassador:  "#ffeb9c",  // Amber
+  sampling:          "#6be5c0",  // Mint
+  lead_generation:   "#c084fc",  // Purple
+  hospitality:       "#fb923c",  // Warm orange
+  tech_support:      "#b0b0b0",  // Light silver
+  photography:       "#ff7351",  // Coral
+  social_media:      "#f472b6",  // Pink
+  anchoring:         "#606060",  // Charcoal
+  promotional:       "#fde68a",  // Light yellow
+  general_support:   "#777575",  // Muted
+  other:             "#adaaaa",  // Gray
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Colors — kept for the rare case of full-palette access (e.g. theme tooling)
+// Colors — kept for rare full-palette access
 // ─────────────────────────────────────────────────────────────────────────────
 /** @deprecated Use T instead */
 export const Colors = {
   primary:    palette.primary,
   secondary:  palette.secondary,
-  accent:     palette.accent,
-  success:    palette.success,
-  warning:    palette.warning,
   error:      palette.error,
-  background: palette.background,
-  surface:    palette.surface,
+  background: palette.bg,
+  surface:    palette.surface2,
   border:     palette.border,
   text:       palette.text,
-  graphite:   palette.graphite,
-  concrete:   palette.concrete,
-  steel:      palette.steel,
+  graphite:   palette.surface0,
+  concrete:   palette.surface4,
+  steel:      palette.text.muted,
   gradients: {
     brand:   T.gradBrand,
     fire:    T.gradFire,

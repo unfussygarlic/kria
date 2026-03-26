@@ -202,7 +202,7 @@ function InputBar({ onSend, bottomInset }: InputBarProps) {
         <Feather
           name="send"
           size={18}
-          color={text.trim() ? T.textInverse : T.textMuted}
+          color={text.trim() ? T.ctaText : T.textMuted}
         />
       </TouchableOpacity>
     </View>
@@ -437,12 +437,12 @@ const styles = StyleSheet.create({
     width: rw(36),
     height: rw(36),
     borderRadius: rw(18),
-    backgroundColor: T.primary100,
+    backgroundColor: T.avatarBg,
     justifyContent: "center",
     alignItems: "center",
   },
   headerAvatarInitials: {
-    color: T.primary,
+    color: T.avatarText,
     fontWeight: "700",
     fontSize: rf(14),
   },
@@ -538,13 +538,13 @@ const styles = StyleSheet.create({
   loadEarlierButton: {
     paddingHorizontal: rw(16),
     paddingVertical: rw(6),
-    backgroundColor: T.primary50,
+    backgroundColor: T.ctaBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: T.primary100,
+    borderColor: T.ctaBg,
   },
   loadEarlierText: {
-    color: T.primary,
+    color: T.ctaText,
     fontSize: rf(13),
     fontWeight: "600",
   },

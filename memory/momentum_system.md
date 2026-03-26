@@ -1,10 +1,10 @@
-# Kriya - Momentum System
+# Kria - Momentum System
 
 **Last Updated:** 2026-02-14
 
 ## Philosophy
 
-Momentum is Kriya's non-purchasable reputation currency. It represents genuine platform participation and cannot be gamed through money.
+Momentum is Kria's non-purchasable reputation currency. It represents genuine platform participation and cannot be gamed through money.
 
 ## Core Rules
 

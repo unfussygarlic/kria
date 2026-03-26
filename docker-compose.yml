@@ -1,4 +1,4 @@
-# Kriya - Base Docker Compose Configuration
+# Kria - Base Docker Compose Configuration
 # Use with docker-compose.dev.yml or docker-compose.prod.yml
 
 version: '3.8'
@@ -12,7 +12,7 @@ services:
   # ===========================================
   # BACKEND - FastAPI
   # ===========================================
-  kriya-api:
+  kria-api:
     build:
       context: ./backend/api
       dockerfile: Dockerfile
@@ -27,7 +27,7 @@ services:
       supabase-db:
         condition: service_healthy
     networks:
-      - kriya-network
+      - kria-network
 
   # ===========================================
   # BACKEND - Supabase Stack
@@ -54,7 +54,7 @@ services:
       retries: 30
       start_period: 10s
     networks:
-      - kriya-network
+      - kria-network
 
   # Supabase Studio (Database UI)
   supabase-studio:
@@ -62,8 +62,8 @@ services:
     environment:
       STUDIO_PG_META_URL: http://supabase-meta:8080
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      DEFAULT_ORGANIZATION_NAME: Kriya
-      DEFAULT_PROJECT_NAME: Kriya Dev
+      DEFAULT_ORGANIZATION_NAME: Kria
+      DEFAULT_PROJECT_NAME: Kria Dev
       SUPABASE_URL: http://supabase-kong:8000
       SUPABASE_PUBLIC_URL: http://localhost:54321
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
@@ -72,7 +72,7 @@ services:
       supabase-meta:
         condition: service_started
     networks:
-      - kriya-network
+      - kria-network
 
   # Supabase Auth (GoTrue)
   supabase-auth:
@@ -103,7 +103,7 @@ services:
       GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: ${TWILIO_MESSAGE_SERVICE_SID:-}
       GOTRUE_MAILER_AUTOCONFIRM: "true"
     networks:
-      - kriya-network
+      - kria-network
 
   # Supabase REST API (PostgREST)
   supabase-rest:
@@ -121,7 +121,7 @@ services:
       supabase-db:
         condition: service_healthy
     networks:
-      - kriya-network
+      - kria-network
 
   # Supabase Realtime
   supabase-realtime:
@@ -147,7 +147,7 @@ services:
       supabase-db:
         condition: service_healthy
     networks:
-      - kriya-network
+      - kria-network
 
   # Supabase Storage
   supabase-storage:
@@ -175,7 +175,7 @@ services:
       supabase-rest:
         condition: service_started
     networks:
-      - kriya-network
+      - kria-network
 
   # Supabase Meta (for Studio)
   supabase-meta:
@@ -192,7 +192,7 @@ services:
       supabase-db:
         condition: service_healthy
     networks:
-      - kriya-network
+      - kria-network
 
   # Supabase Kong (API Gateway)
   supabase-kong:
@@ -214,7 +214,7 @@ services:
       - supabase-realtime
       - supabase-storage
     networks:
-      - kriya-network
+      - kria-network
 
   # Image Proxy (for storage transformations)
   supabase-imgproxy:
@@ -226,10 +226,10 @@ services:
     volumes:
       - supabase-storage-data:/var/lib/storage:ro
     networks:
-      - kriya-network
+      - kria-network
 
 networks:
-  kriya-network:
+  kria-network:
     driver: bridge
 
 volumes:

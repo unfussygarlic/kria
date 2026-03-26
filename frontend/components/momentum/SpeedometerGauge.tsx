@@ -214,22 +214,23 @@ export function SpeedometerGauge({
               y1={CY}
               x2={tipX}
               y2={tipY}
-              stroke={T.graphite}
+              stroke={T.primary}
               strokeWidth={3}
               strokeLinecap="round"
             />
             {/* Center pivot */}
-            <Circle cx={CX} cy={CY} r={7} fill={T.graphite} />
-            <Circle cx={CX} cy={CY} r={4} fill={T.surface} />
+            <Circle cx={CX} cy={CY} r={7} fill={T.surface4} />
+            <Circle cx={CX} cy={CY} r={4} fill={T.primary} />
           </G>
         </Svg>
       </Animated.View>
 
       {/* ── Score + band label ── */}
       <View style={styles.scoreBlock}>
-        <Text style={[styles.scoreNumber, { color: band.color }]}>
-          {displayScore}
-        </Text>
+        <View style={styles.scoreRow}>
+          <Text style={styles.scoreNumber}>{displayScore}</Text>
+          <Text style={styles.scoreSuffix}>/850</Text>
+        </View>
         <View style={[styles.bandPill, { backgroundColor: band.bgColor }]}>
           <Text style={[styles.bandLabel, { color: band.textColor }]}>
             {band.label}
@@ -257,11 +258,25 @@ const styles = StyleSheet.create({
     marginTop: rw(4),
     gap: rw(6),
   },
+  scoreRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 4,
+  },
   scoreNumber: {
-    fontSize: rf(52),
+    fontSize: rf(58),
     fontWeight: "800",
-    letterSpacing: -1,
-    lineHeight: rf(56),
+    fontFamily: "SpaceGrotesk_700Bold",
+    letterSpacing: -2,
+    lineHeight: rf(62),
+    color: T.text,
+  },
+  scoreSuffix: {
+    fontSize: rf(20),
+    fontWeight: "600",
+    color: T.textMuted,
+    lineHeight: rf(34),
+    letterSpacing: -0.5,
   },
   bandPill: {
     paddingHorizontal: rw(14),

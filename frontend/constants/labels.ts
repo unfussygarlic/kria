@@ -12,7 +12,7 @@ export const L = {
   FINDER_TAGLINE: "Post gigs & hire talent",
 
   // ── App identity ──────────────────────────────────────────────────────────
-  APP_NAME: "Kriya",
+  APP_NAME: "Kria",
   TAGLINE: "Your gig marketplace",
 
   // ── Tabs ──────────────────────────────────────────────────────────────────

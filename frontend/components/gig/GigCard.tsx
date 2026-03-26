@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     color: T.textSub,
   },
   spotsTextUrgent: {
-    color: T.secondary,
+    color: T.tertiary,
     fontWeight: "600",
   },
 });

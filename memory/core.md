@@ -1,8 +1,8 @@
-# Kriya - Core Development Guide
+# Kria - Core Development Guide
 
 **For AI Agents: READ THIS FILE FIRST**
 
-This document is the entry point for all development on Kriya. Follow these instructions precisely.
+This document is the entry point for all development on Kria. Follow these instructions precisely.
 
 ---
 
@@ -16,11 +16,11 @@ This document is the entry point for all development on Kriya. Follow these inst
 - **Frontend:** Expo (React Native) - UI/UX layer
 - **Backend API:** FastAPI (Python) - Business logic, identity verification, matching
 - **Data Layer:** Supabase (PostgreSQL) - Auth + DB + Realtime + Storage
-- **Migrations:** Alembic (Python) — auto-applies on `kriya-api` container start
+- **Migrations:** Alembic (Python) — auto-applies on `kria-api` container start
 
 **What's Done:**
 - ✅ Expo SDK 54 (Node 20, React Native 0.81.5)
-- ✅ Docker: Supabase stack + FastAPI (`kriya-api` port 8001)
+- ✅ Docker: Supabase stack + FastAPI (`kria-api` port 8001)
 - ✅ Alembic migrations (5 applied — replaces old bash migration runner)
 - ✅ Mock OTP auth (OTP: 123456 for dev, email+password under the hood)
 - ✅ 4-step onboarding: First+Last Name → DOB (date picker) → Gender → City+State
@@ -69,7 +69,7 @@ CONTEXT-DEPENDENT (read based on task):
 ### Step 2: Check Current State
 ```bash
 # Check project structure
-ls -la /home/halvis/Documents/projects/kriya/
+ls -la /home/halvis/Documents/projects/kria/
 
 # Check if frontend is set up
 ls -la frontend/ 2>/dev/null || echo "Frontend not set up"
@@ -101,7 +101,7 @@ Ask the user what they want to work on, or continue from `changelog.md`.
 
 ### Phase 0.5: FastAPI Backend Setup (COMPLETE ✅)
 - [x] Create FastAPI project structure in `/backend/api/`
-- [x] FastAPI runs in Docker (`kriya-api` service, port 8000)
+- [x] FastAPI runs in Docker (`kria-api` service, port 8000)
 - [x] Create basic FastAPI app with health check (`GET /health`, `GET /health/db`)
 - [x] Implement JWT auth middleware (validate Supabase tokens)
 - [x] Configure SQLAlchemy async for Supabase PostgreSQL
@@ -168,7 +168,7 @@ Ask the user what they want to work on, or continue from `changelog.md`.
 
 ### Directory Layout
 ```
-/kriya
+/kria
 ├── memory/                         # AI agent memory (READ FIRST)
 │   ├── core.md                     # This file - entry point
 │   ├── architecture.md             # System architecture (FastAPI + Supabase)
@@ -230,7 +230,7 @@ Ask the user what they want to work on, or continue from `changelog.md`.
 | Supabase Auth | 9999 | ✅ Running | Phone OTP auth service |
 
 **Current Setup:**
-- **Backend (Docker):** Supabase + FastAPI (`kriya-api` service, port 8000)
+- **Backend (Docker):** Supabase + FastAPI (`kria-api` service, port 8000)
 - **Frontend (Local):** Expo (runs separately, not in Docker)
 
 #### Production Environment
@@ -246,13 +246,13 @@ Ask the user what they want to work on, or continue from `changelog.md`.
 
 **Terminal 1: Backend (Docker - Supabase + FastAPI)**
 ```bash
-cd /home/halvis/Documents/projects/kriya
+cd /home/halvis/Documents/projects/kria
 docker-compose --env-file .env.development -f docker-compose.yml -f docker-compose.dev.yml up
 ```
 
 **Terminal 2: Expo Frontend**
 ```bash
-cd /home/halvis/Documents/projects/kriya/frontend
+cd /home/halvis/Documents/projects/kria/frontend
 npx expo start
 ```
 
@@ -518,13 +518,13 @@ eas submit --platform all
 ### Start Full Development Stack
 ```bash
 # Terminal 1: Supabase (Docker)
-cd /home/halvis/Documents/projects/kriya
+cd /home/halvis/Documents/projects/kria
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 # FastAPI runs in Docker alongside Supabase — no separate terminal needed
 
 # Terminal 3: Expo Frontend
-cd /home/halvis/Documents/projects/kriya/frontend
+cd /home/halvis/Documents/projects/kria/frontend
 npx expo start
 ```
 
@@ -533,7 +533,7 @@ npx expo start
 **Database:**
 ```bash
 # Apply migrations
-cd /home/halvis/Documents/projects/kriya/backend
+cd /home/halvis/Documents/projects/kria/backend
 supabase db push
 
 # Generate TypeScript types

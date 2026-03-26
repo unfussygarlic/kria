@@ -1,8 +1,8 @@
-// Kriya App Configuration
+// Kria App Configuration
 
 export const Config = {
   // App info
-  appName: "Kriya",
+  appName: "Kria",
   appVersion: "1.0.0",
 
   // API

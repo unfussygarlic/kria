@@ -103,12 +103,12 @@ export const FloatingFab = memo(function FloatingFab({
       <Pressable onPress={onPress} hitSlop={16}>
         <Animated.View style={[styles.fab, { transform: [{ rotate }] }]}>
           <LinearGradient
-            colors={["#F97316", "#EA580C", "#C2410C"]}
+            colors={T.gradBrand}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-          <Feather name="plus" size={28} color="#fff" />
+          <Feather name="plus" size={28} color="#000" />
         </Animated.View>
       </Pressable>
     </View>
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#C2410C",
+    shadowColor: T.primaryContainer,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.45,
     shadowRadius: 8,

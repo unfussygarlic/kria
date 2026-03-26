@@ -1,4 +1,4 @@
-# Kriya - UX Decisions
+# Kria - UX Decisions
 
 **Last Updated:** 2026-02-14
 

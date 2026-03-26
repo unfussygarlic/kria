@@ -1,4 +1,4 @@
-# Kriya Frontend - Production Dockerfile
+# Kria Frontend - Production Dockerfile
 # Builds Expo app for production deployment
 
 FROM node:20-slim AS builder

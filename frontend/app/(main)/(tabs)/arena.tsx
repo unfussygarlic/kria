@@ -76,7 +76,7 @@ export default function ArenaScreen() {
           <Feather
             name={activeRole === "finder" ? "layers" : "briefcase"}
             size={rw(14)}
-            color="rgba(255,255,255,0.5)"
+            color={T.textMuted}
           />
           <Text style={styles.roleLabel}>{roleLabel} · Momentum</Text>
         </View>
@@ -87,7 +87,7 @@ export default function ArenaScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isLoadingMy} onRefresh={handleRefresh} tintColor={T.primary} />
+          <RefreshControl refreshing={isLoadingMy} onRefresh={handleRefresh} tintColor={T.secondary} />
         }
       >
         {/* ── Gauge ── */}
@@ -222,6 +222,7 @@ const howStyles = StyleSheet.create({
   title: {
     fontSize: rf(14),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
     marginBottom: rw(4),
   },
@@ -258,7 +259,8 @@ const styles = StyleSheet.create({
   roleLabel: {
     fontSize: rf(13),
     fontWeight: "600",
-    color: "rgba(255,255,255,0.5)",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: T.textMuted,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },

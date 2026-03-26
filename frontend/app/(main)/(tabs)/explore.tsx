@@ -128,7 +128,7 @@ export default function ExploreScreen() {
             </View>
           ) : availableGigs.length === 0 ? (
             <View style={styles.center}>
-              <Feather name="check-circle" size={52} color={T.primary200} />
+              <Feather name="check-circle" size={52} color={T.primary} />
               <Text style={styles.emptyTitle}>You're all caught up!</Text>
               <Text style={styles.emptySubtitle}>
                 No more gigs nearby right now. Check back soon.
@@ -196,15 +196,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   tabBtnActive: {
-    backgroundColor: T.textInverse,
+    backgroundColor: T.selBg,
   },
   tabBtnText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.6)",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: T.textMuted,
   },
   tabBtnTextActive: {
-    color: T.text,
+    color: T.selText,
   },
 
   // Flames deck

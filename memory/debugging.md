@@ -1,4 +1,4 @@
-# Kriya - Debugging & Known Issues
+# Kria - Debugging & Known Issues
 
 **For AI Agents: Read this before touching auth, Docker, or migrations.**
 
@@ -92,8 +92,8 @@ Production uses real Supabase Phone OTP (Twilio). Dev uses **email+password** un
 ### Flow
 1. User enters phone → `sendOtp()` → just logs, no real request
 2. User enters `123456` → `verifyOtp()` runs:
-   - Derives fake email: `{digits_only}@kriya.dev` (strips non-digits to normalize `+91...` vs `91...`)
-   - Constant password: `kriya-dev-2026`
+   - Derives fake email: `{digits_only}@kria.dev` (strips non-digits to normalize `+91...` vs `91...`)
+   - Constant password: `kria-dev-2026`
    - Tries `signInWithPassword(email, password)` first (returning users)
    - If fails → `signUp(email, password, { data: { phone } })` (new users)
    - If `signUp` returns no session → `signInWithPassword` again (GoTrue sometimes needs explicit sign-in even with autoconfirm)
@@ -210,7 +210,7 @@ consumers:
       - key: eyJhbGci...EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
 ```
 
-After changing kong.yml: `docker restart kriya_supabase-kong_1` (no DB wipe needed).
+After changing kong.yml: `docker restart kria_supabase-kong_1` (no DB wipe needed).
 
 ---
 
@@ -268,9 +268,9 @@ Alembic will re-apply all migrations automatically on the fresh DB.
 
 ### Restart single service (config change, keep DB)
 ```bash
-docker restart kriya_supabase-kong_1
+docker restart kria_supabase-kong_1
 # or
-docker restart kriya_supabase-rest_1  # etc.
+docker restart kria_supabase-rest_1  # etc.
 ```
 Note: `--force-recreate` crashes on docker-compose 1.29.2 — use `docker restart` instead.
 

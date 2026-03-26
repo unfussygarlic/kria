@@ -1,4 +1,4 @@
-# Kriya - Domain Model
+# Kria - Domain Model
 
 **Last Updated:** 2026-02-14
 

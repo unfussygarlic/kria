@@ -4,6 +4,13 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  useFonts,
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from "@expo-google-fonts/space-grotesk";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
 
@@ -14,19 +21,30 @@ export default function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
   const isLoading = useAuthStore((s) => s.isLoading);
 
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+  });
+
   useEffect(() => {
-    initialize().finally(() => {
+    if (!isLoading && fontsLoaded) {
       SplashScreen.hideAsync();
-    });
+    }
+  }, [isLoading, fontsLoaded]);
+
+  useEffect(() => {
+    initialize();
   }, []);
 
-  if (isLoading) {
+  if (isLoading || !fontsLoaded) {
     return null; // Splash screen is showing
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar style="dark" backgroundColor={T.bg} />
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: T.bg }}>
+      <StatusBar style="light" backgroundColor={T.bg} />
       <Stack
         screenOptions={{
           headerShown: false,
