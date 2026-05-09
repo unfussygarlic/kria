@@ -3,19 +3,16 @@
 # Standalone (does NOT extend docker-compose.yml).
 # Runs on a single EC2 t3a.medium.
 #
-# Usage:
-#   docker compose -f docker-compose.prod.yml up -d --build
+# Usage: bash infra/deploy.sh   (handles --env-file flag automatically)
 #
 # Required env file: .env.prod (never commit this)
 #   SUPABASE_URL=https://<ref>.supabase.co
-#   SUPABASE_ANON_KEY=...
-#   SUPABASE_SERVICE_KEY=...
-#   JWT_SECRET=...
+#   SUPABASE_SERVICE_KEY=sb_secret_...
+#   SUPABASE_JWT_SECRET=...
 #   DATABASE_URL=postgresql+asyncpg://postgres:<password>@db.<ref>.supabase.co:5432/postgres
 #   GOOGLE_MAPS_API_KEY=...
+#   ENVIRONMENT=production
 #   ANTISPOOF_MODEL_ENABLED=False   # flip to True after validating with real selfies
-
-version: '3.8'
 
 services:
 
@@ -28,13 +25,6 @@ services:
     restart: always
     env_file: .env.prod
     environment:
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
-      SUPABASE_JWT_SECRET: ${JWT_SECRET}
-      DATABASE_URL: ${DATABASE_URL}
-      ENVIRONMENT: production
-      API_VERSION: v1
-      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
       INSPECTOR_URL: http://inspector:8000
     ports:
       - "8000:8000"
