@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabase";
 
 type Step = "phone" | "otp" | "name";
 
+const DEV_OTP = "123456";
+
 const FEATURES = [
   { icon: Users,    label: "Post Gigs in Seconds" },
   { icon: BarChart3, label: "Real-time Performance Metrics" },
