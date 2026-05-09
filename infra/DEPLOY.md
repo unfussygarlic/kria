@@ -101,14 +101,14 @@ And copy the **Project URL** (e.g. `https://xxxxxxxxxxxx.supabase.co`) → `SUPA
 ### 2c. Get database connection string
 
 Click the **Connect** button at the top of the Supabase dashboard. Choose:
-- Tab: **Direct connection** (best for a persistent EC2 server)
-- Copy the URI (e.g. `postgresql://postgres:[YOUR-PASSWORD]@db.xxxxxxxxxxxx.supabase.co:5432/postgres`)
+- Tab: **Session mode** (IPv4 — required for EC2; the Direct connection tab uses IPv6 which EC2 doesn't support by default)
+- Copy the URI (e.g. `postgresql://postgres.[ref]:[YOUR-PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:5432/postgres`)
 - Replace `[YOUR-PASSWORD]` with your database password
 - Change the scheme to `postgresql+asyncpg://` for our async SQLAlchemy driver
 
 Final form:
 ```
-postgresql+asyncpg://postgres:[PASSWORD]@db.xxxxxxxxxxxx.supabase.co:5432/postgres
+postgresql+asyncpg://postgres.[ref]:[PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:5432/postgres
 ```
 
 ### 2d. Configure phone auth (Twilio)
@@ -135,7 +135,7 @@ Paste and fill in:
 SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 SUPABASE_SERVICE_KEY=sb_secret_...
 SUPABASE_JWT_SECRET=<JWT Secret from Settings → API → JWT Settings>
-DATABASE_URL=postgresql+asyncpg://postgres:[PASSWORD]@db.xxxxxxxxxxxx.supabase.co:5432/postgres
+DATABASE_URL=postgresql+asyncpg://postgres.[ref]:[PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:5432/postgres
 GOOGLE_MAPS_API_KEY=AIza...
 ANTISPOOF_MODEL_ENABLED=False
 ENVIRONMENT=production

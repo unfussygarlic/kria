@@ -133,6 +133,7 @@ export function ApplicantProfileModal({
     || applicant.languages?.length > 0 || applicant.skills?.length > 0;
 
   const band = getBand(app.momentum_score ?? null);
+  const bandColor = `var(--${band.varName})`;
 
   // ── Shared header ───────────────────────────────────────────────────────────
   const header = (
@@ -274,11 +275,11 @@ export function ApplicantProfileModal({
                         <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--sg-grid)" }}>
                           <div className="h-full rounded-full transition-all duration-500" style={{
                             width: `${Math.round(signal.bar_value * 100)}%`,
-                            backgroundColor: band.color,
-                            boxShadow: `0 0 5px ${band.color}70`,
+                            backgroundColor: bandColor,
+                            boxShadow: `0 0 5px ${bandColor}70`,
                           }} />
                         </div>
-                        <span className="text-[11px] font-semibold w-8 text-right flex-shrink-0" style={{ color: band.color }}>
+                        <span className="text-[11px] font-semibold w-8 text-right flex-shrink-0" style={{ color: bandColor }}>
                           {Math.round(signal.bar_value * 100)}%
                         </span>
                       </>
@@ -435,11 +436,11 @@ export function ApplicantProfileModal({
                       <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--sg-grid)" }}>
                         <div className="h-full rounded-full transition-all duration-500" style={{
                           width: `${Math.round(signal.bar_value * 100)}%`,
-                          backgroundColor: band.color,
-                          boxShadow: `0 0 6px ${band.color}80`,
+                          backgroundColor: bandColor,
+                          boxShadow: `0 0 6px ${bandColor}80`,
                         }} />
                       </div>
-                      <span className="text-xs font-semibold w-9 text-right flex-shrink-0" style={{ color: band.color }}>
+                      <span className="text-xs font-semibold w-9 text-right flex-shrink-0" style={{ color: bandColor }}>
                         {Math.round(signal.bar_value * 100)}%
                       </span>
                     </>
