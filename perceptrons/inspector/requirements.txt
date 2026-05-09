@@ -7,7 +7,7 @@ insightface>=0.7.3
 onnxruntime>=1.17.0          # CPU inference; swap for onnxruntime-gpu on GPU boxes
 
 # Liveness
-mediapipe>=0.10.14
+mediapipe==0.10.14
 
 # Image / video
 opencv-python-headless>=4.9.0
