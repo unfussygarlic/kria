@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inspector — ID Verification</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span class="logo-icon">⬡</span>
+      <span>Inspector</span>
+    </div>
+    <p class="tagline">Open-source ID face verification</p>
+  </header>
+
+  <main>
+    <!-- ── Capture panels ──────────────────────────────────────── -->
+    <div class="panels">
+
+      <!-- ID Card panel -->
+      <div class="panel" id="panel-id">
+        <div class="panel-header">
+          <span class="panel-label">01</span>
+          <h2>ID Card</h2>
+          <span class="panel-hint">Aadhaar · PAN · Passport</span>
+        </div>
+
+        <div class="capture-area">
+          <video id="vid-id" class="preview" autoplay playsinline muted></video>
+          <canvas id="canvas-id" class="preview hidden"></canvas>
+          <div class="capture-overlay" id="overlay-id">
+            <span>Camera off</span>
+          </div>
+        </div>
+
+        <div class="file-drop" id="drop-id">
+          <input type="file" id="file-id" accept="image/*" hidden />
+          <label for="file-id">Drop image or <u>browse</u></label>
+        </div>
+
+        <div class="panel-actions">
+          <button class="btn btn-secondary" id="btn-cam-id">Start Camera</button>
+          <button class="btn btn-primary hidden" id="btn-snap-id">Capture</button>
+          <button class="btn btn-ghost hidden"  id="btn-retry-id">Retake</button>
+        </div>
+
+        <div class="thumb-wrap hidden" id="thumb-id-wrap">
+          <img id="thumb-id" alt="ID card capture" />
+          <span class="thumb-badge thumb-ok">Captured</span>
+        </div>
+      </div>
+
+      <!-- Selfie / Video panel -->
+      <div class="panel" id="panel-selfie">
+        <div class="panel-header">
+          <span class="panel-label">02</span>
+          <h2>Selfie</h2>
+          <div class="mode-toggle">
+            <button class="toggle-btn active" id="mode-photo">Photo</button>
+            <button class="toggle-btn"        id="mode-video">Video</button>
+          </div>
+        </div>
+
+        <div class="capture-area">
+          <video id="vid-selfie" class="preview" autoplay playsinline muted></video>
+          <canvas id="canvas-selfie" class="preview hidden"></canvas>
+          <div class="capture-overlay" id="overlay-selfie">
+            <span>Camera off</span>
+          </div>
+          <div class="rec-indicator hidden" id="rec-dot">● REC</div>
+        </div>
+
+        <div class="file-drop" id="drop-selfie">
+          <input type="file" id="file-selfie" accept="image/*,video/*" hidden />
+          <label for="file-selfie">Drop image/video or <u>browse</u></label>
+        </div>
+
+        <div class="panel-actions">
+          <button class="btn btn-secondary" id="btn-cam-selfie">Start Camera</button>
+          <button class="btn btn-primary hidden" id="btn-snap-selfie">Capture</button>
+          <button class="btn btn-danger  hidden" id="btn-rec-start">Start Recording</button>
+          <button class="btn btn-danger  hidden" id="btn-rec-stop" disabled>Stop Recording</button>
+          <button class="btn btn-ghost   hidden" id="btn-retry-selfie">Retake</button>
+        </div>
+
+        <div class="thumb-wrap hidden" id="thumb-selfie-wrap">
+          <img id="thumb-selfie" alt="Selfie capture" />
+          <video id="thumb-video" controls class="hidden"></video>
+          <span class="thumb-badge thumb-ok" id="selfie-badge">Captured</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Verify button ───────────────────────────────────────── -->
+    <div class="verify-row">
+      <button class="btn btn-verify" id="btn-verify" disabled>
+        <span id="verify-label">Verify Identity</span>
+        <span id="verify-spinner" class="spinner hidden"></span>
+      </button>
+      <p class="verify-note" id="verify-note">Capture both ID card and selfie to continue</p>
+    </div>
+
+    <!-- ── Results ─────────────────────────────────────────────── -->
+    <div class="results hidden" id="results">
+      <div class="result-verdict" id="result-verdict">
+        <div class="verdict-icon" id="verdict-icon">✓</div>
+        <div>
+          <div class="verdict-title" id="verdict-title">Identity Verified</div>
+          <div class="verdict-sub"  id="verdict-sub">Faces match</div>
+        </div>
+      </div>
+
+      <!-- Spoof warning banner — hidden by default -->
+      <div class="spoof-banner hidden" id="spoof-banner">
+        <span class="spoof-icon">⚠</span>
+        <div>
+          <strong>Spoofing attempt detected</strong>
+          <span id="spoof-reason-text"></span>
+        </div>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-card">
+          <div class="result-label">Match Score</div>
+          <div class="result-value" id="res-score">—</div>
+          <div class="score-bar"><div class="score-fill" id="score-fill"></div></div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">Confidence</div>
+          <div class="result-value" id="res-confidence">—</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">Liveness</div>
+          <div class="result-value" id="res-liveness">—</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">ID Blur Score</div>
+          <div class="result-value" id="res-id-blur">—</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">Selfie Blur Score</div>
+          <div class="result-value" id="res-selfie-blur">—</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">Blinks Detected</div>
+          <div class="result-value" id="res-blinks">—</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">Anti-Spoof Score</div>
+          <div class="result-value" id="res-live-score">—</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">ID is Document</div>
+          <div class="result-value" id="res-id-document">—</div>
+        </div>
+      </div>
+
+      <details class="raw-json">
+        <summary>Raw JSON response</summary>
+        <pre id="res-raw"></pre>
+      </details>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

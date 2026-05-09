@@ -1,0 +1,64 @@
+services:
+  inspector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # To use GPU: add --build-arg BASE=nvidia/cuda:12.3.1-runtime-ubuntu22.04
+      # and swap onnxruntime → onnxruntime-gpu in requirements.txt
+    image: inspector:latest
+    container_name: inspector
+    restart: unless-stopped
+
+    # Hot-reload: source code is mounted so uvicorn --reload picks up changes instantly.
+    # Only the Python source is mounted — model weights stay in the named volume.
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+    volumes:
+      - ./api:/app/api
+      - ./services:/app/services
+      - ./utils:/app/utils
+      - ./config.py:/app/config.py
+      - ./.env:/app/.env:ro
+      - insightface_models:/root/.insightface
+
+    environment:
+      INSIGHTFACE_MODEL: buffalo_sc
+      MATCH_THRESHOLD: "0.35"
+      MIN_FACE_SIZE_PX: "50"
+      MAX_IMAGE_LONG_SIDE: "1920"
+      LIVENESS_MIN_BLINKS: "1"
+      LIVENESS_MIN_HEAD_MOVEMENT: "5.0"
+      EAR_BLINK_THRESHOLD: "0.20"
+      UPLOAD_DIR: /tmp/inspector_uploads
+      ANTISPOOF_MODEL_ENABLED: "False"
+
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 512M
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  frontend:
+    image: nginx:alpine
+    container_name: inspector-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    volumes:
+      # Hot-reload: edit any file in ./frontend and the browser sees it on next refresh
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      inspector:
+        condition: service_healthy
+
+volumes:
+  insightface_models:

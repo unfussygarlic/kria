@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KRIA GRID | Command Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#1a1d10",
+                    "secondary": "#b8c3ff",
+                    "error-container": "#93000a",
+                    "surface-variant": "#333627",
+                    "on-secondary": "#002487",
+                    "on-primary": "#2a3400",
+                    "on-tertiary-fixed-variant": "#324a54",
+                    "on-surface-variant": "#c5c9ac",
+                    "on-tertiary-container": "#506873",
+                    "on-primary-fixed-variant": "#3e4c00",
+                    "tertiary-fixed-dim": "#b1cad7",
+                    "surface-container-lowest": "#0d0f04",
+                    "on-primary-container": "#596c00",
+                    "primary": "#ffffff",
+                    "tertiary-container": "#cde7f3",
+                    "on-secondary-fixed": "#001355",
+                    "primary-fixed": "#caf300",
+                    "surface-dim": "#121508",
+                    "on-background": "#e2e4cf",
+                    "inverse-surface": "#e2e4cf",
+                    "on-primary-fixed": "#171e00",
+                    "outline": "#8f9378",
+                    "surface-tint": "#b0d500",
+                    "primary-container": "#caf300",
+                    "secondary-fixed-dim": "#b8c3ff",
+                    "outline-variant": "#444932",
+                    "error": "#ffb4ab",
+                    "tertiary-fixed": "#cde7f3",
+                    "surface-bright": "#383b2b",
+                    "inverse-primary": "#536600",
+                    "surface": "#121508",
+                    "on-secondary-fixed-variant": "#223da1",
+                    "tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#041e28",
+                    "on-tertiary": "#1b343d",
+                    "surface-container-highest": "#333627",
+                    "surface-container-high": "#292b1d",
+                    "secondary-container": "#223da1",
+                    "surface-container": "#1e2113",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b0d500",
+                    "inverse-on-surface": "#2f3223",
+                    "background": "#121508",
+                    "secondary-fixed": "#dde1ff",
+                    "on-surface": "#e2e4cf",
+                    "on-secondary-container": "#a1b1ff",
+                    "on-error": "#690005"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "base": "4px",
+                    "sm": "12px",
+                    "md": "16px",
+                    "xs": "8px",
+                    "xl": "32px",
+                    "margin": "24px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "body-sm": ["Space Grotesk"],
+                    "label-md": ["Space Grotesk"],
+                    "h2": ["Space Grotesk"],
+                    "body-md": ["Space Grotesk"],
+                    "label-lg": ["Space Grotesk"],
+                    "h1": ["Space Grotesk"],
+                    "label-sm": ["Space Grotesk"],
+                    "h3": ["Space Grotesk"],
+                    "body-lg": ["Space Grotesk"]
+            },
+            "fontSize": {
+                    "body-sm": ["14px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "h2": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "label-lg": ["14px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "h1": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["10px", {"lineHeight": "1", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                    "h3": ["24px", {"lineHeight": "1.2", "letterSpacing": "0", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #0e0e0e; overflow: hidden; }
+        .grid-overlay {
+            background-image: linear-gradient(rgba(212, 255, 0, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(212, 255, 0, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .scanline {
+            background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%);
+            height: 10px;
+            width: 100%;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="text-on-background font-body-md h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-[#0e0e0e] border-b border-white/10 flex justify-between items-center w-full px-6 h-16">
+<div class="flex items-center gap-xs">
+<span class="text-2xl font-black tracking-widest text-[#D4FF00]">KRIA GRID</span>
+</div>
+<div class="flex-1 flex justify-center px-12">
+<div class="relative w-full max-w-xl">
+<input class="w-full bg-[#131313] border border-white/10 rounded-none h-10 px-4 text-xs font-['Space_Grotesk'] tracking-widest focus:border-[#D4FF00] focus:ring-0 transition-all" placeholder="GLOBAL_SYSTEM_SEARCH..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="flex gap-sm">
+<span class="material-symbols-outlined text-white/60 hover:text-[#D4FF00] transition-colors cursor-pointer" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-white/60 hover:text-[#D4FF00] transition-colors cursor-pointer" data-icon="help_outline">help_outline</span>
+</div>
+<div class="h-8 w-8 rounded-full border border-[#D4FF00]/50 overflow-hidden">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="A sharp, high-contrast close-up portrait of a tech professional against a dark, industrial background. The lighting is dramatic, with cool blue and neon green rim lights that emphasize the futuristic command center atmosphere. The overall style is cinematic and professional, matching the void-black and solar flare yellow palette of the UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZMjrxOfIXs1yGKmjuWHtfkV3_sVNthHUOTDBcm9MK5zrVRFSy0WZievNmkIl4AU7-LpuazU3UW3LHWSvhfZkVb408VlEG9RLGAdxZbuLouwHZPmm9KAUbmWEf1ZTYQ47tukUKFOqLeqtcRruaoaJL_59f4xENXeFn4jIEfDgyxSJwZcSV4V77yb8vrZqasnyr-qv2Y6r-uw5qU58_yW8CQeci7ftji5ZQP2U-YimZL_BJsIO-OblHYII1jWqC9_OQ4FvTw9ae2O8"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 pt-16 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-[#0e0e0e] border-r border-white/10 flex flex-col pt-20 z-40">
+<div class="px-6 mb-8">
+<div class="text-[#D4FF00] font-black font-['Space_Grotesk'] text-xs tracking-widest">GRID ENGINE</div>
+<div class="text-white/40 text-[10px] font-mono tracking-tighter">V2.4.0-STABLE</div>
+</div>
+<nav class="flex-1">
+<div class="text-[#D4FF00] bg-white/5 border-l-4 border-[#D4FF00] py-3 px-4 font-['Space_Grotesk'] text-xs font-medium uppercase tracking-widest flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm" data-icon="dashboard">dashboard</span>
+                    Dashboard
+                </div>
+<div class="text-white/40 py-3 px-4 font-['Space_Grotesk'] text-xs font-medium uppercase tracking-widest flex items-center gap-xs hover:bg-white/5 hover:text-white transition-all duration-150 cursor-pointer">
+<span class="material-symbols-outlined text-sm" data-icon="bolt">bolt</span>
+                    Gig Performance
+                </div>
+<div class="text-white/40 py-3 px-4 font-['Space_Grotesk'] text-xs font-medium uppercase tracking-widest flex items-center gap-xs hover:bg-white/5 hover:text-white transition-all duration-150 cursor-pointer">
+<span class="material-symbols-outlined text-sm" data-icon="payments">payments</span>
+                    Spending
+                </div>
+<div class="text-white/40 py-3 px-4 font-['Space_Grotesk'] text-xs font-medium uppercase tracking-widest flex items-center gap-xs hover:bg-white/5 hover:text-white transition-all duration-150 cursor-pointer">
+<span class="material-symbols-outlined text-sm" data-icon="groups">groups</span>
+                    Workforce
+                </div>
+<div class="text-white/40 py-3 px-4 font-['Space_Grotesk'] text-xs font-medium uppercase tracking-widest flex items-center gap-xs hover:bg-white/5 hover:text-white transition-all duration-150 cursor-pointer">
+<span class="material-symbols-outlined text-sm" data-icon="terminal">terminal</span>
+                    System Logs
+                </div>
+</nav>
+<div class="p-6 mt-auto">
+<button class="w-full bg-[#D4FF00] text-black font-black text-[10px] py-3 tracking-widest hover:opacity-90 active:scale-95 transition-all">
+                    DEPLOY NEW NODE
+                </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-64 p-6 overflow-hidden grid-overlay relative">
+<div class="flex flex-col h-full gap-gutter">
+<!-- Hero Header Stats -->
+<div class="flex justify-between items-end">
+<div>
+<span class="font-['Space_Grotesk'] text-xs font-bold text-[#D4FF00] tracking-widest block mb-xs">ANALYTICS_V2.0 // COMMAND_VIEW</span>
+<h1 class="font-h1 text-h1 text-white leading-none">SYSTEM PERFORMANCE</h1>
+</div>
+<div class="flex gap-md text-right">
+<div>
+<div class="text-[10px] font-mono text-white/40">LATENCY</div>
+<div class="font-['Space_Grotesk'] font-bold text-[#D4FF00]">12ms</div>
+</div>
+<div>
+<div class="text-[10px] font-mono text-white/40">UPTIME</div>
+<div class="font-['Space_Grotesk'] font-bold text-[#D4FF00]">99.98%</div>
+</div>
+<div>
+<div class="text-[10px] font-mono text-white/40">SYNC_STATUS</div>
+<div class="flex items-center gap-xs justify-end">
+<span class="h-2 w-2 rounded-full bg-[#D4FF00] animate-pulse"></span>
+<span class="font-['Space_Grotesk'] font-bold text-white">OPTIMAL</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Layout Grid -->
+<div class="flex-1 grid grid-cols-12 grid-rows-6 gap-gutter min-h-0">
+<!-- Line Chart Hero -->
+<div class="col-span-8 row-span-3 bg-[#131313] border border-white/10 rounded-lg p-md flex flex-col relative overflow-hidden">
+<div class="flex justify-between items-start mb-md">
+<div>
+<h3 class="font-label-lg text-label-lg text-white uppercase">Gig Completion vs Runner Satisfaction</h3>
+<p class="text-[10px] text-white/40 font-mono">STABLE_METRICS_LAST_30_DAYS</p>
+</div>
+<div class="flex gap-sm">
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-[#D4FF00]"></span>
+<span class="text-[10px] font-mono">COMPLETION</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-[#b8c3ff]"></span>
+<span class="text-[10px] font-mono">SATISFACTION</span>
+</div>
+</div>
+</div>
+<div class="flex-1 relative flex items-end gap-xs pt-xs">
+<!-- Simulated Chart Grid -->
+<div class="absolute inset-0 border-b border-l border-white/5 pointer-events-none"></div>
+<svg class="w-full h-full" viewbox="0 0 800 200">
+<polyline fill="none" points="0,180 100,140 200,160 300,100 400,120 500,60 600,80 700,30 800,50" stroke="#D4FF00" stroke-width="3"></polyline>
+<polyline fill="none" points="0,150 100,160 200,140 300,150 400,130 500,110 600,120 700,90 800,100" stroke="#b8c3ff" stroke-dasharray="4" stroke-width="2"></polyline>
+</svg>
+</div>
+</div>
+<!-- 4-Grid Data Widgets -->
+<div class="col-span-4 row-span-3 grid grid-cols-2 grid-rows-2 gap-gutter">
+<!-- Payouts -->
+<div class="bg-[#131313] border border-white/10 p-sm rounded-lg flex flex-col justify-between">
+<span class="text-[10px] text-white/40 font-mono tracking-widest">TOTAL_PAYOUTS</span>
+<div class="mt-xs">
+<div class="text-h3 font-h3 text-white">₹8.2M</div>
+<div class="text-[#D4FF00] text-[10px] font-mono">+12.4% ▲</div>
+</div>
+<div class="h-8 w-full mt-xs opacity-50">
+<svg class="w-full h-full" viewbox="0 0 100 40">
+<path d="M0,40 L10,35 L20,38 L30,20 L40,25 L50,15 L60,18 L70,5 L80,10 L90,2 L100,0" fill="none" stroke="#D4FF00" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+<!-- Average Time -->
+<div class="bg-[#131313] border border-white/10 p-sm rounded-lg flex flex-col justify-between">
+<span class="text-[10px] text-white/40 font-mono tracking-widest">AVG_TIME_FILL</span>
+<div class="mt-xs">
+<div class="text-h3 font-h3 text-white">2.4<span class="text-sm font-light text-white/40">HRS</span></div>
+<div class="text-[#b8c3ff] text-[10px] font-mono">OPTIMIZED</div>
+</div>
+<div class="h-1 bg-[#201f1f] rounded-full overflow-hidden mt-xs">
+<div class="h-full bg-[#D4FF00] w-[82%]"></div>
+</div>
+</div>
+<!-- Retention -->
+<div class="bg-[#131313] border border-white/10 p-sm rounded-lg flex flex-col justify-between">
+<span class="text-[10px] text-white/40 font-mono tracking-widest">RETENTION_RATE</span>
+<div class="mt-xs">
+<div class="text-h3 font-h3 text-white">94.2%</div>
+<div class="text-[#D4FF00] text-[10px] font-mono">TOP_TIER</div>
+</div>
+<div class="flex gap-xs mt-xs">
+<div class="h-1 flex-1 bg-[#D4FF00]"></div>
+<div class="h-1 flex-1 bg-[#D4FF00]"></div>
+<div class="h-1 flex-1 bg-[#D4FF00]"></div>
+<div class="h-1 flex-1 bg-[#201f1f]"></div>
+</div>
+</div>
+<!-- System Efficiency -->
+<div class="bg-[#131313] border border-white/10 p-sm rounded-lg flex flex-col justify-between">
+<span class="text-[10px] text-white/40 font-mono tracking-widest">EFFICIENCY_SCORE</span>
+<div class="mt-xs">
+<div class="text-h3 font-h3 text-white">A++</div>
+<div class="text-white/60 text-[10px] font-mono">RANK_01</div>
+</div>
+<div class="flex items-center gap-xs mt-xs">
+<span class="material-symbols-outlined text-[#D4FF00] text-sm" data-icon="bolt" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="text-[10px] font-mono text-[#D4FF00]">MAX_THROUGHPUT</span>
+</div>
+</div>
+</div>
+<!-- Geographic Heatmap -->
+<div class="col-span-5 row-span-3 bg-[#131313] border border-white/10 rounded-lg overflow-hidden relative">
+<div class="absolute top-sm left-sm z-10">
+<h3 class="font-label-lg text-label-lg text-white uppercase">Density Heatmap</h3>
+<p class="text-[10px] text-white/40 font-mono">GEO_LOCK: INDIA_REGION</p>
+</div>
+<div class="absolute bottom-sm right-sm z-10 flex flex-col gap-xs text-right">
+<div class="text-[10px] font-mono"><span class="text-[#D4FF00] font-bold">MUMBAI</span> : HIGH_ACT</div>
+<div class="text-[10px] font-mono"><span class="text-[#D4FF00] font-bold">BANGALORE</span> : PEAK_DEMAND</div>
+<div class="text-[10px] font-mono"><span class="text-white/40 font-bold">DELHI</span> : STABLE</div>
+</div>
+<img class="w-full h-full object-cover opacity-60 mix-blend-luminosity" data-alt="A dark, stylized geographic map of India rendered in a monochromatic void-black and slate aesthetic. Overlaid on the map are vibrant, glowing heat zones in electric lime yellow concentrated around Mumbai, Bangalore, and Delhi. The map features a professional technical interface look with latitude and longitude coordinates and thin, glowing grid lines, perfectly fitting the high-energy command center style." data-location="Mumbai, Bangalore, Delhi" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-9LWaAKhKHCzWkEgCDnbCqFrWNT2zf-QyAoeatd97mFMapJvlhNSP2FcpC9iBPZaAek_C3uSCILl11btv3nK1DVTO4GY8-nu18l6Wd1xsNDD6HP0JTBVqSyZzx5N58K-h-4W9runYVtZYy2eljzB_wUmEQOD-7IzynQ1j9rBOnJONHAcbFRb3rJBDmhk2N9lr6tq-DpQr-nt-_fX-z4N7WqKoEME1K3jQojP6d4rSRTitbU2BCrtCApIMEc_SpE_yD5HE-sTgeq4"/>
+<!-- Heat Overlay -->
+<div class="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] to-transparent"></div>
+</div>
+<!-- Workforce Breakdown -->
+<div class="col-span-7 row-span-3 bg-[#131313] border border-white/10 rounded-lg p-md flex flex-col">
+<div class="flex justify-between items-start mb-md">
+<div>
+<h3 class="font-label-lg text-label-lg text-white uppercase">Workforce Breakdown</h3>
+<p class="text-[10px] text-white/40 font-mono">SECTOR_ALLOCATION_TOTAL: 14.2K</p>
+</div>
+<span class="material-symbols-outlined text-white/20" data-icon="groups">groups</span>
+</div>
+<div class="flex-1 flex flex-col gap-md justify-center">
+<div class="space-y-xs">
+<div class="flex justify-between text-[10px] font-mono">
+<span>HOSPITALITY</span>
+<span class="text-[#D4FF00]">42%</span>
+</div>
+<div class="h-2 bg-[#201f1f] rounded-full overflow-hidden">
+<div class="h-full bg-[#D4FF00] w-[42%]"></div>
+</div>
+</div>
+<div class="space-y-xs">
+<div class="flex justify-between text-[10px] font-mono">
+<span>LOGISTICS</span>
+<span class="text-[#D4FF00]">35%</span>
+</div>
+<div class="h-2 bg-[#201f1f] rounded-full overflow-hidden">
+<div class="h-full bg-[#b8c3ff] w-[35%]"></div>
+</div>
+</div>
+<div class="space-y-xs">
+<div class="flex justify-between text-[10px] font-mono">
+<span>IT_SUPPORT</span>
+<span class="text-[#D4FF00]">23%</span>
+</div>
+<div class="h-2 bg-[#201f1f] rounded-full overflow-hidden">
+<div class="h-full bg-white w-[23%]"></div>
+</div>
+</div>
+</div>
+<div class="mt-md pt-sm border-t border-white/5 flex justify-between">
+<div class="flex items-center gap-sm">
+<div class="text-center">
+<div class="text-[10px] text-white/40 font-mono">ACTIVE</div>
+<div class="text-sm font-bold">12.1K</div>
+</div>
+<div class="text-center">
+<div class="text-[10px] text-white/40 font-mono">STANDBY</div>
+<div class="text-sm font-bold">2.1K</div>
+</div>
+</div>
+<button class="text-[10px] font-bold text-[#D4FF00] tracking-widest uppercase hover:underline">Download Report</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Status Bar Footer -->
+<footer class="fixed bottom-0 left-0 right-0 h-8 bg-[#0e0e0e] border-t border-white/5 z-50 flex items-center justify-between px-6">
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs">
+<span class="h-1.5 w-1.5 rounded-full bg-[#D4FF00]"></span>
+<span class="text-[10px] font-mono text-white/40 tracking-widest uppercase">Kernel.Stable_Release_v2.4</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="h-1.5 w-1.5 rounded-full bg-[#b8c3ff]"></span>
+<span class="text-[10px] font-mono text-white/40 tracking-widest uppercase">Api.Response.Ok_200</span>
+</div>
+</div>
+<div class="text-[10px] font-mono text-white/40 uppercase tracking-widest">
+            Encryption: AES-256-GCM | Node: India-South-01
+        </div>
+</footer>
+</body></html>

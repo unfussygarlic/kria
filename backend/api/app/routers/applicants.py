@@ -4,27 +4,32 @@ Routes:
   GET  /api/v1/gigs/{gig_id}/applicants                  → list all applicants
   POST /api/v1/applicants/{application_id}/accept         → accept an applicant
   POST /api/v1/applicants/{application_id}/reject         → reject an applicant
-  POST /api/v1/assignments/{assignment_id}/verify-otp     → seeker enters OTP to mark attended
+  POST /api/v1/assignments/{assignment_id}/verify-otp     → runner enters OTP to mark attended
   POST /api/v1/assignments/{assignment_id}/no-show        → poster marks worker as no-show
 """
 
 import secrets
 from datetime import datetime
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.middleware import CurrentUser
 from app.db.session import get_db
+from app.services.badge_service import check_gig_badges
 from app.models.applicant import (
     ApplicantListItem,
     ApplicantListResponse,
     ApplicantProfile,
     ApplicationActionResponse,
+    GlobalApplicantItem,
+    GlobalApplicantListResponse,
     OtpVerifyRequest,
 )
-from app.services.momentum_calculator import recalculate_momentum
+from app.momentum.recalculate import recalculate_momentum
+from app.momentum.config import WORKER_PENALTIES
 
 # ---------------------------------------------------------------------------
 # OTP helpers
@@ -42,6 +47,131 @@ router = APIRouter(tags=["applicants"])
 
 
 # ---------------------------------------------------------------------------
+# GET /applicants  — all applicants across the host's gigs (single query)
+# ---------------------------------------------------------------------------
+
+@router.get("/applicants", response_model=GlobalApplicantListResponse)
+async def list_all_applicants(
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+    status: Literal["pending", "accepted", "all"] = Query(default="all"),
+) -> GlobalApplicantListResponse:
+    """
+    Return all applicants across every gig the caller has posted.
+
+    Single JOIN query — O(applicants). Ordered by gig event_date ASC so the
+    most urgent gigs surface first; pending applications sort before accepted
+    within each gig.
+    """
+    rows = await db.execute(
+        text("""
+            SELECT
+                ga.id                AS application_id,
+                ga.status,
+                ga.applied_at,
+                ga.responded_at,
+                ga.message,
+                p.id                 AS applicant_id,
+                p.display_name,
+                p.first_name,
+                p.last_name,
+                p.avatar_url,
+                p.bio,
+                p.city               AS applicant_city,
+                p.gender,
+                p.worker_reputation,
+                p.total_gigs_completed,
+                p.reliability_score,
+                p.is_verified,
+                p.id_verified,
+                p.languages,
+                p.skills,
+                COALESCE(p.work_experience, '[]'::jsonb)   AS work_experience,
+                COALESCE(p.education_entries, '[]'::jsonb) AS education_entries,
+                asgn.id              AS assignment_id,
+                asgn.status          AS assignment_status,
+                asgn.otp             AS assignment_otp,
+                (r.id IS NOT NULL)   AS has_been_rated,
+                mp.worker_score      AS momentum_score,
+                g.id                 AS gig_id,
+                g.title              AS gig_title,
+                g.event_date         AS gig_date,
+                g.city               AS gig_city,
+                g.slots_filled       AS gig_slots_filled,
+                g.slots_total        AS gig_slots_total
+            FROM gig_applications ga
+            JOIN gigs g ON g.id = ga.gig_id
+            JOIN profiles p ON p.id = ga.applicant_id
+            LEFT JOIN gig_assignments asgn
+                ON asgn.gig_id = ga.gig_id AND asgn.worker_id = ga.applicant_id
+            LEFT JOIN ratings r
+                ON r.gig_id = ga.gig_id
+               AND r.rater_id = :rater_id
+               AND r.ratee_id = p.id
+               AND r.rating_type = 'worker_rating'
+            LEFT JOIN momentum_profiles mp ON mp.user_id = p.id
+            WHERE g.poster_id = :poster_id
+              AND (:status = 'all' OR ga.status::text = :status)
+            ORDER BY
+                g.event_date ASC,
+                CASE ga.status::text WHEN 'pending' THEN 0 ELSE 1 END ASC,
+                ga.applied_at ASC
+        """),
+        {"poster_id": current_user.user_id, "rater_id": current_user.user_id, "status": status},
+    )
+    data = rows.mappings().all()
+
+    applicants = [
+        GlobalApplicantItem(
+            application_id=str(row["application_id"]),
+            status=row["status"],
+            applied_at=row["applied_at"],
+            responded_at=row["responded_at"],
+            message=row["message"],
+            applicant=ApplicantProfile(
+                id=str(row["applicant_id"]),
+                display_name=row["display_name"],
+                first_name=row["first_name"],
+                last_name=row["last_name"],
+                avatar_url=row["avatar_url"],
+                bio=row["bio"],
+                city=row["applicant_city"],
+                gender=row["gender"],
+                worker_reputation=row["worker_reputation"],
+                total_gigs_completed=row["total_gigs_completed"] or 0,
+                reliability_score=float(row["reliability_score"]) if row["reliability_score"] is not None else 1.0,
+                is_verified=bool(row["is_verified"]),
+                id_verified=bool(row["id_verified"]),
+                languages=list(row["languages"] or []),
+                skills=list(row["skills"] or []),
+                work_experience=list(row["work_experience"] or []),
+                education_entries=list(row["education_entries"] or []),
+            ),
+            assignment_id=str(row["assignment_id"]) if row["assignment_id"] else None,
+            assignment_status=row["assignment_status"],
+            assignment_otp=row["assignment_otp"],
+            has_been_rated=bool(row["has_been_rated"]),
+            momentum_score=int(row["momentum_score"]) if row["momentum_score"] is not None else None,
+            gig_id=str(row["gig_id"]),
+            gig_title=row["gig_title"],
+            gig_date=str(row["gig_date"]),
+            gig_city=row["gig_city"],
+            gig_slots_filled=row["gig_slots_filled"],
+            gig_slots_total=row["gig_slots_total"],
+        )
+        for row in data
+    ]
+
+    pending_count = sum(1 for a in applicants if a.status == "pending")
+
+    return GlobalApplicantListResponse(
+        total=len(applicants),
+        pending_count=pending_count,
+        applicants=applicants,
+    )
+
+
+# ---------------------------------------------------------------------------
 # GET /gigs/{gig_id}/applicants
 # ---------------------------------------------------------------------------
 
@@ -50,8 +180,10 @@ async def list_applicants(
     gig_id: str,
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
+    sort: Literal["momentum_desc", "momentum_asc", "newest", "oldest"] = Query(default="momentum_desc"),
+    filter_status: Literal["pending", "accepted", "all"] = Query(default="all", alias="status"),
 ) -> ApplicantListResponse:
-    """Return all applicants for a gig.  Caller must be the gig's poster."""
+    """Return applicants for a gig.  Caller must be the gig's poster."""
 
     # Verify ownership
     gig_row = await db.execute(
@@ -64,8 +196,15 @@ async def list_applicants(
     if str(gig["poster_id"]) != current_user.user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your gig.")
 
+    sort_clause = {
+        "momentum_desc": "COALESCE(mp.worker_score, 0) DESC, ga.applied_at ASC",
+        "momentum_asc":  "COALESCE(mp.worker_score, 0) ASC,  ga.applied_at ASC",
+        "newest":        "ga.applied_at DESC",
+        "oldest":        "ga.applied_at ASC",
+    }[sort]
+
     rows = await db.execute(
-        text("""
+        text(f"""
             SELECT
                 ga.id           AS application_id,
                 ga.status,
@@ -92,21 +231,23 @@ async def list_applicants(
                 asgn.id         AS assignment_id,
                 asgn.status     AS assignment_status,
                 asgn.otp        AS assignment_otp,
-                (
-                    SELECT COUNT(*) FROM ratings r
-                    WHERE r.gig_id = ga.gig_id
-                      AND r.rater_id = :poster_id
-                      AND r.ratee_id = p.id
-                      AND r.rating_type = 'worker_rating'
-                ) > 0           AS has_been_rated
+                (r.id IS NOT NULL) AS has_been_rated,
+                mp.worker_score AS momentum_score
             FROM gig_applications ga
             JOIN profiles p ON p.id = ga.applicant_id
             LEFT JOIN gig_assignments asgn
                 ON asgn.gig_id = ga.gig_id AND asgn.worker_id = ga.applicant_id
+            LEFT JOIN ratings r
+                ON r.gig_id = ga.gig_id
+               AND r.rater_id = :poster_id
+               AND r.ratee_id = p.id
+               AND r.rating_type = 'worker_rating'
+            LEFT JOIN momentum_profiles mp ON mp.user_id = p.id
             WHERE ga.gig_id = :gig_id
-            ORDER BY ga.applied_at ASC
+              AND (:filter_status = 'all' OR ga.status::text = :filter_status)
+            ORDER BY {sort_clause}
         """),
-        {"gig_id": gig_id, "poster_id": current_user.user_id},
+        {"gig_id": gig_id, "poster_id": current_user.user_id, "filter_status": filter_status},
     )
     data = rows.mappings().all()
 
@@ -140,6 +281,7 @@ async def list_applicants(
             assignment_status=row["assignment_status"],
             assignment_otp=row["assignment_otp"],
             has_been_rated=bool(row["has_been_rated"]),
+            momentum_score=int(row["momentum_score"]) if row["momentum_score"] is not None else None,
         )
         for row in data
     ]
@@ -211,7 +353,7 @@ async def accept_applicant(
     )
 
     # 2. Determine OTP — per-gig: reuse any existing code for this gig,
-    #    so all accepted workers share the same OTP (finder shows one code at the venue).
+    #    so all accepted workers share the same OTP (host shows one code at the venue).
     #    To switch to per-assignment: replace the SELECT with `otp = _generate_otp()`.
     existing_otp_row = await db.execute(
         text("SELECT otp FROM gig_assignments WHERE gig_id = :gig_id AND otp IS NOT NULL LIMIT 1"),
@@ -303,7 +445,7 @@ async def reject_applicant(
 
 
 # ---------------------------------------------------------------------------
-# POST /assignments/{assignment_id}/verify-otp  (called by seeker)
+# POST /assignments/{assignment_id}/verify-otp  (called by runner)
 # ---------------------------------------------------------------------------
 
 @router.post("/assignments/{assignment_id}/verify-otp", response_model=ApplicationActionResponse)
@@ -314,7 +456,7 @@ async def verify_otp(
     db: AsyncSession = Depends(get_db),
 ) -> ApplicationActionResponse:
     """
-    Seeker enters the OTP shown to the finder.
+    Runner enters the OTP shown to the host.
     On success: assignment → completed, rating unlocked for both parties.
     """
     row = await db.execute(
@@ -354,8 +496,8 @@ async def verify_otp(
     )
     await db.commit()
 
-    # Worker completed a gig — update their momentum (gig_count + show_rate)
-    await recalculate_momentum(str(asgn["worker_id"]), db)
+    await recalculate_momentum(str(asgn["worker_id"]), db, event_type="gig_complete", gig_id=str(asgn["gig_id"]))
+    await check_gig_badges(db, str(asgn["worker_id"]))
 
     return ApplicationActionResponse(
         ok=True,
@@ -398,19 +540,25 @@ async def no_show_assignment(
         )
 
     worker_id = str(asgn["worker_id"])
+    gig_id    = str(asgn["gig_id"])
 
     await db.execute(
-        text("""
-            UPDATE gig_assignments
-            SET status = 'no_show'
-            WHERE id = :asgn_id
-        """),
+        text("UPDATE gig_assignments SET status = 'no_show' WHERE id = :asgn_id"),
         {"asgn_id": assignment_id},
+    )
+
+    # Write penalty to momentum_profiles before recalculating
+    await db.execute(
+        text("""
+            UPDATE momentum_profiles
+            SET worker_penalty_points = worker_penalty_points + :penalty
+            WHERE user_id = :uid
+        """),
+        {"penalty": WORKER_PENALTIES["no_show"], "uid": worker_id},
     )
     await db.commit()
 
-    # Update worker's momentum (show_rate drops)
-    await recalculate_momentum(worker_id, db)
+    await recalculate_momentum(worker_id, db, event_type="no_show", gig_id=gig_id)
 
     return ApplicationActionResponse(
         ok=True,

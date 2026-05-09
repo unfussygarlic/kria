@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,9 +9,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.middleware import CurrentUser
 from app.db.session import get_db
 from app.models.gig import GigMatchRequest, GigMatchResponse
-from app.services.matching import match_gigs_for_worker
+from app.recommendations.engine import match_gigs_for_worker
+from app.recommendations.models import LocationUpdateRequest
 
 router = APIRouter(prefix="/gigs", tags=["gigs"])
+
+
+# ── Posted-gig summary types ─────────────────────────────────────────────────
+
+class PostedGigSummary(BaseModel):
+    id: str
+    title: str
+    city: str
+    event_date: str
+    status: str
+    slots_total: int
+    slots_filled: int
+    pending_count: int
+
+
+class PostedGigsResponse(BaseModel):
+    items: list[PostedGigSummary]
+    total: int
 
 
 # ── Accepted gig types ──────────────────────────────────────────────────────
@@ -20,6 +39,7 @@ class AcceptedGigPoster(BaseModel):
     id: str
     display_name: str
     avatar_url: Optional[str] = None
+    reputation: Optional[float] = None
 
 
 class AcceptedGigItem(BaseModel):
@@ -32,6 +52,8 @@ class AcceptedGigItem(BaseModel):
     company_name: Optional[str] = None
     venue_name: str
     city: str
+    venue_lat: Optional[float] = None
+    venue_lng: Optional[float] = None
     event_date: str
     shift_start_time: str
     shift_end_time: str
@@ -47,6 +69,51 @@ class AcceptedGigsResponse(BaseModel):
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
+
+@router.get("/mine", response_model=PostedGigsResponse)
+async def get_my_posted_gigs(
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> PostedGigsResponse:
+    """
+    Lightweight list of gigs the caller posted, with pending application count.
+    Powers the Applications page left panel. MUST be defined before /{gig_id}.
+    """
+    rows = await db.execute(
+        text("""
+            SELECT
+                g.id,
+                g.title,
+                g.city,
+                g.event_date::TEXT,
+                g.status,
+                g.slots_total,
+                g.slots_filled,
+                COUNT(ga.id) FILTER (WHERE ga.status = 'pending') AS pending_count
+            FROM gigs g
+            LEFT JOIN gig_applications ga ON ga.gig_id = g.id
+            WHERE g.poster_id = :poster_id
+            GROUP BY g.id
+            ORDER BY g.event_date ASC
+        """),
+        {"poster_id": current_user.user_id},
+    )
+    data = rows.mappings().all()
+    items = [
+        PostedGigSummary(
+            id=str(row["id"]),
+            title=row["title"],
+            city=row["city"],
+            event_date=str(row["event_date"]),
+            status=row["status"],
+            slots_total=row["slots_total"],
+            slots_filled=row["slots_filled"],
+            pending_count=int(row["pending_count"] or 0),
+        )
+        for row in data
+    ]
+    return PostedGigsResponse(items=items, total=len(items))
+
 
 @router.get("/my-accepted", response_model=AcceptedGigsResponse)
 async def get_my_accepted_gigs(
@@ -70,14 +137,17 @@ async def get_my_accepted_gigs(
                 g.company_name,
                 g.venue_name,
                 g.city,
+                g.venue_lat,
+                g.venue_lng,
                 g.event_date::TEXT,
                 g.shift_start_time::TEXT,
                 g.shift_end_time::TEXT,
                 g.pay_amount,
                 g.pay_type,
-                p.id            AS poster_id,
-                p.display_name  AS poster_name,
-                p.avatar_url    AS poster_avatar,
+                p.id               AS poster_id,
+                p.display_name     AS poster_name,
+                p.avatar_url       AS poster_avatar,
+                p.poster_reputation AS poster_reputation,
                 (
                     SELECT COUNT(*) FROM ratings r
                     WHERE r.gig_id = g.id
@@ -108,6 +178,8 @@ async def get_my_accepted_gigs(
             company_name=row["company_name"],
             venue_name=row["venue_name"],
             city=row["city"],
+            venue_lat=row["venue_lat"],
+            venue_lng=row["venue_lng"],
             event_date=str(row["event_date"]),
             shift_start_time=str(row["shift_start_time"]),
             shift_end_time=str(row["shift_end_time"]),
@@ -117,6 +189,7 @@ async def get_my_accepted_gigs(
                 id=str(row["poster_id"]),
                 display_name=row["poster_name"],
                 avatar_url=row["poster_avatar"],
+                reputation=float(row["poster_reputation"]) if row["poster_reputation"] is not None else None,
             ),
             has_been_rated=bool(row["has_been_rated"]),
         )
@@ -124,6 +197,46 @@ async def get_my_accepted_gigs(
     ]
 
     return AcceptedGigsResponse(items=items, total=len(items))
+
+
+@router.patch("/{gig_id}/location", status_code=204)
+async def update_gig_location(
+    gig_id: str,
+    body: LocationUpdateRequest,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """
+    Set the PostGIS location_point on a gig after geocoding.
+    Only the poster can update their own gig's location.
+    """
+    row = await db.execute(
+        text("SELECT poster_id FROM gigs WHERE id = :id"),
+        {"id": gig_id},
+    )
+    gig = row.mappings().first()
+    if not gig:
+        raise HTTPException(status_code=404, detail="Gig not found")
+    if str(gig["poster_id"]) != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not your gig")
+
+    await db.execute(
+        text("""
+            UPDATE gigs
+            SET location_point = ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+                venue_lat = :lat,
+                venue_lng = :lng,
+                venue_formatted_address = :formatted_address
+            WHERE id = :id
+        """),
+        {
+            "lat": body.latitude,
+            "lng": body.longitude,
+            "formatted_address": body.formatted_address or None,
+            "id": gig_id,
+        },
+    )
+    await db.commit()
 
 
 @router.post("/match", response_model=GigMatchResponse)

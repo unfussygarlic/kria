@@ -37,6 +37,7 @@ class ApplicantListItem(BaseModel):
     assignment_status: Optional[str] = None
     assignment_otp: Optional[str] = None
     has_been_rated: bool = False
+    momentum_score: Optional[int] = None
 
 
 class OtpVerifyRequest(BaseModel):
@@ -54,3 +55,19 @@ class ApplicationActionResponse(BaseModel):
     application_id: str
     new_status: str
     message: str
+
+
+class GlobalApplicantItem(ApplicantListItem):
+    momentum_score: Optional[int] = None
+    gig_id: str
+    gig_title: str
+    gig_date: str      # ISO date string, e.g. "2026-05-10"
+    gig_city: str
+    gig_slots_filled: int
+    gig_slots_total: int
+
+
+class GlobalApplicantListResponse(BaseModel):
+    total: int
+    pending_count: int
+    applicants: list[GlobalApplicantItem]

@@ -8,7 +8,7 @@ Per-gig OTP flow:
   - otp: 6-char code generated when first worker is accepted for a gig.
          All workers on the same gig share the same value for now.
          Future: generate per-row for per-assignment OTP (no schema change needed).
-  - otp_verified_at: set when the seeker successfully enters the code.
+  - otp_verified_at: set when the runner successfully enters the code.
                      NULL = not yet verified (pending or no-show).
 """
 
@@ -27,11 +27,11 @@ ALTER TABLE gig_assignments
   ADD COLUMN otp_verified_at  TIMESTAMPTZ;
 
 COMMENT ON COLUMN gig_assignments.otp IS
-  'Check-in OTP shown to finder. Shared across all assignments for the same gig (per-gig mode). '
+  'Check-in OTP shown to host. Shared across all assignments for the same gig (per-gig mode). '
   'Change generation logic in accept_applicant to switch to per-assignment mode.';
 
 COMMENT ON COLUMN gig_assignments.otp_verified_at IS
-  'Timestamp when seeker successfully entered the OTP. NULL until verified.';
+  'Timestamp when runner successfully entered the OTP. NULL until verified.';
     """)
 
 

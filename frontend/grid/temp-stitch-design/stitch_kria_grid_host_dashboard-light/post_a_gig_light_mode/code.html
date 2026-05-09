@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-secondary": "#ffffff",
+                "surface-variant": "#e2e4cf",
+                "secondary": "#4858ab",
+                "on-primary": "#ffffff",
+                "tertiary-fixed": "#e5e2e1",
+                "error": "#ba1a1a",
+                "tertiary": "#5f5e5e",
+                "surface-container-lowest": "#ffffff",
+                "inverse-on-surface": "#f1f2dc",
+                "primary": "#536600",
+                "on-error": "#ffffff",
+                "surface-container": "#eef0da",
+                "secondary-fixed-dim": "#bac3ff",
+                "on-surface-variant": "#444932",
+                "surface": "#f9fbe5",
+                "on-background": "#1a1d10",
+                "surface-container-highest": "#e2e4cf",
+                "tertiary-container": "#f0eded",
+                "secondary-container": "#96a5ff",
+                "primary-container": "#d4ff00",
+                "on-tertiary": "#ffffff",
+                "tertiary-fixed-dim": "#c8c6c5",
+                "on-secondary-container": "#27378a",
+                "on-tertiary-container": "#6c6b6b",
+                "on-primary-container": "#5f7400",
+                "surface-container-low": "#f4f5df",
+                "surface-container-high": "#e8ead4",
+                "surface-dim": "#dadcc6",
+                "inverse-primary": "#b0d500",
+                "on-surface": "#1a1d10",
+                "primary-fixed": "#caf300",
+                "on-tertiary-fixed": "#1c1b1b",
+                "inverse-surface": "#2f3223",
+                "surface-tint": "#536600",
+                "primary-fixed-dim": "#b0d500",
+                "on-primary-fixed": "#171e00",
+                "on-primary-fixed-variant": "#3e4c00",
+                "error-container": "#ffdad6",
+                "outline": "#757a60",
+                "on-error-container": "#93000a",
+                "secondary-fixed": "#dee0ff",
+                "on-secondary-fixed-variant": "#2f3f92",
+                "on-secondary-fixed": "#00105b",
+                "surface-bright": "#f9fbe5",
+                "outline-variant": "#c5c9ac",
+                "on-tertiary-fixed-variant": "#474646",
+                "background": "#f9fbe5"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "gutter": "20px",
+                "xl": "32px",
+                "base": "4px",
+                "lg": "24px",
+                "xs": "8px",
+                "margin": "40px",
+                "md": "16px",
+                "sm": "12px"
+            },
+            "fontFamily": {
+                "h2": ["Space Grotesk"],
+                "body-lg": ["Space Grotesk"],
+                "label-lg": ["Space Grotesk"],
+                "body-md": ["Space Grotesk"],
+                "h1": ["Space Grotesk"],
+                "body-sm": ["Space Grotesk"],
+                "h3": ["Space Grotesk"],
+                "label-md": ["Space Grotesk"]
+            },
+            "fontSize": {
+                "h2": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "label-lg": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "h1": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                "h3": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.04em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f9fbe5;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<aside class="fixed left-0 top-0 h-full w-64 border-r border-zinc-100 bg-white flex flex-col py-6 z-50">
+<div class="px-6 mb-10">
+<h1 class="text-lg font-black text-zinc-900 font-h1">Kria Grid</h1>
+<p class="font-label-md text-zinc-500 uppercase tracking-widest mt-1">Host Management</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 font-label-lg uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+                Dashboard
+            </a>
+<a class="bg-zinc-900 text-lime-400 rounded-sm mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out font-label-lg uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="work" style="font-variation-settings: 'FILL' 1;">work</span>
+                Gigs
+            </a>
+<a class="mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 font-label-lg uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+                Events
+            </a>
+<a class="mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 font-label-lg uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+                Profile
+            </a>
+<a class="mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 font-label-lg uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="corporate_fare">corporate_fare</span>
+                Org
+            </a>
+</nav>
+<div class="mt-auto px-2 space-y-2">
+<a class="px-4 py-3 flex items-center gap-3 text-zinc-500 hover:text-zinc-900 transition-colors font-label-lg uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+                Help Center
+            </a>
+<a class="px-4 py-3 flex items-center gap-3 text-zinc-500 hover:text-zinc-900 transition-colors font-label-lg uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                Sign Out
+            </a>
+</div>
+</aside>
+<header class="fixed top-0 right-0 left-64 h-16 flex items-center justify-between px-8 z-40 bg-white/90 backdrop-blur-md border-b border-zinc-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+<div class="flex items-center gap-4">
+<span class="font-h3 text-zinc-900">Post a New Gig</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<button class="p-2 text-zinc-500 hover:bg-zinc-50 rounded-full transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-zinc-500 hover:bg-zinc-50 rounded-full transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+<div class="h-8 w-8 rounded-full bg-zinc-200 overflow-hidden border border-zinc-100">
+<img alt="Host User Profile" class="h-full w-full object-cover" data-alt="Close-up portrait of a professional male recruiter in a modern office environment. The lighting is soft and natural, emphasizing a trustworthy and professional atmosphere. He is wearing a minimalist, high-quality charcoal shirt. The background is a blurred, high-end corporate setting with lime-green architectural accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOd3jJK0t_E71ibk7XJrkgJz3AIQ2qEOljAuqsLseG-7VGV6mgGb6LDF3db9ksDk6lTXLzcwuA594PK5SYHljXlJgN4yIiyfXtRg9bFLXXP4-Omqa7jEqWjEXQvGmvXREB2lDBhF8G6WaksRcSRsbaxFjpgX8clLONGRgDouKBW51QLAR_6xeikO-Nc_JfiRnngqoIxYJl9MWachmEZIs2F0diuS-tvzFiM8t45FD3lYS87CWQYQSiPpZz5uhMSBnCaw5zzrDIXpU"/>
+</div>
+</div>
+</header>
+<main class="ml-64 pt-16 min-h-screen">
+<div class="max-w-[1280px] mx-auto p-margin">
+<nav class="flex items-center justify-between mb-12">
+<div class="flex items-center gap-sm">
+<div class="flex items-center gap-xs">
+<span class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold font-label-lg">1</span>
+<span class="font-label-lg text-zinc-900 uppercase">Category</span>
+</div>
+<div class="w-12 h-px bg-zinc-200 mx-4"></div>
+<div class="flex items-center gap-xs">
+<span class="w-8 h-8 rounded-full border border-zinc-200 text-zinc-400 flex items-center justify-center font-bold font-label-lg">2</span>
+<span class="font-label-lg text-zinc-400 uppercase">Details</span>
+</div>
+<div class="w-12 h-px bg-zinc-200 mx-4"></div>
+<div class="flex items-center gap-xs">
+<span class="w-8 h-8 rounded-full border border-zinc-200 text-zinc-400 flex items-center justify-center font-bold font-label-lg">3</span>
+<span class="font-label-lg text-zinc-400 uppercase">Pricing</span>
+</div>
+<div class="w-12 h-px bg-zinc-200 mx-4"></div>
+<div class="flex items-center gap-xs">
+<span class="w-8 h-8 rounded-full border border-zinc-200 text-zinc-400 flex items-center justify-center font-bold font-label-lg">4</span>
+<span class="font-label-lg text-zinc-400 uppercase">Review</span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-2 border border-zinc-200 text-zinc-900 font-label-lg uppercase tracking-widest hover:bg-zinc-50 transition-colors">Save Draft</button>
+<button class="px-6 py-2 bg-primary-container text-on-primary-container font-label-lg uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:scale-95">Next Step</button>
+</div>
+</nav>
+<div class="grid grid-cols-12 gap-gutter">
+<div class="col-span-8">
+<section class="bg-white border border-black/5 p-xl rounded-lg">
+<h2 class="font-h2 text-zinc-900 mb-xs">Step 1: Select Category</h2>
+<p class="font-body-md text-zinc-500 mb-lg">What kind of talent are you looking to recruit for this gig?</p>
+<div class="grid grid-cols-3 gap-md">
+<button class="flex flex-col items-center p-lg border-2 border-primary-container bg-primary-container/5 text-zinc-900 rounded-lg group transition-all">
+<div class="w-12 h-12 flex items-center justify-center bg-primary-container rounded-full mb-md group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-zinc-900" data-icon="terminal">terminal</span>
+</div>
+<span class="font-label-lg uppercase tracking-widest">Engineering</span>
+<span class="font-body-sm text-zinc-500 text-center mt-2">Frontend, Backend, Devops</span>
+</button>
+<button class="flex flex-col items-center p-lg border border-zinc-100 hover:border-zinc-300 bg-white text-zinc-900 rounded-lg group transition-all">
+<div class="w-12 h-12 flex items-center justify-center bg-zinc-50 rounded-full mb-md group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-zinc-500 group-hover:text-zinc-900" data-icon="brush">brush</span>
+</div>
+<span class="font-label-lg uppercase tracking-widest">Creative</span>
+<span class="font-body-sm text-zinc-500 text-center mt-2">UI/UX, Visual, Content</span>
+</button>
+<button class="flex flex-col items-center p-lg border border-zinc-100 hover:border-zinc-300 bg-white text-zinc-900 rounded-lg group transition-all">
+<div class="w-12 h-12 flex items-center justify-center bg-zinc-50 rounded-full mb-md group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-zinc-500 group-hover:text-zinc-900" data-icon="trending_up">trending_up</span>
+</div>
+<span class="font-label-lg uppercase tracking-widest">Growth</span>
+<span class="font-body-sm text-zinc-500 text-center mt-2">Marketing, SEO, Sales</span>
+</button>
+<button class="flex flex-col items-center p-lg border border-zinc-100 hover:border-zinc-300 bg-white text-zinc-900 rounded-lg group transition-all">
+<div class="w-12 h-12 flex items-center justify-center bg-zinc-50 rounded-full mb-md group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-zinc-500 group-hover:text-zinc-900" data-icon="inventory_2">inventory_2</span>
+</div>
+<span class="font-label-lg uppercase tracking-widest">Product</span>
+<span class="font-body-sm text-zinc-500 text-center mt-2">Management, QA, Data</span>
+</button>
+<button class="flex flex-col items-center p-lg border border-zinc-100 hover:border-zinc-300 bg-white text-zinc-900 rounded-lg group transition-all">
+<div class="w-12 h-12 flex items-center justify-center bg-zinc-50 rounded-full mb-md group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-zinc-500 group-hover:text-zinc-900" data-icon="support_agent">support_agent</span>
+</div>
+<span class="font-label-lg uppercase tracking-widest">Support</span>
+<span class="font-body-sm text-zinc-500 text-center mt-2">Customer, Tech Support</span>
+</button>
+<button class="flex flex-col items-center p-lg border border-zinc-100 hover:border-zinc-300 bg-white text-zinc-900 rounded-lg group transition-all">
+<div class="w-12 h-12 flex items-center justify-center bg-zinc-50 rounded-full mb-md group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-zinc-500 group-hover:text-zinc-900" data-icon="add_circle">add_circle</span>
+</div>
+<span class="font-label-lg uppercase tracking-widest">Other</span>
+<span class="font-body-sm text-zinc-500 text-center mt-2">Custom Role Types</span>
+</button>
+</div>
+</section>
+<section class="mt-gutter grid grid-cols-2 gap-gutter">
+<div class="bg-white border border-black/5 p-lg rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+<h4 class="font-label-lg text-zinc-900 uppercase mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-lime-600" data-icon="verified">verified</span>
+                                Quality Assurance
+                            </h4>
+<p class="font-body-sm text-zinc-600">All gigs are reviewed by our platform moderators within 24 hours to ensure high-quality listings for our elite talent pool.</p>
+</div>
+<div class="bg-zinc-900 text-white p-lg rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+<h4 class="font-label-lg text-lime-400 uppercase mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="bolt" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                                Instant Matching
+                            </h4>
+<p class="font-body-sm text-zinc-400">Post and get matched with top 5% talent instantly using our AI-driven Kria Grid algorithm.</p>
+</div>
+</section>
+</div>
+<div class="col-span-4">
+<section class="bg-white border border-black/5 p-xl rounded-lg sticky top-24">
+<h3 class="font-h3 text-zinc-900 mb-lg">Basic Info</h3>
+<form class="space-y-md">
+<div>
+<label class="block font-label-md text-zinc-500 uppercase mb-xs">Gig Title</label>
+<input class="w-full border border-black/10 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all" placeholder="e.g. Senior React Developer" type="text"/>
+</div>
+<div>
+<label class="block font-label-md text-zinc-500 uppercase mb-xs">Description</label>
+<textarea class="w-full border border-black/10 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all" placeholder="Briefly describe the responsibilities..." rows="4"></textarea>
+</div>
+<div class="grid grid-cols-2 gap-sm">
+<div>
+<label class="block font-label-md text-zinc-500 uppercase mb-xs">Open Slots</label>
+<input class="w-full border border-black/10 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all" min="1" type="number" value="1"/>
+</div>
+<div>
+<label class="block font-label-md text-zinc-500 uppercase mb-xs">Budget Range</label>
+<select class="w-full border border-black/10 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all">
+<option>$50 - $100/hr</option>
+<option>$100 - $150/hr</option>
+<option>$150+/hr</option>
+</select>
+</div>
+</div>
+<div class="pt-4 border-t border-zinc-100 mt-lg">
+<div class="flex justify-between items-center mb-md">
+<span class="font-label-lg text-zinc-400 uppercase">Estimated Reach</span>
+<span class="font-label-lg text-zinc-900">1,200+ Developers</span>
+</div>
+<div class="w-full h-1 bg-zinc-100 rounded-full overflow-hidden">
+<div class="w-3/4 h-full bg-primary-container"></div>
+</div>
+</div>
+<button class="w-full py-4 bg-primary-container text-on-primary-container font-label-lg uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:scale-95 mt-lg" type="button">
+                                Complete Step 1
+                            </button>
+</form>
+</section>
+</div>
+</div>
+<footer class="mt-margin pt-xl border-t border-zinc-200">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-lg">
+<div class="max-w-md">
+<p class="font-label-lg text-zinc-900 uppercase mb-xs">Need Assistance?</p>
+<p class="font-body-sm text-zinc-500">Contact our recruiter success team for help with setting up your gig listing or defining talent requirements.</p>
+</div>
+<div class="flex gap-md">
+<button class="flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 rounded-lg font-label-lg text-zinc-700 hover:bg-zinc-50 transition-colors">
+<span class="material-symbols-outlined text-zinc-400" data-icon="chat_bubble">chat_bubble</span>
+                            Talk to Success
+                        </button>
+<button class="flex items-center gap-2 px-6 py-3 bg-secondary text-white rounded-lg font-label-lg hover:brightness-110 transition-all">
+<span class="material-symbols-outlined" data-icon="book" style="font-variation-settings: 'FILL' 1;">book</span>
+                            Recruiter Guide
+                        </button>
+</div>
+</div>
+</footer>
+</div>
+</main>
+<div class="fixed bottom-margin right-margin z-50">
+<button class="h-14 w-14 rounded-full bg-zinc-900 text-lime-400 shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-150">
+<span class="material-symbols-outlined" data-icon="question_mark">question_mark</span>
+</button>
+</div>
+</body></html>

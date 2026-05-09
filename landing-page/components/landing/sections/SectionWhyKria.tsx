@@ -177,22 +177,22 @@ export default function SectionWhyKria() {
                 );
               }
 
-              const isSeeker = item.from === "seeker";
+              const isRunner = item.from === "runner";
               const isLast   = i === THREAD.length - 1;
 
               return (
                 <div key={i} style={{
                   display: "flex", flexDirection: "column",
-                  alignItems: isSeeker ? "flex-start" : "flex-end",
+                  alignItems: isRunner ? "flex-start" : "flex-end",
                   opacity: visible ? (isLast ? 0.45 : 1) : 0,
-                  transform: visible ? "none" : `translateY(8px) translateX(${isSeeker ? "-6px" : "6px"})`,
+                  transform: visible ? "none" : `translateY(8px) translateX(${isRunner ? "-6px" : "6px"})`,
                   transition: "opacity 0.4s ease, transform 0.4s ease",
                 }}>
                   <div style={{
                     maxWidth: "78%", padding: "9px 13px",
-                    borderRadius: isSeeker ? "4px 16px 16px 16px" : "16px 4px 16px 16px",
-                    background: isSeeker ? "rgba(255,255,255,0.07)" : "rgba(212,255,0,0.08)",
-                    border: isSeeker ? "1px solid rgba(255,255,255,0.08)" : `1px solid rgba(212,255,0,0.12)`,
+                    borderRadius: isRunner ? "4px 16px 16px 16px" : "16px 4px 16px 16px",
+                    background: isRunner ? "rgba(255,255,255,0.07)" : "rgba(212,255,0,0.08)",
+                    border: isRunner ? "1px solid rgba(255,255,255,0.08)" : `1px solid rgba(212,255,0,0.12)`,
                   }}>
                     <p style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", margin: 0, lineHeight: 1.5 }}>
                       {item.text}

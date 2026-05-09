@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#b1cad7",
+                        "surface-tint": "#b0d500",
+                        "on-tertiary-container": "#506873",
+                        "on-primary": "#2a3400",
+                        "tertiary": "#ffffff",
+                        "secondary": "#b8c3ff",
+                        "primary-fixed-dim": "#b0d500",
+                        "on-primary-fixed": "#171e00",
+                        "secondary-fixed": "#dde1ff",
+                        "on-tertiary-fixed-variant": "#324a54",
+                        "on-primary-container": "#596c00",
+                        "outline-variant": "#444932",
+                        "surface-container": "#1e2113",
+                        "on-secondary": "#002487",
+                        "inverse-on-surface": "#2f3223",
+                        "error-container": "#93000a",
+                        "on-background": "#e2e4cf",
+                        "primary-container": "#caf300",
+                        "inverse-surface": "#e2e4cf",
+                        "surface-bright": "#383b2b",
+                        "inverse-primary": "#536600",
+                        "primary-fixed": "#caf300",
+                        "secondary-fixed-dim": "#b8c3ff",
+                        "surface-dim": "#121508",
+                        "tertiary-fixed": "#cde7f3",
+                        "surface-container-lowest": "#0d0f04",
+                        "primary": "#ffffff",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed": "#001355",
+                        "on-secondary-container": "#a1b1ff",
+                        "outline": "#8f9378",
+                        "surface-container-high": "#292b1d",
+                        "on-surface-variant": "#c5c9ac",
+                        "on-tertiary": "#1b343d",
+                        "surface-container-low": "#1a1d10",
+                        "tertiary-container": "#cde7f3",
+                        "on-tertiary-fixed": "#041e28",
+                        "on-surface": "#e2e4cf",
+                        "surface": "#121508",
+                        "surface-container-highest": "#333627",
+                        "secondary-container": "#223da1",
+                        "on-secondary-fixed-variant": "#223da1",
+                        "on-primary-fixed-variant": "#3e4c00",
+                        "background": "#121508",
+                        "on-error": "#690005",
+                        "surface-variant": "#333627"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "8px",
+                        "margin": "24px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "base": "4px",
+                        "xl": "32px",
+                        "sm": "12px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Space Grotesk"],
+                        "label-sm": ["Space Grotesk"],
+                        "label-lg": ["Space Grotesk"],
+                        "h2": ["Space Grotesk"],
+                        "label-md": ["Space Grotesk"],
+                        "h1": ["Space Grotesk"],
+                        "body-sm": ["Space Grotesk"],
+                        "h3": ["Space Grotesk"],
+                        "body-lg": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-sm": ["10px", {"lineHeight": "1", "letterSpacing": "0.08em", "fontWeight": "500"}],
+                        "label-lg": ["14px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "h2": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "h1": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                        "h3": ["24px", {"lineHeight": "1.2", "letterSpacing": "0", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0c0d0a;
+            overflow: hidden;
+            height: 100vh;
+        }
+        .soft-glow-background {
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(212, 255, 0, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(212, 255, 0, 0.02) 0%, transparent 40%),
+                #0c0d0a;
+        }
+        .glass-card {
+            background: rgba(26, 29, 16, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 20px rgba(212, 255, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-background selection:bg-primary-container selection:text-on-primary-container soft-glow-background">
+<!-- Background Layer -->
+<div class="fixed inset-0 z-[-1]">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent via-[#0c0d0a]/50 to-[#0c0d0a]"></div>
+</div>
+<!-- Main Content Canvas -->
+<main class="h-screen w-full flex items-center justify-center relative">
+<div class="w-full max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 h-full items-center px-8">
+<!-- Left Side: Professional Information -->
+<div class="lg:col-span-7 flex flex-col justify-center py-12">
+<div class="space-y-4 mb-8">
+<span class="font-label-sm uppercase tracking-[0.2em] text-[#D4FF00] flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-[#D4FF00]"></span>
+                    Source Top Talent
+                </span>
+<h1 class="font-h1 text-[56px] lg:text-[72px] leading-[1.05] text-white tracking-tight max-w-2xl font-bold">
+                    The Professional <br/>
+<span class="text-[#D4FF00]">Host Network</span>
+</h1>
+<p class="font-body-lg text-neutral-400 max-w-lg mt-6">
+                    Connect with elite hospitality professionals through our streamlined workforce management ecosystem.
+                </p>
+</div>
+<ul class="mt-8 space-y-6">
+<li class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-[#D4FF00] text-xl">person_search</span>
+</div>
+<span class="font-body-lg text-neutral-300 font-medium">Post Gigs in Seconds</span>
+</li>
+<li class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-[#D4FF00] text-xl">analytics</span>
+</div>
+<span class="font-body-lg text-neutral-300 font-medium">Real-time Performance Metrics</span>
+</li>
+<li class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-[#D4FF00] text-xl">group_work</span>
+</div>
+<span class="font-body-lg text-neutral-300 font-medium">Automated Staffing Solutions</span>
+</li>
+</ul>
+<div class="mt-16 flex gap-12 items-center opacity-60">
+<div class="flex flex-col">
+<span class="font-label-sm text-neutral-500 mb-1">PARTNERS</span>
+<span class="font-h3 text-white">500+</span>
+</div>
+<div class="flex flex-col border-l border-white/10 pl-12">
+<span class="font-label-sm text-neutral-500 mb-1">QUALIFIED HOSTS</span>
+<span class="font-h3 text-white">12.5k</span>
+</div>
+<div class="flex flex-col border-l border-white/10 pl-12">
+<span class="font-label-sm text-neutral-500 mb-1">PLACEMENTS / MO</span>
+<span class="font-h3 text-white">4.8k</span>
+</div>
+</div>
+</div>
+<!-- Right Side: Professional Auth Portal -->
+<div class="lg:col-span-5 flex justify-end items-center">
+<div class="w-full max-w-[420px] glass-card rounded-2xl p-10 relative overflow-hidden">
+<!-- Decorative Glow -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-[#D4FF00] opacity-[0.03] blur-[80px] pointer-events-none"></div>
+<div class="mb-10 text-center lg:text-left">
+<h2 class="font-h2 text-white font-bold tracking-tight">Welcome Back</h2>
+<p class="font-body-sm text-neutral-400 mt-2">Sign in to your professional account</p>
+</div>
+<form class="space-y-6">
+<div class="space-y-2">
+<label class="font-label-md text-neutral-400">Phone Number</label>
+<div class="relative flex items-center group">
+<span class="absolute left-4 font-body-md text-[#D4FF00] border-r border-white/10 pr-3">+91</span>
+<input class="w-full bg-white/5 border border-white/10 text-white pl-20 pr-4 py-4 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#D4FF00]/50 focus:border-[#D4FF00] transition-all font-body-md" placeholder="00000 00000" type="text"/>
+</div>
+</div>
+<div class="pt-2">
+<button class="w-full bg-[#D4FF00] hover:bg-[#e1ff4d] text-[#0c0d0a] font-label-lg py-4 rounded-xl transition-all active:scale-[0.98] btn-glow uppercase tracking-wider font-bold">
+                            CONTINUE
+                        </button>
+</div>
+<div class="flex items-center justify-center gap-4 py-2">
+<div class="h-px bg-white/10 flex-grow"></div>
+<span class="font-label-sm text-neutral-500 uppercase tracking-widest">Other Options</span>
+<div class="h-px bg-white/10 flex-grow"></div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<button class="flex items-center justify-center gap-2 bg-white/5 border border-white/10 py-3 rounded-xl hover:bg-white/10 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">mail</span>
+<span class="font-label-md text-white">EMAIL</span>
+</button>
+<button class="flex items-center justify-center gap-2 bg-white/5 border border-white/10 py-3 rounded-xl hover:bg-white/10 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">qr_code_2</span>
+<span class="font-label-md text-white">QR KEY</span>
+</button>
+</div>
+</form>
+<div class="mt-8 pt-8 border-t border-white/10">
+<p class="font-body-sm text-neutral-500 text-center">
+                        By signing in, you agree to our <br/>
+<a class="text-white hover:text-[#D4FF00] transition-colors" href="#">Terms of Service</a> and <a class="text-white hover:text-[#D4FF00] transition-colors" href="#">Privacy Policy</a>.
+                    </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Fixed Footer -->
+<footer class="fixed bottom-0 left-0 w-full bg-[#0c0d0a]/40 backdrop-blur-md border-t border-white/5 flex flex-col md:flex-row justify-between items-center px-10 py-5 z-50">
+<div class="font-label-sm text-neutral-600 mb-2 md:mb-0">
+        © 2024 KRIA NETWORK. ELEVATING HOSPITALITY STANDARDS.
+    </div>
+<div class="flex gap-8">
+<a class="font-label-sm text-neutral-500 hover:text-[#D4FF00] transition-colors" href="#">Legal</a>
+<a class="font-label-sm text-neutral-500 hover:text-[#D4FF00] transition-colors" href="#">Cookies</a>
+<a class="font-label-sm text-neutral-500 hover:text-[#D4FF00] transition-colors" href="#">Support</a>
+<a class="font-label-sm text-neutral-500 hover:text-[#D4FF00] transition-colors" href="#">Enterprise</a>
+</div>
+<div class="font-label-sm text-neutral-500 flex items-center gap-3 mt-2 md:mt-0">
+<span class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+            Operational Status
+        </span>
+</div>
+</footer>
+</body></html>

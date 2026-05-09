@@ -1,0 +1,26 @@
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+
+# Face detection + ArcFace embeddings (RetinaFace bundled)
+insightface>=0.7.3
+onnxruntime>=1.17.0          # CPU inference; swap for onnxruntime-gpu on GPU boxes
+
+# Liveness
+mediapipe>=0.10.14
+
+# Image / video
+opencv-python-headless>=4.9.0
+Pillow>=10.3.0
+numpy>=1.24.0
+scipy>=1.12.0
+
+# Config
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Async file I/O
+aiofiles>=23.2.0
+
+# Anti-spoofing — perceptual image hashing (duplicate detection)
+imagehash>=4.3.1

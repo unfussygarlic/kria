@@ -1,69 +1,90 @@
-# Kria - Production Environment Overrides
-# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+# Kria — Production Compose
+#
+# Standalone (does NOT extend docker-compose.yml).
+# Runs on a single EC2 t3a.medium.
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Required env file: .env.prod (never commit this)
+#   SUPABASE_URL=https://<ref>.supabase.co
+#   SUPABASE_ANON_KEY=...
+#   SUPABASE_SERVICE_KEY=...
+#   JWT_SECRET=...
+#   DATABASE_URL=postgresql+asyncpg://postgres:<password>@db.<ref>.supabase.co:5432/postgres
+#   GOOGLE_MAPS_API_KEY=...
+#   ANTISPOOF_MODEL_ENABLED=False   # flip to True after validating with real selfies
 
 version: '3.8'
 
 services:
-  # ===========================================
-  # FRONTEND - Production Build
-  # ===========================================
-  frontend:
+
+  # ── FastAPI ────────────────────────────────────────────────────────────────
+  kria-api:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
-      args:
-        - EXPO_PUBLIC_APP_ENV=production
-        - EXPO_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
-        - EXPO_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      context: ./backend/api
+      dockerfile: Dockerfile
+    container_name: kria-api
+    restart: always
+    env_file: .env.prod
     environment:
-      - NODE_ENV=production
-    # No port exposure - use EAS Build for app store deployment
-    # This container is for building, not serving
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      SUPABASE_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
+      ENVIRONMENT: production
+      API_VERSION: v1
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+      INSPECTOR_URL: http://inspector:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      inspector:
+        condition: service_started   # Inspector warms up slowly; API returns 503 until ready
+    networks:
+      - kria-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
-  # ===========================================
-  # BACKEND - Production Notes
-  # ===========================================
-  # In production, use Supabase Cloud instead of self-hosted
-  # The backend services below are DISABLED for production
-  #
-  # To deploy:
-  # 1. Create project at supabase.com
-  # 2. Run migrations: supabase db push --linked
-  # 3. Set env vars in EAS/app config
-  # ===========================================
+  # ── Inspector (ID verification pipeline) ──────────────────────────────────
+  inspector:
+    build:
+      context: ./perceptrons/inspector
+      dockerfile: Dockerfile
+    container_name: inspector
+    restart: always
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      INSIGHTFACE_MODEL: buffalo_sc
+      MATCH_THRESHOLD: "0.35"
+      MIN_FACE_SIZE_PX: "50"
+      MAX_IMAGE_LONG_SIDE: "1920"
+      UPLOAD_DIR: /tmp/inspector_uploads
+      ANTISPOOF_MODEL_ENABLED: ${ANTISPOOF_MODEL_ENABLED:-False}
+    volumes:
+      - insightface_models:/root/.insightface   # persists ~300MB model weights across restarts
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s   # first boot downloads model weights (~60s)
+    networks:
+      - kria-network
 
-  supabase-db:
-    profiles:
-      - disabled  # Not used in production
+networks:
+  kria-network:
+    driver: bridge
 
-  supabase-studio:
-    profiles:
-      - disabled
-
-  supabase-auth:
-    profiles:
-      - disabled
-
-  supabase-rest:
-    profiles:
-      - disabled
-
-  supabase-realtime:
-    profiles:
-      - disabled
-
-  supabase-storage:
-    profiles:
-      - disabled
-
-  supabase-meta:
-    profiles:
-      - disabled
-
-  supabase-kong:
-    profiles:
-      - disabled
-
-  supabase-imgproxy:
-    profiles:
-      - disabled
+volumes:
+  insightface_models:

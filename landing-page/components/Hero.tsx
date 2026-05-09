@@ -11,7 +11,7 @@ import { LanguageProvider } from "./landing/LanguageContext";
 import type { Role } from "./landing/constants";
 
 export default function LandingPage() {
-  const [role, setRole] = useState<Role>("seeker");
+  const [role, setRole] = useState<Role>("runner");
 
   return (
     <LanguageProvider>

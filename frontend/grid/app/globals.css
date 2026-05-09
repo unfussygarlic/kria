@@ -1,0 +1,223 @@
+@import "tailwindcss";
+
+@theme {
+  /* Solar Flare dark palette */
+  --color-bg:        #0e0e0e;
+  --color-surface-1: #131313;
+  --color-surface-2: #1a1919;
+  --color-surface-3: #201f1f;
+  --color-surface-4: #262626;
+  --color-surface-5: #2c2c2c;
+
+  --color-primary:     #D4FF00;
+  --color-primary-dim: #a8cc00;
+  --color-secondary:   #8097ff;
+  --color-error:       #ff7351;
+  --color-amber:       #ffeb9c;
+
+  --color-text:       #e2e4cf;
+  --color-text-sub:   #adaaaa;
+  --color-text-muted: #777575;
+  --color-text-inv:   #000000;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+/* Remove number input spin buttons */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+/* ─────────────────────────────────────────────────────────────────
+   Component-level semantic tokens (respond to data-theme switch)
+   ───────────────────────────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --card-bg:       #131313;
+  --sidebar-bg:    #131313;
+  --topbar-bg:     rgba(14,14,14,0.82);
+  --content-bg:    #0e0e0e;
+  --input-bg:      #201f1f;
+
+  /* Borders & dividers */
+  --border-color:  rgba(255,255,255,0.10);
+  --border-subtle: rgba(255,255,255,0.05);
+
+  /* Hover */
+  --hover-bg:      rgba(255,255,255,0.05);
+
+  /* Nav */
+  --nav-active-bg:     rgba(255,255,255,0.07);
+  --nav-active-text:   #D4FF00;
+  --nav-active-border: #D4FF00;
+  --nav-inactive-text: #777575;
+  --nav-hover-bg:      rgba(255,255,255,0.05);
+  --nav-hover-text:    #e2e4cf;
+
+  /* Lime — constant in both themes (avatar bg, CTA) */
+  --lime:    #D4FF00;
+  --lime-on: #0e0e0e;
+}
+
+/* ── Solar Flare Light (from stitch_kria_grid_host_dashboard-light) ── */
+[data-theme="light"] {
+  /* @theme cascade overrides */
+  --color-bg:        #f4f5df;
+  --color-surface-1: #ffffff;   /* cards = pure white */
+  --color-surface-2: #f4f5df;
+  --color-surface-3: #eef0da;
+  --color-surface-4: #e8ead4;
+  --color-surface-5: #e2e4cf;
+
+  /* Lime → olive in light mode. Olive (#536600) on light surfaces is readable;
+     for nav-active text on the dark block, use muted olive-lime (#a8cc00)
+     which matches Tailwind lime-400 and stays legible on near-black. */
+  --color-primary:     #536600;
+  --color-primary-dim: #3e4c00;
+  --color-secondary:   #4858ab;
+  --color-error:       #ba1a1a;
+
+  --color-text:       #1a1d10;
+  --color-text-sub:   #444932;
+  --color-text-muted: #757a60;
+  --color-text-inv:   #ffffff;   /* text ON olive buttons → white */
+
+  /* Component tokens */
+  --card-bg:       #ffffff;
+  --sidebar-bg:    #ffffff;
+  --topbar-bg:     rgba(255,255,255,0.92);
+  --content-bg:    #f4f5df;
+  --input-bg:      #f8f9fa;
+
+  --border-color:  rgba(0,0,0,0.08);
+  --border-subtle: rgba(0,0,0,0.05);
+  --hover-bg:      rgba(0,0,0,0.04);
+
+  --nav-active-bg:     #eef0da;   /* warm beige — sits naturally on white sidebar */
+  --nav-active-text:   #536600;   /* olive on beige */
+  --nav-active-border: #536600;   /* olive right-edge indicator */
+  --nav-inactive-text: #757a60;
+  --nav-hover-bg:      rgba(0,0,0,0.05);
+  --nav-hover-text:    #1a1d10;
+
+  /* Lime constant → olive in light */
+  --lime:    #536600;
+  --lime-on: #ffffff;   /* white on olive */
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Light-mode overrides for hardcoded dark Tailwind utilities
+   These fix pages that use border-white/* and bg-white/* without
+   needing to touch individual component files.
+   ───────────────────────────────────────────────────────────────── */
+[data-theme="light"] .border-white\/10  { border-color: rgba(0,0,0,0.08) !important; }
+[data-theme="light"] .border-white\/5   { border-color: rgba(0,0,0,0.05) !important; }
+[data-theme="light"] .border-white\/20  { border-color: rgba(0,0,0,0.12) !important; }
+[data-theme="light"] .border-white\/30  { border-color: rgba(0,0,0,0.16) !important; }
+
+[data-theme="light"] .bg-white\/5  { background-color: rgba(0,0,0,0.04) !important; }
+[data-theme="light"] .bg-white\/10 { background-color: rgba(0,0,0,0.06) !important; }
+
+[data-theme="light"] .hover\:border-white\/20:hover { border-color: rgba(0,0,0,0.14) !important; }
+[data-theme="light"] .hover\:border-white\/40:hover { border-color: rgba(0,0,0,0.20) !important; }
+[data-theme="light"] .hover\:bg-white\/5:hover       { background-color: rgba(0,0,0,0.04) !important; }
+[data-theme="light"] .hover\:bg-white\/\[0\.02\]:hover { background-color: rgba(0,0,0,0.02) !important; }
+[data-theme="light"] .hover\:bg-surface-2:hover      { background-color: #f4f5df !important; }
+
+/* Hardcoded input background used in several forms */
+[data-theme="light"] .bg-\[\#201f1f\] { background-color: #f8f9fa !important; }
+
+/* Hardcoded lime hex → olive in light mode */
+[data-theme="light"] .bg-\[\#D4FF00\]   { background-color: #536600 !important; }
+[data-theme="light"] .text-\[\#D4FF00\] { color: #536600 !important; }
+[data-theme="light"] .border-\[\#D4FF00\] { border-color: #536600 !important; }
+
+/* Text color fixes for things using literal white/near-white on dark */
+[data-theme="light"] .text-neutral-400 { color: #757a60 !important; }
+[data-theme="light"] .text-neutral-300 { color: #444932 !important; }
+[data-theme="light"] .text-neutral-500 { color: #757a60 !important; }
+[data-theme="light"] .text-neutral-600 { color: #444932 !important; }
+
+/* ── Skill Graph canvas tokens ── */
+:root {
+  --sg-canvas-from: #1e1d1d;
+  --sg-canvas-to:   #0c0c0c;
+  --sg-grid:        rgba(255,255,255,0.07);
+}
+[data-theme="light"] {
+  --sg-canvas-from: #e4e7d6;
+  --sg-canvas-to:   #d8dcc6;
+  --sg-grid:        rgba(0,0,0,0.09);
+}
+
+/* ── Momentum band colors ── */
+:root {
+  --band-legend:   #ffffff;
+  --band-elite:    #D4FF00;
+  --band-trusted:  #FFC83D;
+  --band-reliable: #8097ff;
+  --band-building: #ff7351;
+  --band-newcomer: #777575;
+}
+[data-theme="light"] {
+  --band-legend:   #1a1d10;
+  --band-elite:    #536600;
+  --band-trusted:  #8a6200;
+  --band-reliable: #4858ab;
+  --band-building: #b84c35;
+  --band-newcomer: #4a4a4a;
+}
+
+/* ── Star rating colors ── */
+:root {
+  --star-filled:       #D4FF00;
+  --star-empty-stroke: rgba(255,255,255,0.20);
+}
+[data-theme="light"] {
+  --star-filled:       #536600;
+  --star-empty-stroke: rgba(0,0,0,0.20);
+}
+
+/* ── Progress bar / fill colors ── */
+:root {
+  --fill-complete: #D4FF00;
+  --fill-partial:  #8097ff;
+  --color-amber:   #FFC83D;
+}
+[data-theme="light"] {
+  --fill-complete: #536600;
+  --fill-partial:  #4858ab;
+  --color-amber:   #8a6200;
+}
+
+/* ── Nav item base classes (Sidebar + ThemeToggle) ── */
+.nav-item {
+  background-color: transparent;
+  color: var(--nav-inactive-text);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.nav-item:hover {
+  background-color: var(--nav-hover-bg);
+  color: var(--nav-hover-text);
+}
+.nav-item-active {
+  color: var(--nav-active-text);
+  background-color: var(--nav-active-bg);
+  border-right: 2px solid var(--nav-active-border);
+}
