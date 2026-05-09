@@ -60,16 +60,16 @@ This installs Docker, Nginx, Certbot, Fail2ban, UFW, and hardens SSH.
 git clone https://github.com/your-org/kriya.git
 cd kriya
 
-# Install the Nginx config
+# Install the Nginx config (HTTP-only — certbot adds SSL next)
 sudo cp infra/nginx/api.trykria.com.conf /etc/nginx/sites-available/api.trykria.com
 sudo ln -s /etc/nginx/sites-available/api.trykria.com /etc/nginx/sites-enabled/
-sudo nginx -t
+sudo nginx -t && sudo systemctl reload nginx
 
-# Get SSL certificate (free, auto-renews)
+# Get SSL certificate — certbot patches the config and adds the HTTPS block
 sudo certbot --nginx -d api.trykria.com
 # Follow prompts — choose to redirect HTTP → HTTPS
 
-sudo systemctl reload nginx
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
 ---
