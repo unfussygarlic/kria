@@ -177,8 +177,14 @@ cd ~/kriya && bash infra/deploy.sh
 
 ### 4a. Add DNS record
 
-In your domain registrar add:
-- `CNAME` record: `grid` → `cname.vercel-dns.com`
+Since `trykria.com` DNS is managed by Vercel, add the record there:
+
+Vercel dashboard → Domains → `trykria.com` → DNS Records → Add Record:
+- Type: `CNAME`
+- Name: `grid`
+- Value: `cname.vercel-dns.com`
+
+No propagation wait needed — Vercel applies its own DNS records instantly.
 
 ### 4b. Deploy
 
