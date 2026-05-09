@@ -91,28 +91,26 @@ export default function LoginPage() {
     if (!firstName.trim()) { setError("First name is required."); return; }
     setLoading(true);
 
-    const { data, error: signUpErr } = await supabase.auth.signUp({
+    const { error: signUpErr } = await supabase.auth.signUp({
       email: devEmail(phone),
       password: DEV_PASSWORD,
     });
 
-    if (signUpErr) {
-      if (signUpErr.message.toLowerCase().includes("already registered")) {
-        const { error: siErr } = await supabase.auth.signInWithPassword({
-          email: devEmail(phone),
-          password: DEV_PASSWORD,
-        });
-        setLoading(false);
-        if (siErr) { setError(siErr.message); return; }
-        router.replace("/dashboard");
-        return;
-      }
+    if (signUpErr && !signUpErr.message.toLowerCase().includes("already registered")) {
       setLoading(false);
       setError(signUpErr.message);
       return;
     }
 
-    const userId = data.user?.id;
+    // Always sign in after sign up — guarantees a session exists before touching profiles
+    // (Supabase Cloud may require email confirmation which leaves signUp sessionless)
+    const { data: siData, error: siErr } = await supabase.auth.signInWithPassword({
+      email: devEmail(phone),
+      password: DEV_PASSWORD,
+    });
+    if (siErr) { setLoading(false); setError(siErr.message); return; }
+
+    const userId = siData.user?.id;
     if (!userId) { setLoading(false); setError("Something went wrong. Try again."); return; }
 
     const display = `${firstName.trim()} ${lastName.trim()}`.trim();
