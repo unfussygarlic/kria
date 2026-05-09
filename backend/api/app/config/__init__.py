@@ -16,5 +16,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     api_version: str = "v1"
 
+    # Recommendations
+    google_maps_api_key: str = ""
+
 
 settings = Settings()

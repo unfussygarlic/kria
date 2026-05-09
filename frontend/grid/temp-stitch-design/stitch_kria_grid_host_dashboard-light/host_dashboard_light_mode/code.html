@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e2e4cf",
+                        "secondary": "#4858ab",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#e5e2e1",
+                        "error": "#ba1a1a",
+                        "tertiary": "#5f5e5e",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#f1f2dc",
+                        "primary": "#536600",
+                        "on-error": "#ffffff",
+                        "surface-container": "#eef0da",
+                        "secondary-fixed-dim": "#bac3ff",
+                        "on-surface-variant": "#444932",
+                        "surface": "#f9fbe5",
+                        "on-background": "#1a1d10",
+                        "surface-container-highest": "#e2e4cf",
+                        "tertiary-container": "#f0eded",
+                        "secondary-container": "#96a5ff",
+                        "primary-container": "#d4ff00",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "on-secondary-container": "#27378a",
+                        "on-tertiary-container": "#6c6b6b",
+                        "on-primary-container": "#5f7400",
+                        "surface-container-low": "#f4f5df",
+                        "surface-container-high": "#e8ead4",
+                        "surface-dim": "#dadcc6",
+                        "inverse-primary": "#b0d500",
+                        "on-surface": "#1a1d10",
+                        "primary-fixed": "#caf300",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "inverse-surface": "#2f3223",
+                        "surface-tint": "#536600",
+                        "primary-fixed-dim": "#b0d500",
+                        "on-primary-fixed": "#171e00",
+                        "on-primary-fixed-variant": "#3e4c00",
+                        "error-container": "#ffdad6",
+                        "outline": "#757a60",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#dee0ff",
+                        "on-secondary-fixed-variant": "#2f3f92",
+                        "on-secondary-fixed": "#00105b",
+                        "surface-bright": "#f9fbe5",
+                        "outline-variant": "#c5c9ac",
+                        "on-tertiary-fixed-variant": "#474646",
+                        "background": "#f9fbe5"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "20px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "lg": "24px",
+                        "xs": "8px",
+                        "margin": "40px",
+                        "md": "16px",
+                        "sm": "12px"
+                    },
+                    "fontFamily": {
+                        "h2": ["Space Grotesk"],
+                        "body-lg": ["Space Grotesk"],
+                        "label-lg": ["Space Grotesk"],
+                        "body-md": ["Space Grotesk"],
+                        "h1": ["Space Grotesk"],
+                        "body-sm": ["Space Grotesk"],
+                        "h3": ["Space Grotesk"],
+                        "label-md": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "h2": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-lg": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "h1": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "h3": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.04em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #f8f9fa; /* As requested in the prompt: light grey background */
+        }
+    </style>
+</head>
+<body class="text-on-background">
+<!-- SideNavBar Shell -->
+<aside class="fixed left-0 top-0 h-full w-64 border-r border-zinc-100 bg-white flex flex-col py-6 z-50">
+<div class="px-6 mb-8">
+<h1 class="text-lg font-black text-zinc-900">Kria Grid</h1>
+<p class="text-[10px] uppercase font-semibold tracking-widest text-zinc-400">Host Management</p>
+</div>
+<nav class="flex-1 flex flex-col gap-1">
+<a class="bg-zinc-900 text-lime-400 rounded-sm mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+<span class="font-space-grotesk text-xs uppercase font-semibold tracking-widest">Dashboard</span>
+</a>
+<a class="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="work">work</span>
+<span class="font-space-grotesk text-xs uppercase font-semibold tracking-widest">Gigs</span>
+</a>
+<a class="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-space-grotesk text-xs uppercase font-semibold tracking-widest">Events</span>
+</a>
+<a class="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-space-grotesk text-xs uppercase font-semibold tracking-widest">Profile</span>
+</a>
+<a class="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="corporate_fare">corporate_fare</span>
+<span class="font-space-grotesk text-xs uppercase font-semibold tracking-widest">Org</span>
+</a>
+</nav>
+<div class="px-4 mb-6">
+<button class="w-full bg-primary-container text-on-primary-container font-label-lg py-3 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity active:scale-95 duration-150">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                Create New Gig
+            </button>
+</div>
+<div class="mt-auto flex flex-col gap-1 border-t border-zinc-100 pt-4">
+<a class="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-space-grotesk text-xs uppercase font-semibold tracking-widest">Help Center</span>
+</a>
+<a class="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-space-grotesk text-xs uppercase font-semibold tracking-widest">Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar Shell -->
+<header class="fixed top-0 right-0 left-64 h-16 flex items-center justify-between px-8 bg-white/90 backdrop-blur-md z-40 border-b border-zinc-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-zinc-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-secondary/20" placeholder="Search projects or talent..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<button class="p-2 text-zinc-500 hover:bg-zinc-50 rounded-full transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-zinc-500 hover:bg-zinc-50 rounded-full transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+<div class="flex items-center gap-3 pl-6 border-l border-zinc-100">
+<div class="text-right">
+<p class="font-label-lg text-zinc-900 leading-none">Host Admin</p>
+<p class="text-[10px] uppercase tracking-tighter text-lime-600 font-bold">Premium Tier</p>
+</div>
+<img alt="Host User Profile" class="w-10 h-10 rounded-full border-2 border-white shadow-sm" data-alt="A professional headshot of a modern corporate host administrator. The individual has a confident, friendly expression and is wearing a sleek, dark tech-focused blazer. The background is a brightly lit, minimalist office environment with subtle accents of lime green and cobalt blue, reflecting a high-tech recruitment firm aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhBaBtSGmgfZo40DjuMjkSvpmCcqn2z_OusmuCN6Ogw5Qsk27j4PXCmJfVcHw_pUPvfcA5IrabT9wcJuyUn3_8jhWhdTklMViIMBUUhGyCLtEff1Rnpta3inRvbNXvd7gLWEJmtuYytluJblAJbISSJDnZT3S1cj3rPhArrlHbcyaTc2Ogv4ceAGo9iebMUKx37vns159MMkTzTCsndh5esAv3NsFfNa2R0B8rOxK4i7VOJiqHDY-zmUaWxvC09so2xPp8AoLZ-qk"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 px-10 pb-10">
+<!-- Dashboard Header -->
+<div class="mb-10">
+<h2 class="font-h2 text-zinc-900">Dashboard Overview</h2>
+<p class="font-body-md text-zinc-500 mt-1">Track your hosting performance and manage upcoming gig schedules.</p>
+</div>
+<!-- Stats Row (4 Cards) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+<!-- Stat Card 1 -->
+<div class="bg-white p-6 border border-zinc-100 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-lime-50 rounded-lg">
+<span class="material-symbols-outlined text-lime-600" data-icon="bolt">bolt</span>
+</div>
+<span class="text-[10px] font-bold text-lime-600 bg-lime-100 px-2 py-1 rounded-full">+12%</span>
+</div>
+<p class="font-label-md text-zinc-400 uppercase tracking-widest">Active Gigs</p>
+<h3 class="text-h2 text-zinc-900 mt-1">24</h3>
+</div>
+<!-- Stat Card 2 -->
+<div class="bg-white p-6 border border-zinc-100 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-blue-50 rounded-lg">
+<span class="material-symbols-outlined text-secondary" data-icon="event">event</span>
+</div>
+<span class="text-[10px] font-bold text-secondary bg-blue-100 px-2 py-1 rounded-full">Weekly</span>
+</div>
+<p class="font-label-md text-zinc-400 uppercase tracking-widest">Total Events</p>
+<h3 class="text-h2 text-zinc-900 mt-1">158</h3>
+</div>
+<!-- Stat Card 3 -->
+<div class="bg-white p-6 border border-zinc-100 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-zinc-50 rounded-lg">
+<span class="material-symbols-outlined text-zinc-600" data-icon="group">group</span>
+</div>
+<div class="w-12 h-1.5 bg-zinc-100 rounded-full overflow-hidden self-center">
+<div class="w-[85%] h-full bg-lime-400"></div>
+</div>
+</div>
+<p class="font-label-md text-zinc-400 uppercase tracking-widest">Slots Filled</p>
+<h3 class="text-h2 text-zinc-900 mt-1">85%</h3>
+</div>
+<!-- Stat Card 4 -->
+<div class="bg-white p-6 border border-zinc-100 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-lime-400 text-zinc-900 rounded-lg">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+</div>
+</div>
+<p class="font-label-md text-zinc-400 uppercase tracking-widest">Total Revenue</p>
+<h3 class="text-h2 text-zinc-900 mt-1">$42.8k</h3>
+</div>
+</div>
+<!-- Bento Grid Layout for Main Content -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Recent Gigs Table Section -->
+<div class="col-span-12 lg:col-span-8 bg-white border border-zinc-100 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+<div class="p-6 border-b border-zinc-50 flex justify-between items-center">
+<h3 class="font-h3 text-zinc-900">Recent Gigs</h3>
+<button class="text-secondary font-label-lg flex items-center gap-1 hover:underline">
+                        View All
+                        <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-zinc-50/50">
+<th class="px-6 py-4 font-label-md text-zinc-400 uppercase tracking-widest">Title</th>
+<th class="px-6 py-4 font-label-md text-zinc-400 uppercase tracking-widest">Category</th>
+<th class="px-6 py-4 font-label-md text-zinc-400 uppercase tracking-widest">City</th>
+<th class="px-6 py-4 font-label-md text-zinc-400 uppercase tracking-widest">Date</th>
+<th class="px-6 py-4 font-label-md text-zinc-400 uppercase tracking-widest">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-zinc-50">
+<tr class="hover:bg-zinc-50/50 transition-colors">
+<td class="px-6 py-4 font-body-md text-zinc-900 font-medium">Senior UX Researcher</td>
+<td class="px-6 py-4">
+<span class="text-xs px-2 py-1 bg-blue-50 text-secondary rounded uppercase font-bold">Design</span>
+</td>
+<td class="px-6 py-4 font-body-sm text-zinc-500">San Francisco</td>
+<td class="px-6 py-4 font-body-sm text-zinc-500">Oct 12, 2023</td>
+<td class="px-6 py-4">
+<span class="flex items-center gap-1.5 text-xs font-bold text-lime-600">
+<span class="w-1.5 h-1.5 rounded-full bg-lime-500"></span> Active
+                                    </span>
+</td>
+</tr>
+<tr class="hover:bg-zinc-50/50 transition-colors">
+<td class="px-6 py-4 font-body-md text-zinc-900 font-medium">Full Stack Engineer</td>
+<td class="px-6 py-4">
+<span class="text-xs px-2 py-1 bg-zinc-100 text-zinc-600 rounded uppercase font-bold">Engineering</span>
+</td>
+<td class="px-6 py-4 font-body-sm text-zinc-500">Remote</td>
+<td class="px-6 py-4 font-body-sm text-zinc-500">Oct 15, 2023</td>
+<td class="px-6 py-4">
+<span class="flex items-center gap-1.5 text-xs font-bold text-amber-500">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Draft
+                                    </span>
+</td>
+</tr>
+<tr class="hover:bg-zinc-50/50 transition-colors">
+<td class="px-6 py-4 font-body-md text-zinc-900 font-medium">Product Lead</td>
+<td class="px-6 py-4">
+<span class="text-xs px-2 py-1 bg-purple-50 text-purple-600 rounded uppercase font-bold">Product</span>
+</td>
+<td class="px-6 py-4 font-body-sm text-zinc-500">New York</td>
+<td class="px-6 py-4 font-body-sm text-zinc-500">Oct 08, 2023</td>
+<td class="px-6 py-4">
+<span class="flex items-center gap-1.5 text-xs font-bold text-zinc-400">
+<span class="w-1.5 h-1.5 rounded-full bg-zinc-300"></span> Closed
+                                    </span>
+</td>
+</tr>
+<tr class="hover:bg-zinc-50/50 transition-colors">
+<td class="px-6 py-4 font-body-md text-zinc-900 font-medium">Growth Marketer</td>
+<td class="px-6 py-4">
+<span class="text-xs px-2 py-1 bg-emerald-50 text-emerald-600 rounded uppercase font-bold">Marketing</span>
+</td>
+<td class="px-6 py-4 font-body-sm text-zinc-500">Austin</td>
+<td class="px-6 py-4 font-body-sm text-zinc-500">Oct 20, 2023</td>
+<td class="px-6 py-4">
+<span class="flex items-center gap-1.5 text-xs font-bold text-lime-600">
+<span class="w-1.5 h-1.5 rounded-full bg-lime-500"></span> Active
+                                    </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Side Card: Quick Actions or Secondary Info -->
+<div class="col-span-12 lg:col-span-4 space-y-6">
+<!-- Activity Feed -->
+<div class="bg-white border border-zinc-100 rounded-lg p-6 shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+<h3 class="font-h3 text-zinc-900 mb-6">Upcoming Events</h3>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-12 h-12 bg-lime-50 text-lime-600 flex flex-col items-center justify-center rounded-lg">
+<span class="text-xs font-bold leading-none">OCT</span>
+<span class="text-lg font-black leading-none">24</span>
+</div>
+<div>
+<h4 class="font-label-lg text-zinc-900">Tech Mixer 2023</h4>
+<p class="text-xs text-zinc-500">San Francisco • 6:00 PM</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-12 h-12 bg-zinc-50 text-zinc-500 flex flex-col items-center justify-center rounded-lg">
+<span class="text-xs font-bold leading-none">OCT</span>
+<span class="text-lg font-black leading-none">28</span>
+</div>
+<div>
+<h4 class="font-label-lg text-zinc-900">Design Sprint Workshop</h4>
+<p class="text-xs text-zinc-500">Virtual Event • 10:00 AM</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-12 h-12 bg-zinc-50 text-zinc-500 flex flex-col items-center justify-center rounded-lg">
+<span class="text-xs font-bold leading-none">NOV</span>
+<span class="text-lg font-black leading-none">02</span>
+</div>
+<div>
+<h4 class="font-label-lg text-zinc-900">Career Fair Q4</h4>
+<p class="text-xs text-zinc-500">Austin Convention Center</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-2 border border-zinc-200 rounded text-xs font-bold uppercase tracking-widest text-zinc-600 hover:bg-zinc-50 transition-colors">
+                        View Schedule
+                    </button>
+</div>
+<!-- Banner/Promo Area -->
+<div class="relative h-48 rounded-lg overflow-hidden group shadow-lg">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="An expansive, high-angle view of a modern open-concept office space with floor-to-ceiling windows showing a futuristic cityscape. The interior features minimalist furniture in tones of light grey and white, with lush green indoor plants and vibrant electric lime accents in the lighting fixtures. The atmosphere is professional, airy, and flooded with natural sunlight, embodying the sophisticated design language of Kria Grid." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSKu812tlVp-mQ6Fu_HYe5KBWbSSkFGdIAjWktZtTXxXF04UQJ8Ps_0z4vbQ0i-qXku2p6T8djLteOEvw4OutPvT5HSvXf3efHoHWQAa6Jet81OJiWtqy9PxHDqml3rfXcqpBpRWclq0G-rC4NO6GfmBpcegFCJ0jFmeQax75VxCJ_GRpgshp0nuqD1xNCc5cia_15ysQ8yoq1j-VFa5IWC14u93EZA1sHtuwB2MDwB1mYiRpTV5nIW5P7fli_owAwlxc8MF6UiPY"/>
+<div class="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent flex flex-col justify-end p-6">
+<p class="text-[10px] uppercase font-black text-lime-400 tracking-[0.2em] mb-1">New Feature</p>
+<h4 class="text-white font-h3 leading-tight">Advanced AI Matchmaking</h4>
+<p class="text-zinc-300 text-xs mt-2">Find the perfect talent for your event in seconds.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (FAB) - For Global "Create" Action -->
+<div class="fixed bottom-8 right-8 z-50">
+<button class="w-14 h-14 bg-zinc-900 text-lime-400 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</button>
+</div>
+</body></html>

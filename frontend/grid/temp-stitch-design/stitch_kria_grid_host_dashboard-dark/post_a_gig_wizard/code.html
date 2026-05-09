@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#121508",
+                    "surface-container": "#1e2113",
+                    "secondary-fixed": "#dde1ff",
+                    "on-background": "#e2e4cf",
+                    "on-primary-fixed": "#171e00",
+                    "surface-container-high": "#292b1d",
+                    "on-secondary": "#002487",
+                    "secondary-container": "#223da1",
+                    "surface-container-low": "#1a1d10",
+                    "primary-fixed-dim": "#b0d500",
+                    "surface-tint": "#b0d500",
+                    "on-error-container": "#ffdad6",
+                    "on-surface": "#e2e4cf",
+                    "inverse-surface": "#e2e4cf",
+                    "on-secondary-fixed-variant": "#223da1",
+                    "primary": "#ffffff",
+                    "on-primary-container": "#596c00",
+                    "secondary-fixed-dim": "#b8c3ff",
+                    "on-primary": "#2a3400",
+                    "inverse-primary": "#536600",
+                    "on-tertiary": "#1b343d",
+                    "inverse-on-surface": "#2f3223",
+                    "surface-container-lowest": "#0d0f04",
+                    "tertiary": "#ffffff",
+                    "tertiary-container": "#cde7f3",
+                    "on-secondary-fixed": "#001355",
+                    "on-secondary-container": "#a1b1ff",
+                    "primary-container": "#caf300",
+                    "error": "#ffb4ab",
+                    "secondary": "#b8c3ff",
+                    "error-container": "#93000a",
+                    "tertiary-fixed-dim": "#b1cad7",
+                    "on-error": "#690005",
+                    "tertiary-fixed": "#cde7f3",
+                    "on-tertiary-fixed": "#041e28",
+                    "surface-bright": "#383b2b",
+                    "surface-variant": "#333627",
+                    "surface-container-highest": "#333627",
+                    "primary-fixed": "#caf300",
+                    "on-tertiary-container": "#506873",
+                    "outline-variant": "#444932",
+                    "surface-dim": "#121508",
+                    "on-primary-fixed-variant": "#3e4c00",
+                    "outline": "#8f9378",
+                    "on-surface-variant": "#c5c9ac",
+                    "on-tertiary-fixed-variant": "#324a54",
+                    "background": "#121508"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "32px",
+                    "margin": "24px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "sm": "12px",
+                    "base": "4px",
+                    "gutter": "16px",
+                    "xs": "8px"
+            },
+            "fontFamily": {
+                    "body-md": ["Space Grotesk"],
+                    "label-md": ["Space Grotesk"],
+                    "label-lg": ["Space Grotesk"],
+                    "h2": ["Space Grotesk"],
+                    "body-sm": ["Space Grotesk"],
+                    "h3": ["Space Grotesk"],
+                    "h1": ["Space Grotesk"],
+                    "body-lg": ["Space Grotesk"],
+                    "label-sm": ["Space Grotesk"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0e0e0e;
+            color: #e2e4cf;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0e0e0e;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #262626;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-[#0e0e0e] min-h-screen overflow-x-hidden">
+<!-- Persistent SideNavBar -->
+<nav class="w-[220px] h-screen fixed left-0 top-0 border-r border-white/10 bg-[#131313] flex flex-col py-8 z-50">
+<div class="px-6 mb-12">
+<h1 class="text-[#D4FF00] font-black italic text-2xl tracking-tighter">KRIA</h1>
+<p class="font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold text-[#D4FF00]/60">Grid</p>
+</div>
+<div class="flex-1 space-y-1">
+<a class="text-neutral-500 flex items-center gap-3 px-6 py-4 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold hover:bg-neutral-800/50 hover:text-white transition-all duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="text-[#D4FF00] bg-white/5 border-r-2 border-[#D4FF00] flex items-center gap-3 px-6 py-4 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold transition-all duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="work">work</span>
+                Gigs
+            </a>
+<a class="text-neutral-500 flex items-center gap-3 px-6 py-4 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold hover:bg-neutral-800/50 hover:text-white transition-all duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="event">event</span>
+                Events
+            </a>
+<a class="text-neutral-500 flex items-center gap-3 px-6 py-4 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold hover:bg-neutral-800/50 hover:text-white transition-all duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+                Profile
+            </a>
+</div>
+<div class="mt-auto px-6">
+<button class="text-neutral-500 flex items-center gap-3 py-4 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold hover:text-white transition-all duration-150 w-full text-left">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                Sign Out
+            </button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-[220px] min-h-screen">
+<!-- TopAppBar -->
+<header class="sticky top-0 w-full z-40 border-b border-white/10 bg-[#0e0e0e]/80 backdrop-blur-md flex justify-between items-center h-16 px-8">
+<div class="flex items-center gap-4">
+<h2 class="font-['Space_Grotesk'] font-medium text-on-surface">Post a Gig</h2>
+</div>
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-neutral-400 cursor-pointer hover:text-[#D4FF00] transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-neutral-400 cursor-pointer hover:text-[#D4FF00] transition-colors" data-icon="settings">settings</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-white/10">
+<img alt="Host Avatar" class="w-full h-full object-cover" data-alt="A close-up high-resolution portrait of a modern, professional woman with a confident expression. The lighting is dramatic and low-key, emphasizing sharp features against a dark, minimalist background. The visual style is crisp and editorial, fitting for a high-performance tech environment, using deep shadows and subtle lime-tinted highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3YkVN5CByNXqyBkcLqLbhPOLGtxPwBkMCUQ6YjALx5xx4qOjDrOfN_uSH2Brct9IkZpPnCwm6ud35lQrJj1GzDRZeheP6KTHzu3MjCpsZnuaRclbQ4cQpIwNHuNzNKeKsbSv7ZLZZYskEVsbb9TMPLH37EZHckpUwL9zLHxeWzENc1LqqaQaTYCiEGj8hfdVbaQMDltonDbY9bcUusXnPF542sLsbP3ig-amnXGtoQLzFSQgYzMONTB55y7gP8MawvjBOpP7HHcw"/>
+</div>
+</div>
+</header>
+<!-- Wizard Container -->
+<div class="max-w-5xl mx-auto py-12 px-8">
+<!-- Step Indicator -->
+<div class="flex items-center justify-between mb-16 relative">
+<div class="absolute top-1/2 left-0 w-full h-[1px] bg-white/10 -z-10"></div>
+<!-- Step 1 -->
+<div class="flex flex-col items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-[#D4FF00] text-black flex items-center justify-center font-bold text-sm ring-4 ring-[#0e0e0e]">1</div>
+<span class="font-label-sm text-on-surface uppercase tracking-widest">Category</span>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-[#D4FF00] text-black flex items-center justify-center font-bold text-sm ring-4 ring-[#0e0e0e]">2</div>
+<span class="font-label-sm text-on-surface uppercase tracking-widest">Basic Info</span>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-[#131313] text-neutral-500 border border-white/10 flex items-center justify-center font-bold text-sm ring-4 ring-[#0e0e0e]">3</div>
+<span class="font-label-sm text-neutral-500 uppercase tracking-widest">Scheduling</span>
+</div>
+<!-- Step 4 -->
+<div class="flex flex-col items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-[#131313] text-neutral-500 border border-white/10 flex items-center justify-center font-bold text-sm ring-4 ring-[#0e0e0e]">4</div>
+<span class="font-label-sm text-neutral-500 uppercase tracking-widest">Review</span>
+</div>
+</div>
+<!-- Wizard Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-xl">
+<!-- Left Section: Category Selection (Step 1) -->
+<div class="lg:col-span-6 space-y-6">
+<div class="flex items-center justify-between">
+<h3 class="font-h3 text-on-surface">Choose Category</h3>
+<span class="text-xs font-label-md text-[#D4FF00]">REQUIRED</span>
+</div>
+<!-- Bento Grid for Categories -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-base">
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🏨</span>
+<span class="font-label-sm uppercase text-neutral-400">Hospitality</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🛍️</span>
+<span class="font-label-sm uppercase text-neutral-400">Retail</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border-2 border-[#D4FF00] shadow-[0_0_15px_rgba(212,255,0,0.1)] group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🎪</span>
+<span class="font-label-sm uppercase text-[#D4FF00]">Events</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🚚</span>
+<span class="font-label-sm uppercase text-neutral-400">Logistics</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🛠️</span>
+<span class="font-label-sm uppercase text-neutral-400">Maintenance</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">💻</span>
+<span class="font-label-sm uppercase text-neutral-400">Tech Support</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🎨</span>
+<span class="font-label-sm uppercase text-neutral-400">Design</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🍳</span>
+<span class="font-label-sm uppercase text-neutral-400">Kitchen</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🧹</span>
+<span class="font-label-sm uppercase text-neutral-400">Cleaning</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🔒</span>
+<span class="font-label-sm uppercase text-neutral-400">Security</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">📞</span>
+<span class="font-label-sm uppercase text-neutral-400">Support</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🏢</span>
+<span class="font-label-sm uppercase text-neutral-400">Office</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🏋️</span>
+<span class="font-label-sm uppercase text-neutral-400">Fitness</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-6 rounded-xl bg-[#131313] border border-white/10 hover:border-[#D4FF00]/50 transition-all group">
+<span class="text-2xl group-hover:scale-110 transition-transform">🩺</span>
+<span class="font-label-sm uppercase text-neutral-400">Healthcare</span>
+</button>
+</div>
+</div>
+<!-- Right Section: Basic Info Form (Step 2) -->
+<div class="lg:col-span-6">
+<div class="bg-[#131313] rounded-2xl border border-white/10 p-8 space-y-8">
+<h3 class="font-h3 text-on-surface">Basic Info</h3>
+<form class="space-y-6">
+<!-- Title -->
+<div class="space-y-2">
+<label class="font-label-md uppercase text-neutral-500 block">Gig Title</label>
+<input class="w-full bg-[#201f1f] border border-white/10 rounded-lg px-4 py-3 text-on-surface focus:outline-none focus:border-[#D4FF00] transition-colors placeholder:text-neutral-600" placeholder="e.g. Lead Coordinator for Tech Summit" type="text"/>
+</div>
+<!-- Description -->
+<div class="space-y-2">
+<label class="font-label-md uppercase text-neutral-500 block">Description</label>
+<textarea class="w-full bg-[#201f1f] border border-white/10 rounded-lg px-4 py-3 text-on-surface focus:outline-none focus:border-[#D4FF00] transition-colors placeholder:text-neutral-600 resize-none" placeholder="Detail the responsibilities and requirements..." rows="4"></textarea>
+</div>
+<!-- Row: Slots & Pay Type -->
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="font-label-md uppercase text-neutral-500 block">Available Slots</label>
+<input class="w-full bg-[#201f1f] border border-white/10 rounded-lg px-4 py-3 text-on-surface focus:outline-none focus:border-[#D4FF00] transition-colors" min="1" type="number" value="1"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-md uppercase text-neutral-500 block">Pay Type</label>
+<div class="flex p-1 bg-[#201f1f] rounded-lg border border-white/10">
+<button class="flex-1 py-2 font-label-sm uppercase text-[#D4FF00] bg-white/5 rounded-md" type="button">Fixed</button>
+<button class="flex-1 py-2 font-label-sm uppercase text-neutral-500 hover:text-white" type="button">Hourly</button>
+<button class="flex-1 py-2 font-label-sm uppercase text-neutral-500 hover:text-white" type="button">Per Day</button>
+</div>
+</div>
+</div>
+<!-- Pay Amount -->
+<div class="space-y-2">
+<label class="font-label-md uppercase text-neutral-500 block">Pay Amount (₹)</label>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#D4FF00] font-bold">₹</span>
+<input class="w-full bg-[#201f1f] border border-white/10 rounded-lg pl-10 pr-4 py-3 text-on-surface focus:outline-none focus:border-[#D4FF00] transition-colors placeholder:text-neutral-600" placeholder="5,000" type="text"/>
+</div>
+</div>
+</form>
+<!-- Actions -->
+<div class="flex items-center gap-4 pt-4">
+<button class="flex-1 py-4 px-6 border border-white/10 text-white font-label-md uppercase tracking-widest hover:bg-white/5 transition-colors active:scale-95 rounded-lg">Save Draft</button>
+<button class="flex-1 py-4 px-6 bg-[#D4FF00] text-black font-label-md uppercase tracking-widest hover:brightness-110 transition-all active:scale-95 rounded-lg shadow-[0_4px_20px_rgba(212,255,0,0.2)]">Next Step</button>
+</div>
+</div>
+<!-- Decorative Element / Hint -->
+<div class="mt-6 p-4 border border-dashed border-white/10 rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-[#D4FF00]" data-icon="info">info</span>
+<p class="text-xs font-body-sm text-neutral-400">Accurate pay estimates help attract 40% more qualified professionals on Kria Grid.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB Suppression: Contextual Action Only -->
+<!-- FAB is excluded on transactional screens like Wizard -->
+</body></html>

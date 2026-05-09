@@ -14,6 +14,54 @@ services:
     volumes:
       - ./backend/api:/app   # hot-reload: code changes apply instantly
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    environment:
+      INSPECTOR_URL: http://inspector:8000
+    depends_on:
+      inspector:
+        condition: service_started   # don't block startup — endpoint returns 503 if Inspector isn't ready
+
+  # ===========================================
+  # Inspector — ID verification pipeline
+  # ===========================================
+  inspector:
+    build:
+      context: ./perceptrons/inspector
+      dockerfile: Dockerfile
+    image: inspector:latest
+    container_name: inspector
+    restart: unless-stopped
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./perceptrons/inspector/api:/app/api
+      - ./perceptrons/inspector/services:/app/services
+      - ./perceptrons/inspector/utils:/app/utils
+      - ./perceptrons/inspector/config.py:/app/config.py
+      - ./perceptrons/inspector/.env:/app/.env:ro
+      - insightface_models:/root/.insightface
+    environment:
+      INSIGHTFACE_MODEL: buffalo_sc
+      MATCH_THRESHOLD: "0.35"
+      MIN_FACE_SIZE_PX: "50"
+      MAX_IMAGE_LONG_SIDE: "1920"
+      LIVENESS_MIN_BLINKS: "1"
+      LIVENESS_MIN_HEAD_MOVEMENT: "5.0"
+      EAR_BLINK_THRESHOLD: "0.20"
+      UPLOAD_DIR: /tmp/inspector_uploads
+      ANTISPOOF_MODEL_ENABLED: "False"   # re-enable once cameras are validated
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s   # model loading takes ~30-60s on first boot
+    networks:
+      - kria-network
 
   # ===========================================
   # BACKEND - Supabase Development Mode
@@ -57,4 +105,5 @@ services:
     ports:
       - "8080:8080"
 
-# No volumes needed - frontend runs separately
+volumes:
+  insightface_models:   # persists InsightFace model weights across container restarts

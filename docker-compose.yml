@@ -6,7 +6,7 @@ version: '3.8'
 # Load environment variables
 x-env: &default-env
   env_file:
-    - .env.development
+    - .env.dev
 
 services:
   # ===========================================
@@ -23,6 +23,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@supabase-db:5432/postgres
       ENVIRONMENT: ${APP_ENV:-development}
       API_VERSION: v1
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
     depends_on:
       supabase-db:
         condition: service_healthy

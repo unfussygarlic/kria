@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "surface": "#121508",
+                  "surface-container": "#1e2113",
+                  "secondary-fixed": "#dde1ff",
+                  "on-background": "#e2e4cf",
+                  "on-primary-fixed": "#171e00",
+                  "surface-container-high": "#292b1d",
+                  "on-secondary": "#002487",
+                  "secondary-container": "#223da1",
+                  "surface-container-low": "#1a1d10",
+                  "primary-fixed-dim": "#b0d500",
+                  "surface-tint": "#b0d500",
+                  "on-error-container": "#ffdad6",
+                  "on-surface": "#e2e4cf",
+                  "inverse-surface": "#e2e4cf",
+                  "on-secondary-fixed-variant": "#223da1",
+                  "primary": "#ffffff",
+                  "on-primary-container": "#596c00",
+                  "secondary-fixed-dim": "#b8c3ff",
+                  "on-primary": "#2a3400",
+                  "inverse-primary": "#536600",
+                  "on-tertiary": "#1b343d",
+                  "inverse-on-surface": "#2f3223",
+                  "surface-container-lowest": "#0d0f04",
+                  "tertiary": "#ffffff",
+                  "tertiary-container": "#cde7f3",
+                  "on-secondary-fixed": "#001355",
+                  "on-secondary-container": "#a1b1ff",
+                  "primary-container": "#caf300",
+                  "error": "#ffb4ab",
+                  "secondary": "#b8c3ff",
+                  "error-container": "#93000a",
+                  "tertiary-fixed-dim": "#b1cad7",
+                  "on-error": "#690005",
+                  "tertiary-fixed": "#cde7f3",
+                  "on-tertiary-fixed": "#041e28",
+                  "surface-bright": "#383b2b",
+                  "surface-variant": "#333627",
+                  "surface-container-highest": "#333627",
+                  "primary-fixed": "#caf300",
+                  "on-tertiary-container": "#506873",
+                  "outline-variant": "#444932",
+                  "surface-dim": "#121508",
+                  "on-primary-fixed-variant": "#3e4c00",
+                  "outline": "#8f9378",
+                  "on-surface-variant": "#c5c9ac",
+                  "on-tertiary-fixed-variant": "#324a54",
+                  "background": "#121508"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "spacing": {
+                  "xl": "32px",
+                  "margin": "24px",
+                  "md": "16px",
+                  "lg": "24px",
+                  "sm": "12px",
+                  "base": "4px",
+                  "gutter": "16px",
+                  "xs": "8px"
+          },
+          "fontFamily": {
+                  "body-md": ["Space Grotesk"],
+                  "label-md": ["Space Grotesk"],
+                  "label-lg": ["Space Grotesk"],
+                  "h2": ["Space Grotesk"],
+                  "body-sm": ["Space Grotesk"],
+                  "h3": ["Space Grotesk"],
+                  "h1": ["Space Grotesk"],
+                  "body-lg": ["Space Grotesk"],
+                  "label-sm": ["Space Grotesk"]
+          },
+          "fontSize": {
+                  "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                  "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                  "label-lg": ["14px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                  "h2": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                  "body-sm": ["14px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                  "h3": ["24px", {"lineHeight": "1.2", "letterSpacing": "0", "fontWeight": "700"}],
+                  "h1": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                  "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                  "label-sm": ["10px", {"lineHeight": "1", "letterSpacing": "0.08em", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #0e0e0e;
+      color: #e2e4cf;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body class="font-body-md">
+<!-- SideNavBar -->
+<aside class="w-[220px] h-screen fixed left-0 top-0 border-r border-white/10 bg-[#131313] flex flex-col py-8 z-50">
+<div class="px-8 mb-12">
+<h1 class="text-[#D4FF00] font-black italic text-2xl tracking-tighter uppercase font-h2">KRIA</h1>
+<span class="font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold text-[#D4FF00]">Grid</span>
+</div>
+<nav class="flex-1">
+<ul class="space-y-1">
+<li>
+<a class="text-neutral-500 flex items-center gap-3 px-6 py-4 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold hover:bg-neutral-800/50 hover:text-white transition-all duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+            Dashboard
+          </a>
+</li>
+<li>
+<a class="text-[#D4FF00] bg-white/5 border-r-2 border-[#D4FF00] flex items-center gap-3 px-6 py-4 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold transition-all duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="work">work</span>
+            Gigs
+          </a>
+</li>
+<li>
+<a class="text-neutral-500 flex items-center gap-3 px-6 py-4 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold hover:bg-neutral-800/50 hover:text-white transition-all duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="event">event</span>
+            Events
+          </a>
+</li>
+<li>
+<a class="text-neutral-500 flex items-center gap-3 px-6 py-4 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold hover:bg-neutral-800/50 hover:text-white transition-all duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+            Profile
+          </a>
+</li>
+</ul>
+</nav>
+<div class="mt-auto px-6 border-t border-white/10 pt-6">
+<a class="text-neutral-500 flex items-center gap-3 py-4 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold hover:bg-neutral-800/50 hover:text-white transition-all duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+        Sign Out
+      </a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-[220px] min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="sticky top-0 w-full z-40 border-b border-white/10 bg-[#0e0e0e]/80 backdrop-blur-md flex justify-between items-center h-16 px-8">
+<div class="flex items-center flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-[20px]" data-icon="search">search</span>
+<input class="w-full bg-[#201f1f] border border-white/10 rounded-lg py-2 pl-10 pr-4 text-sm focus:border-[#D4FF00] outline-none transition-all placeholder:text-neutral-600" placeholder="Search gigs, locations, or clients..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-neutral-400">
+<span class="material-symbols-outlined cursor-pointer hover:text-[#D4FF00] transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-[#D4FF00] transition-colors" data-icon="settings">settings</span>
+</div>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-white/10">
+<img class="w-full h-full object-cover" data-alt="A close-up professional headshot of a creative professional against a minimalist dark grey concrete wall. The lighting is dramatic and directional, casting subtle shadows that highlight the person's focused and confident expression. The overall aesthetic is clean, high-contrast, and modern, fitting into a dark-themed professional UI. The color palette is dominated by deep charcoal and soft skin tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2vPH-uVQCJ8rxeLWdeRpfQwZCPc5K59xgUB5koY7gyiUGBkgQxdO7dOqdBDiWLeQicEx90TnJgfvzq0CCW0PgZuAFMUF-EHAwpyKf6cTX4i00k8w9tgaWcVH05yORz2_mtXpTVOCSNga27tNcHkqNTC-8TItcATZudVYMzQ-KQl2se3Uc36mzB0fTcKIjjn22G-CUfk-8E49dT7lH_6dlCGl9alUUNRTiyCxPRDbkc9ucxvYXVn7NhOYZZaXjLie6LvibXrXEdtk"/>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<section class="p-8 max-w-6xl w-full mx-auto">
+<!-- Header & CTA -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="font-h1 text-primary mb-2">My Gigs</h2>
+<p class="text-neutral-400 font-body-sm">Manage your active opportunities and performance across the grid.</p>
+</div>
+<button class="bg-[#D4FF00] text-[#0e0e0e] font-label-lg px-6 py-3 rounded-lg flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+          Post a Gig
+        </button>
+</div>
+<!-- Filters -->
+<div class="flex items-center gap-2 mb-8 border-b border-white/5 pb-1">
+<button class="px-4 py-3 text-[#D4FF00] border-b-2 border-[#D4FF00] font-label-md">All</button>
+<button class="px-4 py-3 text-neutral-500 hover:text-white transition-colors font-label-md">Open</button>
+<button class="px-4 py-3 text-neutral-500 hover:text-white transition-colors font-label-md">In Progress</button>
+<button class="px-4 py-3 text-neutral-500 hover:text-white transition-colors font-label-md">Completed</button>
+<button class="px-4 py-3 text-neutral-500 hover:text-white transition-colors font-label-md">Cancelled</button>
+</div>
+<!-- Gig Grid/List -->
+<div class="space-y-4">
+<!-- Gig Item 1 -->
+<div class="bg-[#131313] border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center gap-6 group hover:border-[#D4FF00]/50 transition-all duration-200">
+<div class="flex-1 space-y-3">
+<div class="flex items-center gap-3">
+<span class="bg-[#262626] text-[#b8c3ff] font-label-sm px-2 py-0.5 rounded uppercase">DevOps</span>
+<span class="flex items-center text-neutral-500 text-xs font-label-md">
+<span class="material-symbols-outlined text-[14px] mr-1" data-icon="location_on">location_on</span>
+                Mumbai
+              </span>
+</div>
+<h3 class="font-h3 text-white">Cloud Architecture Audit</h3>
+<div class="flex items-center gap-4 text-neutral-400 font-body-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="calendar_today">calendar_today</span>
+                24 Oct, 2023
+              </span>
+<span class="flex items-center gap-1 text-[#D4FF00]">
+<span class="material-symbols-outlined text-[16px]" data-icon="payments">payments</span>
+                ₹85,000 / Fixed
+              </span>
+</div>
+</div>
+<div class="w-full md:w-64 space-y-4">
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-label-md text-neutral-400">
+<span>Slots filled</span>
+<span class="text-white">4 / 5</span>
+</div>
+<div class="h-1 w-full bg-[#201f1f] rounded-full overflow-hidden">
+<div class="h-full bg-[#D4FF00] rounded-full" style="width: 80%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-[#D4FF00]"></div>
+<span class="font-label-md text-white uppercase">In Progress</span>
+</div>
+<button class="text-neutral-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Gig Item 2 -->
+<div class="bg-[#131313] border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center gap-6 group hover:border-[#D4FF00]/50 transition-all duration-200">
+<div class="flex-1 space-y-3">
+<div class="flex items-center gap-3">
+<span class="bg-[#262626] text-[#b8c3ff] font-label-sm px-2 py-0.5 rounded uppercase">UX Design</span>
+<span class="flex items-center text-neutral-500 text-xs font-label-md">
+<span class="material-symbols-outlined text-[14px] mr-1" data-icon="location_on">location_on</span>
+                Bangalore
+              </span>
+</div>
+<h3 class="font-h3 text-white">Fintech App Design System</h3>
+<div class="flex items-center gap-4 text-neutral-400 font-body-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="calendar_today">calendar_today</span>
+                12 Nov, 2023
+              </span>
+<span class="flex items-center gap-1 text-[#D4FF00]">
+<span class="material-symbols-outlined text-[16px]" data-icon="payments">payments</span>
+                ₹1,20,000 / Milestone
+              </span>
+</div>
+</div>
+<div class="w-full md:w-64 space-y-4">
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-label-md text-neutral-400">
+<span>Slots filled</span>
+<span class="text-white">0 / 2</span>
+</div>
+<div class="h-1 w-full bg-[#201f1f] rounded-full overflow-hidden">
+<div class="h-full bg-[#D4FF00] rounded-full" style="width: 0%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-blue-500"></div>
+<span class="font-label-md text-white uppercase">Open</span>
+</div>
+<button class="text-neutral-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Gig Item 3 -->
+<div class="bg-[#131313] border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center gap-6 group hover:border-[#D4FF00]/50 transition-all duration-200">
+<div class="flex-1 space-y-3">
+<div class="flex items-center gap-3">
+<span class="bg-[#262626] text-[#b8c3ff] font-label-sm px-2 py-0.5 rounded uppercase">Fullstack</span>
+<span class="flex items-center text-neutral-500 text-xs font-label-md">
+<span class="material-symbols-outlined text-[14px] mr-1" data-icon="location_on">location_on</span>
+                Remote
+              </span>
+</div>
+<h3 class="font-h3 text-white">E-commerce API Integration</h3>
+<div class="flex items-center gap-4 text-neutral-400 font-body-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="calendar_today">calendar_today</span>
+                05 Oct, 2023
+              </span>
+<span class="flex items-center gap-1 text-[#D4FF00]">
+<span class="material-symbols-outlined text-[16px]" data-icon="payments">payments</span>
+                ₹45,000 / Fixed
+              </span>
+</div>
+</div>
+<div class="w-full md:w-64 space-y-4">
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-label-md text-neutral-400">
+<span>Slots filled</span>
+<span class="text-white">1 / 1</span>
+</div>
+<div class="h-1 w-full bg-[#201f1f] rounded-full overflow-hidden">
+<div class="h-full bg-white/20 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-neutral-600"></div>
+<span class="font-label-md text-neutral-400 uppercase">Completed</span>
+</div>
+<button class="text-neutral-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Gig Item 4 -->
+<div class="bg-[#131313] border border-white/10 rounded-xl p-6 flex flex-col md:flex-row md:items-center gap-6 group hover:border-[#D4FF00]/50 transition-all duration-200 opacity-60">
+<div class="flex-1 space-y-3">
+<div class="flex items-center gap-3">
+<span class="bg-[#262626] text-[#b8c3ff] font-label-sm px-2 py-0.5 rounded uppercase">Content</span>
+<span class="flex items-center text-neutral-500 text-xs font-label-md">
+<span class="material-symbols-outlined text-[14px] mr-1" data-icon="location_on">location_on</span>
+                Delhi
+              </span>
+</div>
+<h3 class="font-h3 text-white">Technical Whitepaper Series</h3>
+<div class="flex items-center gap-4 text-neutral-400 font-body-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="calendar_today">calendar_today</span>
+                20 Sep, 2023
+              </span>
+<span class="flex items-center gap-1 text-[#D4FF00]">
+<span class="material-symbols-outlined text-[16px]" data-icon="payments">payments</span>
+                ₹30,000 / Fixed
+              </span>
+</div>
+</div>
+<div class="w-full md:w-64 space-y-4">
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-label-md text-neutral-400">
+<span>Slots filled</span>
+<span>0 / 3</span>
+</div>
+<div class="h-1 w-full bg-[#201f1f] rounded-full overflow-hidden">
+<div class="h-full bg-red-900 rounded-full" style="width: 0%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-red-500"></div>
+<span class="font-label-md text-red-500 uppercase">Cancelled</span>
+</div>
+<button class="text-neutral-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Stats / Secondary Area -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+<div class="bg-[#1a1919] border border-white/10 rounded-xl p-6">
+<div class="flex items-center justify-between mb-4">
+<span class="text-neutral-400 font-label-md">Active Earnings</span>
+<span class="material-symbols-outlined text-[#D4FF00]" data-icon="trending_up">trending_up</span>
+</div>
+<div class="text-2xl font-h2 text-white">₹2,45,000</div>
+<div class="mt-2 h-1 w-full bg-[#201f1f] rounded-full overflow-hidden">
+<div class="h-full bg-[#D4FF00]" style="width: 65%"></div>
+</div>
+</div>
+<div class="bg-[#1a1919] border border-white/10 rounded-xl p-6">
+<div class="flex items-center justify-between mb-4">
+<span class="text-neutral-400 font-label-md">Gig Completion</span>
+<span class="material-symbols-outlined text-blue-400" data-icon="verified">verified</span>
+</div>
+<div class="text-2xl font-h2 text-white">94.2%</div>
+<div class="mt-2 h-1 w-full bg-[#201f1f] rounded-full overflow-hidden">
+<div class="h-full bg-blue-500" style="width: 94%"></div>
+</div>
+</div>
+<div class="bg-[#1a1919] border border-white/10 rounded-xl p-6">
+<div class="flex items-center justify-between mb-4">
+<span class="text-neutral-400 font-label-md">Avg. Response Time</span>
+<span class="material-symbols-outlined text-orange-400" data-icon="timer">timer</span>
+</div>
+<div class="text-2xl font-h2 text-white">1.4 hrs</div>
+<div class="mt-2 h-1 w-full bg-[#201f1f] rounded-full overflow-hidden">
+<div class="h-full bg-orange-500" style="width: 80%"></div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</body></html>

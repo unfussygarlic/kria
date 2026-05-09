@@ -1,5 +1,5 @@
 export type ChatItem =
-  | { kind: "msg"; from: "seeker" | "finder"; text: string; time: string; file?: true }
+  | { kind: "msg"; from: "runner" | "host"; text: string; time: string; file?: true }
   | { kind: "divider"; text: string };
 
 export type GigCardStrings = {
@@ -19,10 +19,10 @@ export type Translations = {
     headlineLine1: string;
     headlineLine2: string;
     sub: string;
-    seekerLabel: string;
-    finderLabel: string;
-    seekerHint: string;
-    finderHint: string;
+    runnerLabel: string;
+    hostLabel: string;
+    runnerHint: string;
+    hostHint: string;
     cta: string;
   };
   whyKria: {
@@ -85,8 +85,8 @@ export type Translations = {
     copyright: string;
   };
   phone: {
-    seekerHint: string;
-    finderHint: string;
+    runnerHint: string;
+    hostHint: string;
     apply: string;
     skip: string;
     next: string;

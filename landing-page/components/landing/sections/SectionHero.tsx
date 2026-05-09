@@ -113,7 +113,7 @@ export default function SectionHero({ role, setRole }: { role: Role; setRole: (r
             border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 14, padding: 4, gap: 4,
           }}>
-            {([["seeker", t.hero.seekerLabel], ["finder", t.hero.finderLabel]] as [Role, string][]).map(([r, label]) => (
+            {([["runner", t.hero.runnerLabel], ["host", t.hero.hostLabel]] as [Role, string][]).map(([r, label]) => (
               <button key={r} onClick={() => setRole(r)} style={{
                 padding: "9px 22px", borderRadius: 10,
                 border: "none", cursor: "pointer",
@@ -130,7 +130,7 @@ export default function SectionHero({ role, setRole }: { role: Role; setRole: (r
           </div>
 
           <p style={{ fontSize: 13, color: "rgba(255,255,255,0.25)", margin: 0, fontWeight: 500 }}>
-            {role === "seeker" ? t.hero.seekerHint : t.hero.finderHint}
+            {role === "runner" ? t.hero.runnerHint : t.hero.hostHint}
           </p>
 
           {/* CTA */}

@@ -1,45 +1,125 @@
-# Kria - Auto Memory
+# Kria — Agent Memory
 
-## Critical: Always Read debugging.md
-`memory/debugging.md` contains known issues that WILL waste hours if ignored.
-Read it whenever touching auth, Docker, or migrations.
+## Product
+- [Overview](product/overview.md) — what Kria is, India-first, Runner/Host terminology, role architecture
+- [Status](product/status.md) — what's live, what's hidden, pending work
 
-## Docker: Must Use --env-file
+## Architecture
+- [Stack](architecture/stack.md) — Expo, FastAPI, Supabase, Next.js, Inspector, ports, Docker networking
+- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (latest: 0019, next: 0020)
+- [Data Access](architecture/data_access.md) — Supabase direct vs FastAPI, auth patterns, key utils
+
+## Apps
+- [Mobile: Theming](apps/mobile/theming.md) — Solar Flare palette, semantic tokens, fonts, responsive, band colors (6-band, 0–1000)
+- [Mobile: Navigation](apps/mobile/navigation.md) — tabs, routing, SHOW_HOST_ROLE flags, header patterns
+- [Mobile: Screens](apps/mobile/screens.md) — screen-by-screen UX decisions (incl. verify-identity multi-ID flow)
+- [Mobile: Animations](apps/mobile/animations.md) — PanResponder, Animated API, NativeWind conflict
+- [Mobile: Patterns](apps/mobile/patterns.md) — reusable components, stores, code gotchas
+- [Grid (Host Dashboard)](apps/grid/overview.md) — Next.js webapp, routes, Applications page, SkillGraph, MomentumChip, theming, gotchas
+- [Landing Page](apps/landing-page/overview.md) — trykria.com, i18n, inline styles, gotchas
+
+## Features
+- [Momentum](features/momentum.md) — 0–1000 scale, 6 bands, profile completion bonus, skill graph, signals, backend module, formula
+- [Badges](features/badges.md) — 18 badges (milestone/streak/identity), backend service, award hooks, home marquee
+- [Identity Verification](features/identity_verification.md) — multi-ID, Inspector pipeline, badge system, VerificationCamera, error codes, gotchas
+- [Gigs & Check-in](features/gigs.md) — lifecycle, OTP flow, applicants, geocoding wizard, venue Maps links
+- [Recommendations](features/recommendations.md) — matching engine, geocoding, GPS, scoring weights, Maps deep link
+- [Events](features/events.md) — events table, creation wizard, host/runner split
+- [Chat](features/chat.md) — hidden feature, tables, real-time bug, do-not-install list
+
+## Project
+- [Demo Seed](project/demo_seed.md) — Priya Mehta demo account, 15 gigs, 15 runners, all UUIDs
+
+## Dev
+- [Setup](dev/setup.md) — run commands, ports, Docker, dev auth, env files
+- [Debugging](dev/debugging.md) — NativeWind/Animated, cache clearing, RLS, SVG CSS vars, asyncpg gotchas, Next.js 16 params
+- [Todo](dev/todo.md) — open bugs, pending work, testing checklists
+- [Changelog](dev/changelog.md) — session-by-session feature log
+
+---
+
+## Quick Reference
+
+### Run Commands
 ```bash
-docker-compose --env-file .env.development -f docker-compose.yml -f docker-compose.dev.yml up
+cd frontend/pocket && npx expo start                   # Mobile (Expo Go)
+docker-compose --env-file .env.dev \
+  -f docker-compose.yml -f docker-compose.dev.yml up  # Backend + Supabase + Inspector
+cd frontend/grid && npm run dev                        # Grid (port 3000)
+cd landing-page && npm run dev                         # Landing page
 ```
 
-## JWT Secret — CRITICAL
-The demo ANON_KEY and SERVICE_ROLE_KEY are signed with:
+### Dev Auth
+- Phone OTP: any number → `123456`
+- Grid email: `91{digits}@kriya.dev` + password `kriya-dev-2026`
+- **Demo host account:** `9988776655` (Priya Mehta, Bangalore) — 15 seeded gigs, 16 runners
+
+### Theme (key tokens)
+- `T.primary` = `#D4FF00` (lime) | `T.secondary` = `#8097ff` (cobalt)
+- `T.bg` = `#0e0e0e` | surfaces: `#131313` / `#1a1919` / `#201f1f` / `#262626`
+- `T.selBg/selText` — selected state (lime/black) | `T.ctaBg/ctaText` — CTA buttons (lime/black)
+- `T.gradDark` = `["#1a1919","#0e0e0e"]` | `T.gradBrand` = `["#D4FF00","#c4ec00"]`
+
+### FastAPI Auth
+```python
+CurrentUser = Annotated[AuthenticatedUser, Depends(get_current_user)]
+db: AsyncSession = Depends(get_db)
 ```
-super-secret-jwt-token-with-at-least-32-characters-long
+
+### Terminology
+- **Runner** = gig worker | **Host** = gig poster
+- Backend fields (`poster_id`, `poster_rating`) unchanged — UI strings use Runner/Host
+- All UI strings → `frontend/pocket/constants/labels.ts` → `L.*`
+
+### Scoring System
+- **Runner** → Momentum (0–1000, 6 bands, skill graph on Arena screen)
+- **Host** → /10 rating from Runners (simple average from `ratings` table)
+- Formula: `clamp(gig_score + profile_points, 0, 1000)`
+  - `gig_score = (weighted_sum / 100) × 1000 × credibility − penalties`
+  - `profile_points` = up to 80 pts from profile fields (outside credibility)
+
+### Momentum Bands (0–1000)
+| Range | Label | Color |
+|-------|-------|-------|
+| 0–99 | Newcomer | `#777575` |
+| 100–299 | Building | `#ff7351` |
+| 300–499 | Reliable | `#8097ff` |
+| 500–699 | Trusted | `#FFC83D` |
+| 700–899 | Elite | `#D4FF00` |
+| 900–1000 | Legend | `#ffffff` |
+
+### Momentum Backend Location
+`backend/api/app/momentum/` — signals/ (one file per signal), registry.py, config.py, calculator.py, router.py, models.py, recalculate.py
+
+### To Add a New Momentum Signal
+1. Drop a `.py` file in `momentum/signals/` — export `SIGNAL: Signal` + `async def compute(user_id, db) -> float | None`
+2. Restart: `docker compose restart kria-api`
+3. Verify: `docker exec kriya_kria-api_1 python -c "from app.momentum import registry; print([s.key for s in registry.get_signals()])"`
+- No DB migration, no frontend changes, no weight assertions. See `features/momentum.md` for full Signal dataclass fields.
+
+### compute_worker_breakdown — new signature (3-tuple)
+```python
+# Takes signal_scores dict (from JSONB column), NOT profile_row
+score, items, profile_items = compute_worker_breakdown(
+    signal_scores,       # dict[str, float | None]  ← from row["signal_scores"]
+    penalty_points,      # int
+    gig_count,           # int
+    profile_fields,      # dict | None
+)
 ```
-(with `-long` suffix — verified by HMAC-SHA256 check)
-This MUST be `JWT_SECRET` in `.env.development`. Any difference → `JWSError JWSInvalidSignature` on every PostgREST request.
 
-## Kong key-auth — CRITICAL
-Kong 2.8.1 does NOT substitute `${VAR}` in kong.yml (`_transform: true` is NOT envsubst).
-`backend/kong.yml` must have the anon/service keys hardcoded directly (already done).
+### Identity Verification Quick Ref
+- **Flow:** `verify-identity.tsx` → `VerificationCamera mode="id"` → `mode="selfie"` → `POST /api/v1/profiles/verify-identity` (returns 202) → polls `GET /me/id-verification` every 5s
+- **Async queue:** `services/verification_queue.py` — single asyncio worker serialises Inspector calls; job status tracked in `verification_jobs` table
+- **Inspector:** `http://inspector:8000/verify` — joins `kria-network` via `docker-compose.dev.yml`
+- **DB column:** `verified_id_types jsonb[]` — use `jsonb_build_array(:id_type)` NOT `':id_type'::jsonb` (asyncpg binding bug)
+- **Badges:** `BadgeList earnedKeys={profile.verified_id_types}` — auto-shows `photo_verified` meta-badge
 
-## Dev Auth (Mock OTP)
-- OTP is always `123456` in development
-- Uses email `{digits_only}@kria.dev` + password `kria-dev-2026` under the hood
-- Phone formatting (`+91...` vs `91...`) is normalized by stripping non-digits
-- Config: `EXPO_PUBLIC_APP_ENV=development` in `frontend/.env`
+### Next Migration: `0020_...py`
 
-## fetchProfile Returns boolean
-`authStore.fetchProfile()` returns `true` on success, `false` on error.
-Only `initialize()` signs out on false — `fetchProfile` itself never calls signOut.
-
-## Migrations Are Idempotent
-Adding a `.sql` file to `backend/supabase/migrations/` is enough.
-The runner uses `_migrations` table to skip already-applied files.
-
-## Screen Layout — Sticky Footer Pattern
-All screens with a primary action button use: `KeyboardAvoidingView` (if inputs) > `ScrollView style={{flex:1}}` > `StickyFooter` component.
-Never use `position: absolute` footers or magic spacer Views. See `memory/ux_decisions.md` → "Screen Layout Schema" for full rules and canonical examples.
-
-## Dynamic Backend URLs — No Hardcoded IPs
-`frontend/lib/config.ts` reads `Constants.expoGoConfig.debuggerHost` (Metro IP) in dev.
-Both `lib/api/client.ts` and `lib/supabase.ts` import `API_URL` / `SUPABASE_URL` from there.
-Never hardcode IPs in `.env` — they change per WiFi. The dynamic config handles it automatically.
+### Badges Quick Ref
+- **Backend:** `backend/api/app/services/badge_service.py` — all badge logic; `award()` uses `ON CONFLICT DO NOTHING` + explicit `db.commit()`
+- **Endpoint:** `GET /api/v1/badges/me` — calls `sync_all_badges` first (retroactive), then returns all badges with earned status
+- **Hook points:** momentum/me (newcomer + streak), applicants OTP verify (gig milestones), verification_queue `_mark_verified` (id badges)
+- **Frontend store:** `frontend/pocket/stores/badgeStore.ts` — `fetchBadges()` on badges screen mount
+- **Home marquee:** `BadgeMarquee` in `home.tsx` — scrolls when `earned.length > 3`; 0.25px/16ms; duplicated list for seamless loop

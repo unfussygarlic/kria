@@ -1,0 +1,48 @@
+{
+  "cli": {
+    "version": ">= 10.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "development"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://api.trykria.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://your-ref.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://api.trykria.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://your-ref.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-services-key.json",
+        "track": "internal"
+      },
+      "ios": {
+        "appleId": "your@email.com",
+        "ascAppId": "your-app-store-connect-app-id",
+        "appleTeamId": "your-team-id"
+      }
+    }
+  }
+}

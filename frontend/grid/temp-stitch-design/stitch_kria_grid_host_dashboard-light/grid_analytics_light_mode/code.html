@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kria Grid | Performance Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "on-secondary": "#ffffff",
+                "surface-variant": "#e2e4cf",
+                "secondary": "#4858ab",
+                "on-primary": "#ffffff",
+                "tertiary-fixed": "#e5e2e1",
+                "error": "#ba1a1a",
+                "tertiary": "#5f5e5e",
+                "surface-container-lowest": "#ffffff",
+                "inverse-on-surface": "#f1f2dc",
+                "primary": "#536600",
+                "on-error": "#ffffff",
+                "surface-container": "#eef0da",
+                "secondary-fixed-dim": "#bac3ff",
+                "on-surface-variant": "#444932",
+                "surface": "#f9fbe5",
+                "on-background": "#1a1d10",
+                "surface-container-highest": "#e2e4cf",
+                "tertiary-container": "#f0eded",
+                "secondary-container": "#96a5ff",
+                "primary-container": "#d4ff00",
+                "on-tertiary": "#ffffff",
+                "tertiary-fixed-dim": "#c8c6c5",
+                "on-secondary-container": "#27378a",
+                "on-tertiary-container": "#6c6b6b",
+                "on-primary-container": "#5f7400",
+                "surface-container-low": "#f4f5df",
+                "surface-container-high": "#e8ead4",
+                "surface-dim": "#dadcc6",
+                "inverse-primary": "#b0d500",
+                "on-surface": "#1a1d10",
+                "primary-fixed": "#caf300",
+                "on-tertiary-fixed": "#1c1b1b",
+                "inverse-surface": "#2f3223",
+                "surface-tint": "#536600",
+                "primary-fixed-dim": "#b0d500",
+                "on-primary-fixed": "#171e00",
+                "on-primary-fixed-variant": "#3e4c00",
+                "error-container": "#ffdad6",
+                "outline": "#757a60",
+                "on-error-container": "#93000a",
+                "secondary-fixed": "#dee0ff",
+                "on-secondary-fixed-variant": "#2f3f92",
+                "on-secondary-fixed": "#00105b",
+                "surface-bright": "#f9fbe5",
+                "outline-variant": "#c5c9ac",
+                "on-tertiary-fixed-variant": "#474646",
+                "background": "#f9fbe5"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+              },
+              "spacing": {
+                "gutter": "20px",
+                "xl": "32px",
+                "base": "4px",
+                "lg": "24px",
+                "xs": "8px",
+                "margin": "40px",
+                "md": "16px",
+                "sm": "12px"
+              },
+              "fontFamily": {
+                "h2": ["Space Grotesk"],
+                "body-lg": ["Space Grotesk"],
+                "label-lg": ["Space Grotesk"],
+                "body-md": ["Space Grotesk"],
+                "h1": ["Space Grotesk"],
+                "body-sm": ["Space Grotesk"],
+                "h3": ["Space Grotesk"],
+                "label-md": ["Space Grotesk"]
+              },
+              "fontSize": {
+                "h2": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "label-lg": ["14px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "h1": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                "h3": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.04em", "fontWeight": "600"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #f9fbe5;
+        }
+        .bento-card {
+            background-color: white;
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="text-on-background antialiased overflow-x-hidden">
+<!-- SideNavBar Shell -->
+<aside class="fixed left-0 top-0 h-full w-64 border-r border-zinc-100 bg-white z-50 flex flex-col py-6">
+<div class="px-6 mb-10">
+<h1 class="text-lg font-black text-zinc-900 tracking-tighter">Kria Grid</h1>
+<p class="text-[10px] uppercase font-semibold tracking-widest text-zinc-400">Host Management</p>
+</div>
+<nav class="flex-1 flex flex-col gap-1">
+<!-- Active Tab: Dashboard -->
+<a class="bg-zinc-900 text-lime-400 mx-2 px-4 py-3 flex items-center gap-3 rounded-sm transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="grid_view">grid_view</span>
+<span class="font-label-md text-label-md uppercase tracking-widest">Dashboard</span>
+</a>
+<a class="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="work">work</span>
+<span class="font-label-md text-label-md uppercase tracking-widest">Gigs</span>
+</a>
+<a class="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="calendar_today">calendar_today</span>
+<span class="font-label-md text-label-md uppercase tracking-widest">Events</span>
+</a>
+<a class="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
+<span class="font-label-md text-label-md uppercase tracking-widest">Profile</span>
+</a>
+<a class="text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 mx-2 px-4 py-3 flex items-center gap-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="corporate_fare">corporate_fare</span>
+<span class="font-label-md text-label-md uppercase tracking-widest">Org</span>
+</a>
+</nav>
+<div class="px-2 mt-auto flex flex-col gap-1">
+<a class="text-zinc-400 hover:text-zinc-900 mx-2 px-4 py-3 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="help">help</span>
+<span class="font-label-md text-label-md uppercase">Help Center</span>
+</a>
+<a class="text-zinc-400 hover:text-zinc-900 mx-2 px-4 py-3 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="logout">logout</span>
+<span class="font-label-md text-label-md uppercase">Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar Shell -->
+<header class="fixed top-0 right-0 left-64 h-16 flex items-center justify-between px-8 bg-white/90 backdrop-blur-md border-b border-zinc-100 z-40">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm" data-icon="search">search</span>
+<input class="w-full bg-zinc-50 border-none rounded-sm pl-10 pr-4 py-2 text-sm focus:ring-1 focus:ring-secondary/20" placeholder="Search analytics..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-zinc-500 hover:text-zinc-900 transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-zinc-500 hover:text-zinc-900 transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-zinc-200 overflow-hidden border border-zinc-200">
+<img alt="Host User Profile" data-alt="A professional close-up portrait of a corporate executive with a clean, well-groomed appearance. The lighting is soft and flattering, typical of a high-end corporate office setting. The background is slightly out of focus, showing a modern architectural interior with neutral tones. The overall aesthetic is professional, reliable, and modern, fitting a high-tech dashboard interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkPILPaw78niM6o9LEbuXvo6LnvN4w7UKpNA_zU6-xATGb_wW2hbjjgIdV3qXKPDFyv4pPDFxZO8db300EFgAeWjjM9-94BrGqmPzJnjaan_qJn49DV146s-OTiimrlqAKQgLOwJhpBiAtJxOcV0entErS_YLoWJj-byjaRtaS69DMm1QDC22rXz1H_pXVkaAQUixbOI56LfYyPcKXYcCPK7Cc-JhvD-xM46K83Xp5Oz34rE0VbwkXxJlCu57QHPzdo4gq-Jc8d-Y"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="ml-64 mt-16 p-margin max-w-[1280px] mx-auto">
+<!-- Header Section -->
+<section class="mb-xl flex items-end justify-between">
+<div>
+<h2 class="font-h1 text-h1 text-zinc-900">Performance Grid</h2>
+<p class="font-body-md text-body-md text-zinc-500">Real-time recruitment dynamics and workforce health.</p>
+</div>
+<div class="flex items-center gap-xs">
+<button class="bg-zinc-100 text-zinc-900 px-lg py-sm font-label-lg text-label-lg flex items-center gap-2 hover:bg-zinc-200 transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span> EXPORT REPORT
+                </button>
+<button class="bg-primary-container text-on-primary-container px-lg py-sm font-label-lg text-label-lg flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span> CREATE NEW GIG
+                </button>
+</div>
+</section>
+<!-- KPI Grid (Bento) -->
+<div class="grid grid-cols-12 gap-gutter mb-xl">
+<!-- Payouts Card -->
+<div class="col-span-3 bento-card p-lg flex flex-col justify-between">
+<div>
+<span class="font-label-md text-label-md text-zinc-400 uppercase tracking-widest block mb-2">Total Payouts</span>
+<h3 class="font-h2 text-h2 text-zinc-900">₹4.2M</h3>
+</div>
+<div class="flex items-center gap-2 text-lime-600 font-label-md">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+<span>12% vs last month</span>
+</div>
+</div>
+<!-- Time to Fill -->
+<div class="col-span-3 bento-card p-lg flex flex-col justify-between">
+<div>
+<span class="font-label-md text-label-md text-zinc-400 uppercase tracking-widest block mb-2">Time-to-Fill</span>
+<h3 class="font-h2 text-h2 text-zinc-900">4.8 Days</h3>
+</div>
+<div class="flex items-center gap-2 text-error font-label-md">
+<span class="material-symbols-outlined text-sm" data-icon="trending_down">trending_down</span>
+<span>0.5d slower</span>
+</div>
+</div>
+<!-- Active Workforce -->
+<div class="col-span-3 bento-card p-lg flex flex-col justify-between border-l-4 border-l-primary-container">
+<div>
+<span class="font-label-md text-label-md text-zinc-400 uppercase tracking-widest block mb-2">Active Workforce</span>
+<h3 class="font-h2 text-h2 text-zinc-900">1,284</h3>
+</div>
+<div class="w-full bg-zinc-100 h-1.5 rounded-full mt-4">
+<div class="bg-primary-container h-full w-[72%] rounded-full"></div>
+</div>
+</div>
+<!-- Retention -->
+<div class="col-span-3 bento-card p-lg flex flex-col justify-between">
+<div>
+<span class="font-label-md text-label-md text-zinc-400 uppercase tracking-widest block mb-2">Retention Rate</span>
+<h3 class="font-h2 text-h2 text-zinc-900">94.2%</h3>
+</div>
+<div class="flex items-center gap-2 text-zinc-500 font-label-md">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span>
+<span>Healthy status</span>
+</div>
+</div>
+</div>
+<!-- Secondary Grid: Map and Main Performance -->
+<div class="grid grid-cols-12 gap-gutter mb-xl">
+<!-- Geographic Heatmap -->
+<div class="col-span-7 bento-card relative overflow-hidden h-[480px]">
+<div class="p-lg border-b border-zinc-50 flex justify-between items-center">
+<h4 class="font-h3 text-h3 text-zinc-900">Hub Distribution</h4>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-zinc-900 text-lime-400 text-[10px] font-bold uppercase tracking-tighter">India Regional</span>
+</div>
+</div>
+<div class="absolute inset-0 top-16 bg-zinc-50 flex items-center justify-center">
+<!-- Map Placeholder with Location Data -->
+<img class="w-full h-full object-cover opacity-90" data-alt="A stylized, high-contrast geographic heatmap of the Indian subcontinent. The map uses a minimalist vector aesthetic with light grey landmasses and white borders. Glowing nodes in electric lime and cobalt blue mark high-density workforce hubs in cities like Bangalore, Mumbai, and Delhi. The lighting is clean and professional with a slight atmospheric haze to represent data activity. The overall color palette is dominated by off-whites and the brand's lime accent." data-location="India" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGJGjcjRGlHSn8KltmTKLmpPal31NG6yPR_8k2PL6XHOh-uUoGJdqJe0bI1dKyQRM8i9LVYGQLk8HLI_R_J45W_1Iuu7bv92WTX-FKVN6Dxnqs3_07gM5tf5qLLHu_jyvEPw5F-j8G1ui26hxDKXkSq-Ew6dkWAaFWL_rWAQhxoHMSlqT5lr8nrr-CXD_icDUPwHrNbP1aSe-6kJROZ_thfKC1XXrpgTJvoogLgAkeQ0HoX6P5ChDaXwVVujaPrYiNZcl4DlPUdi4"/>
+<!-- Overlay Metrics -->
+<div class="absolute bottom-8 left-8 flex gap-4">
+<div class="glass-panel p-md shadow-xl">
+<p class="text-[10px] uppercase font-bold text-zinc-500">South Hub</p>
+<p class="text-xl font-bold">542 Workers</p>
+</div>
+<div class="glass-panel p-md shadow-xl border-l-2 border-l-secondary">
+<p class="text-[10px] uppercase font-bold text-zinc-500">North Hub</p>
+<p class="text-xl font-bold">310 Workers</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Workforce Breakdown -->
+<div class="col-span-5 bento-card p-lg flex flex-col h-[480px]">
+<div class="mb-lg">
+<h4 class="font-h3 text-h3 text-zinc-900">Worker Segments</h4>
+<p class="text-body-sm text-zinc-500">Breakdown by technical expertise</p>
+</div>
+<div class="flex-1 space-y-md overflow-y-auto pr-2">
+<!-- Technical Segment -->
+<div class="p-md bg-zinc-50 border-l-4 border-l-secondary">
+<div class="flex justify-between items-center mb-xs">
+<span class="font-label-lg text-zinc-900">Full-Stack Engineering</span>
+<span class="font-bold text-secondary">42%</span>
+</div>
+<div class="w-full bg-zinc-200 h-1 rounded-full">
+<div class="bg-secondary h-full w-[42%]"></div>
+</div>
+</div>
+<!-- Logistics Segment -->
+<div class="p-md bg-zinc-50 border-l-4 border-l-primary-container">
+<div class="flex justify-between items-center mb-xs">
+<span class="font-label-lg text-zinc-900">Supply Chain &amp; Logistics</span>
+<span class="font-bold text-zinc-900">28%</span>
+</div>
+<div class="w-full bg-zinc-200 h-1 rounded-full">
+<div class="bg-primary-container h-full w-[28%]"></div>
+</div>
+</div>
+<!-- Data Operations -->
+<div class="p-md bg-zinc-50 border-l-4 border-l-zinc-300">
+<div class="flex justify-between items-center mb-xs">
+<span class="font-label-lg text-zinc-900">Data Labeling &amp; Ops</span>
+<span class="font-bold text-zinc-900">18%</span>
+</div>
+<div class="w-full bg-zinc-200 h-1 rounded-full">
+<div class="bg-zinc-300 h-full w-[18%]"></div>
+</div>
+</div>
+<!-- Creative -->
+<div class="p-md bg-zinc-50 border-l-4 border-l-zinc-200">
+<div class="flex justify-between items-center mb-xs">
+<span class="font-label-lg text-zinc-900">UI/UX &amp; Creative</span>
+<span class="font-bold text-zinc-900">12%</span>
+</div>
+<div class="w-full bg-zinc-200 h-1 rounded-full">
+<div class="bg-zinc-200 h-full w-[12%]"></div>
+</div>
+</div>
+</div>
+<button class="w-full mt-lg py-sm border border-zinc-200 text-zinc-600 font-label-md uppercase tracking-widest hover:bg-zinc-50 transition-colors">
+                    View Talent Pool
+                </button>
+</div>
+</div>
+<!-- Performance Graph & Recent Activity -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Monthly Trends -->
+<div class="col-span-8 bento-card p-lg h-[320px] flex flex-col">
+<div class="flex justify-between items-start mb-xl">
+<div>
+<h4 class="font-h3 text-h3 text-zinc-900">Performance Trends</h4>
+<p class="text-body-sm text-zinc-500">Operational efficiency vs payout cycle</p>
+</div>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+<span class="text-[10px] font-bold uppercase text-zinc-400">Efficiency</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="text-[10px] font-bold uppercase text-zinc-400">Payouts</span>
+</div>
+</div>
+</div>
+<div class="flex-1 flex items-end justify-between gap-base px-2">
+<!-- Fake Chart Bars -->
+<div class="w-full flex items-end gap-1 group">
+<div class="w-full bg-zinc-100 group-hover:bg-primary-container/20 h-[40%] transition-all"></div>
+<div class="w-full bg-secondary h-[30%] opacity-80"></div>
+</div>
+<div class="w-full flex items-end gap-1 group">
+<div class="w-full bg-zinc-100 group-hover:bg-primary-container/20 h-[55%] transition-all"></div>
+<div class="w-full bg-secondary h-[45%] opacity-80"></div>
+</div>
+<div class="w-full flex items-end gap-1 group">
+<div class="w-full bg-zinc-100 group-hover:bg-primary-container/20 h-[70%] transition-all"></div>
+<div class="w-full bg-secondary h-[60%] opacity-80"></div>
+</div>
+<div class="w-full flex items-end gap-1 group">
+<div class="w-full bg-zinc-100 group-hover:bg-primary-container/20 h-[85%] transition-all"></div>
+<div class="w-full bg-secondary h-[75%] opacity-80"></div>
+</div>
+<div class="w-full flex items-end gap-1 group">
+<div class="w-full bg-zinc-100 group-hover:bg-primary-container/20 h-[65%] transition-all"></div>
+<div class="w-full bg-secondary h-[50%] opacity-80"></div>
+</div>
+<div class="w-full flex items-end gap-1 group">
+<div class="w-full bg-zinc-100 group-hover:bg-primary-container/20 h-[90%] transition-all"></div>
+<div class="w-full bg-secondary h-[80%] opacity-80"></div>
+</div>
+<div class="w-full flex items-end gap-1 group">
+<div class="w-full bg-primary-container h-[95%] transition-all"></div>
+<div class="w-full bg-secondary h-[85%]"></div>
+</div>
+</div>
+<div class="flex justify-between mt-md pt-md border-t border-zinc-50 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+<span>JAN</span><span>FEB</span><span>MAR</span><span>APR</span><span>MAY</span><span>JUN</span><span>JUL</span>
+</div>
+</div>
+<!-- Operational Alerts -->
+<div class="col-span-4 bento-card p-lg h-[320px] flex flex-col">
+<h4 class="font-h3 text-h3 text-zinc-900 mb-lg">Live Alerts</h4>
+<div class="space-y-sm flex-1 overflow-y-auto">
+<div class="flex gap-md p-sm bg-error/5 border border-error/10 rounded-sm">
+<span class="material-symbols-outlined text-error" data-icon="warning">warning</span>
+<div>
+<p class="font-label-lg text-zinc-900 leading-tight">Payout Delayed</p>
+<p class="text-xs text-zinc-500">Chennai Hub - 42 Workers affected</p>
+</div>
+</div>
+<div class="flex gap-md p-sm bg-zinc-50 border border-zinc-100 rounded-sm">
+<span class="material-symbols-outlined text-secondary" data-icon="info">info</span>
+<div>
+<p class="font-label-lg text-zinc-900 leading-tight">Compliance Update</p>
+<p class="text-xs text-zinc-500">New taxation rules for gig contractors</p>
+</div>
+</div>
+<div class="flex gap-md p-sm bg-zinc-50 border border-zinc-100 rounded-sm">
+<span class="material-symbols-outlined text-lime-600" data-icon="rocket_launch">rocket_launch</span>
+<div>
+<p class="font-label-lg text-zinc-900 leading-tight">Peak Demand</p>
+<p class="text-xs text-zinc-500">Bangalore Hub - +20% demand forecasted</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button Contextual -->
+<div class="fixed bottom-margin right-margin z-50">
+<button class="h-14 w-14 rounded-full bg-zinc-900 text-lime-400 shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-150">
+<span class="material-symbols-outlined text-3xl" data-icon="bolt" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</button>
+</div>
+</body></html>

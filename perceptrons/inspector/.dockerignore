@@ -1,0 +1,36 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Secrets / local config
+.env
+*.key
+*.pem
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+*.xml
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docs
+README.md

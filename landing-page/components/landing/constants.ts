@@ -3,7 +3,7 @@ export const BG       = "#0B0F0A";
 export const SURFACE  = "#111510";
 export const SURFACE2 = "#161b14";
 
-export type Role = "seeker" | "finder";
+export type Role = "runner" | "host";
 
 /** Non-translatable gig card data */
 export interface GigCardData {

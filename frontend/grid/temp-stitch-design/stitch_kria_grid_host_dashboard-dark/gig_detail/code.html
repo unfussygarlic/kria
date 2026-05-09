@@ -1,0 +1,356 @@
+<html class="dark"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "surface": "#121508",
+                  "surface-container": "#1e2113",
+                  "secondary-fixed": "#dde1ff",
+                  "on-background": "#e2e4cf",
+                  "on-primary-fixed": "#171e00",
+                  "surface-container-high": "#292b1d",
+                  "on-secondary": "#002487",
+                  "secondary-container": "#223da1",
+                  "surface-container-low": "#1a1d10",
+                  "primary-fixed-dim": "#b0d500",
+                  "surface-tint": "#b0d500",
+                  "on-error-container": "#ffdad6",
+                  "on-surface": "#e2e4cf",
+                  "inverse-surface": "#e2e4cf",
+                  "on-secondary-fixed-variant": "#223da1",
+                  "primary": "#ffffff",
+                  "on-primary-container": "#596c00",
+                  "secondary-fixed-dim": "#b8c3ff",
+                  "on-primary": "#2a3400",
+                  "inverse-primary": "#536600",
+                  "on-tertiary": "#1b343d",
+                  "inverse-on-surface": "#2f3223",
+                  "surface-container-lowest": "#0d0f04",
+                  "tertiary": "#ffffff",
+                  "tertiary-container": "#cde7f3",
+                  "on-secondary-fixed": "#001355",
+                  "on-secondary-container": "#a1b1ff",
+                  "primary-container": "#caf300",
+                  "error": "#ffb4ab",
+                  "secondary": "#b8c3ff",
+                  "error-container": "#93000a",
+                  "tertiary-fixed-dim": "#b1cad7",
+                  "on-error": "#690005",
+                  "tertiary-fixed": "#cde7f3",
+                  "on-tertiary-fixed": "#041e28",
+                  "surface-bright": "#383b2b",
+                  "surface-variant": "#333627",
+                  "surface-container-highest": "#333627",
+                  "primary-fixed": "#caf300",
+                  "on-tertiary-container": "#506873",
+                  "outline-variant": "#444932",
+                  "surface-dim": "#121508",
+                  "on-primary-fixed-variant": "#3e4c00",
+                  "outline": "#8f9378",
+                  "on-surface-variant": "#c5c9ac",
+                  "on-tertiary-fixed-variant": "#324a54",
+                  "background": "#121508"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "spacing": {
+                  "xl": "32px",
+                  "margin": "24px",
+                  "md": "16px",
+                  "lg": "24px",
+                  "sm": "12px",
+                  "base": "4px",
+                  "gutter": "16px",
+                  "xs": "8px"
+          },
+          "fontFamily": {
+                  "body-md": ["Space Grotesk"],
+                  "label-md": ["Space Grotesk"],
+                  "label-lg": ["Space Grotesk"],
+                  "h2": ["Space Grotesk"],
+                  "body-sm": ["Space Grotesk"],
+                  "h3": ["Space Grotesk"],
+                  "h1": ["Space Grotesk"],
+                  "body-lg": ["Space Grotesk"],
+                  "label-sm": ["Space Grotesk"]
+          },
+          "fontSize": {
+                  "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                  "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                  "label-lg": ["14px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                  "h2": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                  "body-sm": ["14px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                  "h3": ["24px", {"lineHeight": "1.2", "letterSpacing": "0", "fontWeight": "700"}],
+                  "h1": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                  "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                  "label-sm": ["10px", {"lineHeight": "1", "letterSpacing": "0.08em", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body { background-color: #0e0e0e; color: #e2e4cf; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #131313; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #262626; border-radius: 10px; }
+  </style>
+</head>
+<body class="font-body-md">
+<!-- SideNavBar Anchor -->
+<aside class="w-[220px] h-screen fixed left-0 top-0 border-r border-white/10 bg-[#131313] flex flex-col py-8 z-50">
+<div class="px-6 mb-12">
+<div class="text-[#D4FF00] font-black italic text-2xl tracking-tighter">KRIA</div>
+<div class="font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold text-[#D4FF00] opacity-60">Grid</div>
+</div>
+<nav class="flex-grow space-y-1">
+<a class="text-neutral-500 flex items-center gap-3 px-6 py-4 hover:bg-neutral-800/50 hover:text-white transition-all duration-150 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="text-[#D4FF00] bg-white/5 border-r-2 border-[#D4FF00] flex items-center gap-3 px-6 py-4 transition-all duration-150 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">work</span>
+<span>Gigs</span>
+</a>
+<a class="text-neutral-500 flex items-center gap-3 px-6 py-4 hover:bg-neutral-800/50 hover:text-white transition-all duration-150 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">event</span>
+<span>Events</span>
+</a>
+<a class="text-neutral-500 flex items-center gap-3 px-6 py-4 hover:bg-neutral-800/50 hover:text-white transition-all duration-150 font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span>Profile</span>
+</a>
+</nav>
+<div class="px-6 pt-8 border-t border-white/10">
+<a class="text-neutral-500 flex items-center gap-3 py-2 hover:text-white transition-all font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar Anchor -->
+<header class="sticky top-0 w-full z-40 border-b border-white/10 bg-[#0e0e0e]/80 backdrop-blur-md flex justify-between items-center h-16 px-8 ml-[220px] w-[calc(100%-220px)]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-neutral-400 cursor-pointer hover:text-[#D4FF00]">arrow_back</span>
+<div class="font-['Space_Grotesk'] font-medium text-neutral-400">Gig Details <span class="mx-2 opacity-30">/</span> <span class="text-white">#GIG-9921</span></div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-neutral-400 cursor-pointer hover:text-[#D4FF00] transition-colors">notifications</span>
+<span class="material-symbols-outlined text-neutral-400 cursor-pointer hover:text-[#D4FF00] transition-colors">settings</span>
+</div>
+<div class="h-8 w-8 rounded-full bg-surface-container-high border border-white/10 overflow-hidden">
+<img alt="Host Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a modern corporate host in a minimalist tech environment. The lighting is crisp and cinematic with subtle blue and lime green undertones reflecting a high-performance digital workspace. The individual has a focused, professional expression. The background is slightly blurred showing a dark, sleek office setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmGglmEwVUM1DTVXOfc0tFtC4bJanFCpTHEe44Y33VjXDs8Geqnp94OA4C7lvbgK7kxQGPLchZo30T_QZBZJpx4ug8ojKsZFhIrLA9l9d56C8Mfxa2PQMrXZhwDzXeH09rpE1Jy1g0UjXH0VpHaKbId25HLN-1LyYgXtLZj2fpo6CR6Nd99A7sLMjIz_bfTuYzdETpoKtaqZ4cKWXa_g8opOySk2K8-D9UTB3nrVKvpnG5y7WynQEOTd4vGybNQiBKe9_0Gk4H4So"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="ml-[220px] p-xl bg-[#0e0e0e] min-h-[calc(100vh-64px)]">
+<div class="grid grid-cols-12 gap-gutter max-w-7xl mx-auto">
+<!-- Left Column: Gig Details -->
+<section class="col-span-12 lg:col-span-7 space-y-lg">
+<!-- Header Info -->
+<div class="bg-[#131313] border border-white/10 rounded-xl p-lg">
+<div class="flex justify-between items-start mb-md">
+<div>
+<div class="flex items-center gap-xs mb-base">
+<span class="bg-[#262626] text-[#b8c3ff] px-xs py-[2px] rounded-sm font-label-sm uppercase">Hospitality</span>
+<span class="flex items-center gap-1 text-[#D4FF00] font-label-sm uppercase">
+<span class="w-2 h-2 rounded-full bg-[#D4FF00]"></span>
+                  Open
+                </span>
+</div>
+<h1 class="font-h2 text-white">Event Crew - Zomato Feeding India</h1>
+</div>
+<div class="text-right">
+<div class="text-white font-h3">₹800<span class="text-body-sm text-neutral-500 font-normal">/day</span></div>
+<div class="text-[#D4FF00] font-label-sm">Incentives Eligible</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-md py-md border-y border-white/5">
+<div class="flex flex-col gap-base">
+<span class="text-neutral-500 font-label-sm uppercase">Date</span>
+<span class="text-white font-body-md">Oct 24, 2023</span>
+</div>
+<div class="flex flex-col gap-base">
+<span class="text-neutral-500 font-label-sm uppercase">Shift</span>
+<span class="text-white font-body-md">9AM - 6PM</span>
+</div>
+<div class="flex flex-col gap-base">
+<span class="text-neutral-500 font-label-sm uppercase">Duration</span>
+<span class="text-white font-body-md">9 Hours</span>
+</div>
+</div>
+<div class="pt-md">
+<div class="flex items-center gap-sm text-neutral-400 mb-xl">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<span class="font-body-sm">Palace Grounds, Bangalore, Karnataka 560006</span>
+</div>
+<div class="space-y-base">
+<div class="flex justify-between text-neutral-400 font-label-sm uppercase">
+<span>Slots Filled</span>
+<span class="text-white">12/20</span>
+</div>
+<div class="h-1 w-full bg-[#201f1f] rounded-full overflow-hidden">
+<div class="h-full bg-[#D4FF00] w-[60%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Check-in OTP Card -->
+<div class="bg-[#1a1919] border-2 border-[#D4FF00]/50 rounded-xl p-lg flex items-center justify-between shadow-[0_0_20px_rgba(212,255,0,0.1)]">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-[#D4FF00]/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#D4FF00]">key</span>
+</div>
+<div>
+<div class="font-label-lg text-[#D4FF00] uppercase tracking-widest">Check-in OTP</div>
+<div class="text-neutral-400 text-body-sm">Share with the hub manager on arrival</div>
+</div>
+</div>
+<div class="text-5xl font-black text-white tracking-tighter">8421</div>
+</div>
+<!-- Venue Map Preview -->
+<div class="bg-[#131313] border border-white/10 rounded-xl overflow-hidden h-[240px] relative">
+<img alt="Map of Bangalore" class="w-full h-full object-cover grayscale opacity-50" data-alt="A high-contrast technical satellite map view of an urban landscape in Bangalore. The aesthetic is monochromatic with deep blacks and dark grays, featuring thin glowing lime green lines representing main roads and pathways. The lighting is moody and cyber-tech inspired, emphasizing grid structures and industrial zones." data-location="Bangalore" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuuwNRhxKJWYjPhW3guG4x_QfTf7YZMchRREcPJkowt5w66wStFJVtya9nkrMxkrNvKsMtwmbWG-JU4nusZw5EYWLzSufYlN00nO6GEWozyhJ2MUSpett4n6Hp_KtdiMcInAwvV3SQJsPDh7E10-cSEKFYdmNNLW4wJXXOI4rezkyEBbNE0RtrbNuLR93OYpu1rk5HKELWpHkQ9K6fjSlANFJU91HjB61LLnG1JglZFH1mO--gWCIvK9DSELHiBEnQA7P1v6y0Rc4"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#131313] to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-sm">
+<div class="px-md py-xs bg-[#1a1919] border border-white/10 rounded-full flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-coral-500 bg-red-500"></span>
+<span class="text-white font-label-sm uppercase">Venue Location</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Column: Applicants -->
+<section class="col-span-12 lg:col-span-5 space-y-lg">
+<div class="bg-[#131313] border border-white/10 rounded-xl flex flex-col h-full overflow-hidden">
+<!-- Tab Header -->
+<div class="flex border-b border-white/10">
+<button class="flex-1 py-md text-[#D4FF00] border-b-2 border-[#D4FF00] font-label-md uppercase">Pending (8)</button>
+<button class="flex-1 py-md text-neutral-500 hover:text-white transition-colors font-label-md uppercase">Accepted (12)</button>
+</div>
+<!-- Applicants List -->
+<div class="p-md space-y-md custom-scrollbar overflow-y-auto max-h-[600px]">
+<!-- Applicant Card 1 -->
+<div class="bg-[#1a1919] border border-white/10 rounded-lg p-md flex items-center justify-between hover:border-white/20 transition-all">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-[#262626] flex items-center justify-center text-white font-bold text-sm border border-white/5">
+                  RK
+                </div>
+<div>
+<div class="text-white font-body-md">Rahul Kumar</div>
+<div class="text-neutral-500 text-body-sm">Indiranagar, Bangalore</div>
+</div>
+</div>
+<div class="flex gap-base">
+<button class="w-8 h-8 rounded-full flex items-center justify-center border border-white/10 text-neutral-400 hover:bg-white/5 hover:text-white active:scale-95">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center bg-[#D4FF00] text-black active:scale-95">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</button>
+</div>
+</div>
+<!-- Applicant Card 2 -->
+<div class="bg-[#1a1919] border border-white/10 rounded-lg p-md flex items-center justify-between hover:border-white/20 transition-all">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-[#262626] flex items-center justify-center text-white font-bold text-sm border border-white/5">
+                  AS
+                </div>
+<div>
+<div class="text-white font-body-md">Ananya Sharma</div>
+<div class="text-neutral-500 text-body-sm">HSR Layout, Bangalore</div>
+</div>
+</div>
+<div class="flex gap-base">
+<button class="w-8 h-8 rounded-full flex items-center justify-center border border-white/10 text-neutral-400 hover:bg-white/5 hover:text-white active:scale-95">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center bg-[#D4FF00] text-black active:scale-95">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</button>
+</div>
+</div>
+<!-- Applicant Card 3 -->
+<div class="bg-[#1a1919] border border-white/10 rounded-lg p-md flex items-center justify-between hover:border-white/20 transition-all opacity-80">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-[#262626] flex items-center justify-center text-white font-bold text-sm border border-white/5">
+                  VP
+                </div>
+<div>
+<div class="text-white font-body-md">Vikram Pratap</div>
+<div class="text-neutral-500 text-body-sm">Whitefield, Bangalore</div>
+</div>
+</div>
+<div class="flex gap-base">
+<button class="w-8 h-8 rounded-full flex items-center justify-center border border-white/10 text-neutral-400 hover:bg-white/5 hover:text-white active:scale-95">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center bg-[#D4FF00] text-black active:scale-95">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</button>
+</div>
+</div>
+<!-- Applicant Card 4 -->
+<div class="bg-[#1a1919] border border-white/10 rounded-lg p-md flex items-center justify-between hover:border-white/20 transition-all opacity-80">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-[#262626] flex items-center justify-center text-white font-bold text-sm border border-white/5">
+                  SJ
+                </div>
+<div>
+<div class="text-white font-body-md">Sneha Jain</div>
+<div class="text-neutral-500 text-body-sm">Koramangala, Bangalore</div>
+</div>
+</div>
+<div class="flex gap-base">
+<button class="w-8 h-8 rounded-full flex items-center justify-center border border-white/10 text-neutral-400 hover:bg-white/5 hover:text-white active:scale-95">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center bg-[#D4FF00] text-black active:scale-95">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</button>
+</div>
+</div>
+<!-- Applicant Card 5 -->
+<div class="bg-[#1a1919] border border-white/10 rounded-lg p-md flex items-center justify-between hover:border-white/20 transition-all opacity-60">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-[#262626] flex items-center justify-center text-white font-bold text-sm border border-white/5">
+                  MA
+                </div>
+<div>
+<div class="text-white font-body-md">Mohammed Ali</div>
+<div class="text-neutral-500 text-body-sm">Jayanagar, Bangalore</div>
+</div>
+</div>
+<div class="flex gap-base">
+<button class="w-8 h-8 rounded-full flex items-center justify-center border border-white/10 text-neutral-400 hover:bg-white/5 hover:text-white active:scale-95">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center bg-[#D4FF00] text-black active:scale-95">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-auto p-md bg-[#1a1919] border-t border-white/10">
+<button class="w-full py-md bg-white text-black font-label-md uppercase rounded-sm hover:bg-[#D4FF00] transition-all">Bulk Action: Accept All Pending</button>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>

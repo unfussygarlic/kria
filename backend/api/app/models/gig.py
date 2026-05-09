@@ -6,20 +6,23 @@ from pydantic import BaseModel, Field
 
 
 class GigCategory(str, Enum):
-    registration_desk = "registration_desk"
-    ushering = "ushering"
-    booth_staff = "booth_staff"
-    brand_ambassador = "brand_ambassador"
-    sampling = "sampling"
-    lead_generation = "lead_generation"
-    hospitality = "hospitality"
-    tech_support = "tech_support"
-    photography = "photography"
-    social_media = "social_media"
-    anchoring = "anchoring"
-    promotional = "promotional"
-    general_support = "general_support"
-    other = "other"
+    event_registration    = "event_registration"
+    usher                 = "usher"
+    booth_staff           = "booth_staff"
+    promoter              = "promoter"
+    sampling_promoter     = "sampling_promoter"
+    lead_collection       = "lead_collection"
+    event_helper          = "event_helper"
+    hospitality_staff     = "hospitality_staff"
+    guest_management      = "guest_management"
+    front_desk            = "front_desk"
+    event_tech_support    = "event_tech_support"
+    sound_light_assistant = "sound_light_assistant"
+    photographer          = "photographer"
+    videographer          = "videographer"
+    social_media_creator  = "social_media_creator"
+    emcee                 = "emcee"
+    other                 = "other"
 
 
 class PayType(str, Enum):

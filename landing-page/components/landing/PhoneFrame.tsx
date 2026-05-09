@@ -81,7 +81,7 @@ function CardContent({ index, role }: { index: number; role: Role }) {
           <polyline points="18 15 12 9 6 15" />
         </svg>
         <span style={{ fontSize: 11, color: "rgba(212,255,0,0.5)", fontWeight: 500 }}>
-          {role === "seeker" ? t.phone.seekerHint : t.phone.finderHint}
+          {role === "runner" ? t.phone.runnerHint : t.phone.hostHint}
         </span>
       </div>
     </div>

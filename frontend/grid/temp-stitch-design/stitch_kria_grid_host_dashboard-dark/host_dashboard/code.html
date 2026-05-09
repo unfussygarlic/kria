@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KRIA Grid | Host Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#121508",
+                        "surface-container": "#1e2113",
+                        "secondary-fixed": "#dde1ff",
+                        "on-background": "#e2e4cf",
+                        "on-primary-fixed": "#171e00",
+                        "surface-container-high": "#292b1d",
+                        "on-secondary": "#002487",
+                        "secondary-container": "#223da1",
+                        "surface-container-low": "#1a1d10",
+                        "primary-fixed-dim": "#b0d500",
+                        "surface-tint": "#b0d500",
+                        "on-error-container": "#ffdad6",
+                        "on-surface": "#e2e4cf",
+                        "inverse-surface": "#e2e4cf",
+                        "on-secondary-fixed-variant": "#223da1",
+                        "primary": "#ffffff",
+                        "on-primary-container": "#596c00",
+                        "secondary-fixed-dim": "#b8c3ff",
+                        "on-primary": "#2a3400",
+                        "inverse-primary": "#536600",
+                        "on-tertiary": "#1b343d",
+                        "inverse-on-surface": "#2f3223",
+                        "surface-container-lowest": "#0d0f04",
+                        "tertiary": "#ffffff",
+                        "tertiary-container": "#cde7f3",
+                        "on-secondary-fixed": "#001355",
+                        "on-secondary-container": "#a1b1ff",
+                        "primary-container": "#caf300",
+                        "error": "#ffb4ab",
+                        "secondary": "#b8c3ff",
+                        "error-container": "#93000a",
+                        "tertiary-fixed-dim": "#b1cad7",
+                        "on-error": "#690005",
+                        "tertiary-fixed": "#cde7f3",
+                        "on-tertiary-fixed": "#041e28",
+                        "surface-bright": "#383b2b",
+                        "surface-variant": "#333627",
+                        "surface-container-highest": "#333627",
+                        "primary-fixed": "#caf300",
+                        "on-tertiary-container": "#506873",
+                        "outline-variant": "#444932",
+                        "surface-dim": "#121508",
+                        "on-primary-fixed-variant": "#3e4c00",
+                        "outline": "#8f9378",
+                        "on-surface-variant": "#c5c9ac",
+                        "on-tertiary-fixed-variant": "#324a54",
+                        "background": "#121508"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "margin": "24px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "sm": "12px",
+                        "base": "4px",
+                        "gutter": "16px",
+                        "xs": "8px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Space Grotesk"],
+                        "label-md": ["Space Grotesk"],
+                        "label-lg": ["Space Grotesk"],
+                        "h2": ["Space Grotesk"],
+                        "body-sm": ["Space Grotesk"],
+                        "h3": ["Space Grotesk"],
+                        "h1": ["Space Grotesk"],
+                        "body-lg": ["Space Grotesk"],
+                        "label-sm": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "label-lg": ["14px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "h2": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                        "h3": ["24px", {"lineHeight": "1.2", "letterSpacing": "0", "fontWeight": "700"}],
+                        "h1": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-sm": ["10px", {"lineHeight": "1", "letterSpacing": "0.08em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #0e0e0e;
+            color: #e2e4cf;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .grid-mask {
+            background-image: radial-gradient(circle, #262626 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="bg-[#0e0e0e]">
+<!-- SideNavBar (Shared Component) -->
+<aside class="w-[220px] h-screen fixed left-0 top-0 border-r border-white/10 bg-[#131313] flex flex-col h-full py-8 z-50">
+<div class="px-8 mb-12">
+<div class="text-[#D4FF00] font-black italic text-2xl tracking-tighter">KRIA</div>
+<div class="font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold text-[#D4FF00]/60">Grid</div>
+</div>
+<nav class="flex-1 flex flex-col">
+<!-- Dashboard (Active) -->
+<a class="font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold text-[#D4FF00] bg-white/5 border-r-2 border-[#D4FF00] flex items-center gap-3 px-6 py-4 active:scale-[0.98] transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Gigs -->
+<a class="font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold text-neutral-500 flex items-center gap-3 px-6 py-4 hover:bg-neutral-800/50 hover:text-white active:scale-[0.98] transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="work">work</span>
+<span>Gigs</span>
+</a>
+<!-- Events -->
+<a class="font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold text-neutral-500 flex items-center gap-3 px-6 py-4 hover:bg-neutral-800/50 hover:text-white active:scale-[0.98] transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="event">event</span>
+<span>Events</span>
+</a>
+<!-- Profile -->
+<a class="font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold text-neutral-500 flex items-center gap-3 px-6 py-4 hover:bg-neutral-800/50 hover:text-white active:scale-[0.98] transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span>Profile</span>
+</a>
+</nav>
+<div class="mt-auto px-6">
+<a class="font-['Space_Grotesk'] uppercase tracking-wider text-xs font-bold text-neutral-500 flex items-center gap-3 py-4 hover:text-[#ffb4ab] transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar (Shared Component) -->
+<header class="sticky top-0 w-full z-40 border-b border-white/10 bg-[#0e0e0e]/80 backdrop-blur-md flex justify-between items-center h-16 px-8 ml-[220px] pr-[220px]">
+<div class="flex items-center gap-4 bg-white/5 border border-white/10 px-4 py-2 rounded-lg w-96">
+<span class="material-symbols-outlined text-neutral-500" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full font-body-md text-on-surface" placeholder="Search gigs or locations..." type="text"/>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-neutral-400 cursor-pointer hover:text-[#D4FF00] transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-neutral-400 cursor-pointer hover:text-[#D4FF00] transition-colors" data-icon="settings">settings</span>
+</div>
+<div class="h-8 w-[1px] bg-white/10 mx-2"></div>
+<div class="flex items-center gap-3 cursor-pointer group">
+<div class="text-right">
+<p class="text-xs font-label-md text-primary leading-none">Grid Host</p>
+<p class="text-[10px] text-neutral-500 font-label-sm">Premium Account</p>
+</div>
+<img alt="Host Avatar" class="w-8 h-8 rounded-full border border-[#D4FF00]/30 group-hover:border-[#D4FF00] transition-colors" data-alt="A high-resolution professional portrait of a tech executive in a dark environment, featuring sharp edge lighting that creates a high-contrast silhouette. The mood is sophisticated and authoritative, with a minimalist dark background that complements the deep black and electric lime design system of KRIA Grid. The lighting is cold and clinical, emphasizing professional precision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLO3QBQ5OSu4wHr7q1CXLNnlbCpChLH8Rx_cm9jyWHOEjseUemTpGbXCImI0L4WATNh--EFb-RSaMgh0D2NBqs7zWpV0OwiX6648gjBNcPgeijFJbVAL6vPUA1-F92JVasfBVJZeJ9nFexPRghH_9lZuOAWa0mz6tDGd04w6X09w0J9F4mylxS_PfrLNOhnhAbXBI0dQri3p5tchaSKvutQ3Lv7fZRArfo7czVkyrk6qa0h8wUg9kDRgLyPmFyH2MEGFy4BMCc08w"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[220px] p-8 min-h-screen">
+<!-- Header Section -->
+<div class="mb-10 flex justify-between items-end">
+<div>
+<h1 class="font-h2 text-primary tracking-tight">Host Dashboard</h1>
+<p class="font-body-md text-on-surface-variant">Real-time performance analytics and gig management.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-[#131313] border border-white/10 text-primary font-label-md rounded flex items-center gap-2 hover:bg-[#1a1919] transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+                    Export CSV
+                </button>
+<button class="px-6 py-2 bg-[#D4FF00] text-[#0e0e0e] font-label-md font-bold rounded flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                    Post New Gig
+                </button>
+</div>
+</div>
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-xl">
+<!-- Active Gigs -->
+<div class="bg-[#131313] border border-white/10 rounded-xl p-6 relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<span class="text-neutral-500 font-label-sm uppercase tracking-widest">Active Gigs</span>
+<span class="material-symbols-outlined text-[#D4FF00]" data-icon="bolt">bolt</span>
+</div>
+<div class="text-4xl font-h1 text-[#D4FF00]">03</div>
+<div class="mt-2 text-xs font-body-sm text-neutral-400">+12% from last cycle</div>
+<div class="absolute bottom-0 left-0 w-full h-[2px] bg-[#D4FF00]/20 group-hover:bg-[#D4FF00] transition-colors"></div>
+</div>
+<!-- Total Events -->
+<div class="bg-[#131313] border border-white/10 rounded-xl p-6 relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<span class="text-neutral-500 font-label-sm uppercase tracking-widest">Total Events</span>
+<span class="material-symbols-outlined text-secondary" data-icon="event_note">event_note</span>
+</div>
+<div class="text-4xl font-h1 text-secondary">12</div>
+<div class="mt-2 text-xs font-body-sm text-neutral-400">4 upcoming this week</div>
+<div class="absolute bottom-0 left-0 w-full h-[2px] bg-secondary/20 group-hover:bg-secondary transition-colors"></div>
+</div>
+<!-- Slots Filled -->
+<div class="bg-[#131313] border border-white/10 rounded-xl p-6 relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<span class="text-neutral-500 font-label-sm uppercase tracking-widest">Slots Filled</span>
+<span class="material-symbols-outlined text-[#D4FF00]" data-icon="groups">groups</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="text-4xl font-h1 text-[#D4FF00]">45</span>
+<span class="text-xl font-h3 text-neutral-500">/60</span>
+</div>
+<div class="w-full bg-[#201f1f] h-1 rounded-full mt-4 overflow-hidden">
+<div class="bg-[#D4FF00] h-full w-[75%]"></div>
+</div>
+<div class="absolute bottom-0 left-0 w-full h-[2px] bg-[#D4FF00]/10"></div>
+</div>
+<!-- Total Posted -->
+<div class="bg-[#131313] border border-white/10 rounded-xl p-6 relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<span class="text-neutral-500 font-label-sm uppercase tracking-widest">Revenue Posted</span>
+<span class="material-symbols-outlined text-secondary" data-icon="payments">payments</span>
+</div>
+<div class="text-3xl font-h2 text-secondary">₹1,20,000</div>
+<div class="mt-3 text-xs font-body-sm text-neutral-400">Billed through Kria Pay</div>
+<div class="absolute bottom-0 left-0 w-full h-[2px] bg-secondary/20 group-hover:bg-secondary transition-colors"></div>
+</div>
+</div>
+<!-- Content Grid: Recent Gigs & System Status -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Recent Gigs Table -->
+<div class="col-span-12 lg:col-span-9 bg-[#131313] border border-white/10 rounded-xl overflow-hidden">
+<div class="px-6 py-5 border-b border-white/10 flex justify-between items-center bg-[#1a1919]">
+<h3 class="font-label-lg text-primary uppercase tracking-widest">Recent Gigs</h3>
+<div class="flex gap-4">
+<span class="flex items-center gap-1 text-[10px] text-neutral-400 font-label-sm"><span class="w-2 h-2 rounded-full bg-[#D4FF00]"></span> OPEN</span>
+<span class="flex items-center gap-1 text-[10px] text-neutral-400 font-label-sm"><span class="w-2 h-2 rounded-full bg-secondary"></span> IN PROGRESS</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-[#131313] border-b border-white/10">
+<th class="px-6 py-4 font-label-sm text-neutral-500 uppercase tracking-tighter">Gig Details</th>
+<th class="px-6 py-4 font-label-sm text-neutral-500 uppercase tracking-tighter">Category</th>
+<th class="px-6 py-4 font-label-sm text-neutral-500 uppercase tracking-tighter">City</th>
+<th class="px-6 py-4 font-label-sm text-neutral-500 uppercase tracking-tighter">Date</th>
+<th class="px-6 py-4 font-label-sm text-neutral-500 uppercase tracking-tighter">Slots</th>
+<th class="px-6 py-4 font-label-sm text-neutral-500 uppercase tracking-tighter">Status</th>
+<th class="px-6 py-4 text-right"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<!-- Row 1 -->
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-5">
+<div class="font-body-md font-medium text-primary">Late Night Security Head</div>
+<div class="text-[10px] text-neutral-500 font-label-sm">ID: KR-8829</div>
+</td>
+<td class="px-6 py-5">
+<span class="bg-[#262626] text-secondary text-[10px] px-2 py-1 rounded font-label-sm">SECURITY</span>
+</td>
+<td class="px-6 py-5 font-body-sm text-on-surface-variant">Mumbai</td>
+<td class="px-6 py-5 font-body-sm text-on-surface-variant">Oct 24, 2023</td>
+<td class="px-6 py-5">
+<div class="text-xs font-body-md text-primary">12 / 15</div>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2 py-1 rounded border border-[#D4FF00]/40 text-[#D4FF00] text-[10px] font-bold uppercase tracking-widest bg-[#D4FF00]/5">Open</span>
+</td>
+<td class="px-6 py-5 text-right">
+<span class="material-symbols-outlined text-neutral-600 group-hover:text-[#D4FF00] cursor-pointer" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-5">
+<div class="font-body-md font-medium text-primary">Main Stage Technician</div>
+<div class="text-[10px] text-neutral-500 font-label-sm">ID: KR-1204</div>
+</td>
+<td class="px-6 py-5">
+<span class="bg-[#262626] text-secondary text-[10px] px-2 py-1 rounded font-label-sm">LOGISTICS</span>
+</td>
+<td class="px-6 py-5 font-body-sm text-on-surface-variant">Bangalore</td>
+<td class="px-6 py-5 font-body-sm text-on-surface-variant">Oct 26, 2023</td>
+<td class="px-6 py-5">
+<div class="text-xs font-body-md text-primary">04 / 04</div>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2 py-1 rounded border border-secondary/40 text-secondary text-[10px] font-bold uppercase tracking-widest bg-secondary/5">In Progress</span>
+</td>
+<td class="px-6 py-5 text-right">
+<span class="material-symbols-outlined text-neutral-600 group-hover:text-secondary cursor-pointer" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-5">
+<div class="font-body-md font-medium text-primary">Crowd Control Team A</div>
+<div class="text-[10px] text-neutral-500 font-label-sm">ID: KR-3310</div>
+</td>
+<td class="px-6 py-5">
+<span class="bg-[#262626] text-secondary text-[10px] px-2 py-1 rounded font-label-sm">STAFFING</span>
+</td>
+<td class="px-6 py-5 font-body-sm text-on-surface-variant">Delhi NCR</td>
+<td class="px-6 py-5 font-body-sm text-on-surface-variant">Oct 28, 2023</td>
+<td class="px-6 py-5">
+<div class="text-xs font-body-md text-primary">22 / 30</div>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2 py-1 rounded border border-[#D4FF00]/40 text-[#D4FF00] text-[10px] font-bold uppercase tracking-widest bg-[#D4FF00]/5">Open</span>
+</td>
+<td class="px-6 py-5 text-right">
+<span class="material-symbols-outlined text-neutral-600 group-hover:text-[#D4FF00] cursor-pointer" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 border-t border-white/5 bg-[#0e0e0e]/30">
+<button class="text-neutral-500 font-label-sm hover:text-primary transition-colors flex items-center gap-2">
+                        View All Gigs <span class="material-symbols-outlined text-xs" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Right Sidebar: System Focus -->
+<div class="col-span-12 lg:col-span-3 flex flex-col gap-gutter">
+<!-- Map Card -->
+<div class="bg-[#131313] border border-white/10 rounded-xl overflow-hidden h-48 relative">
+<div class="absolute top-3 left-3 z-10 bg-[#0e0e0e]/80 backdrop-blur-md border border-white/10 px-2 py-1 rounded text-[10px] font-label-sm text-[#D4FF00]">
+                        LIVE ACTIVITY: MUMBAI
+                    </div>
+<img alt="Location Map" class="w-full h-full object-cover opacity-50 grayscale hover:grayscale-0 transition-all duration-700" data-alt="A dark-themed, minimalist digital map of Mumbai with glowing data points indicating live gig activity. The style is technical and cartographic, using a palette of deep charcoal and void black, with electric lime and cobalt blue light pulses highlighting high-activity zones. The perspective is top-down and high-detail, mirroring a modern command center interface." data-location="Mumbai" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmWd0nY8ANs3iC7gO0RJ8Oxg2RGlSa-aUgHTf8x3f-WU-A79P87is3W3QKdfqfNg3Bl0_2jpQ12HgYLnXVKitwjfYbmg3GhRt8HGtuL6saH6iQ1a7eP6yhmPuiZGA6OkTb-bTEcYHieW1UP5Yk2JMI4VNf8j3L2Kkrdd1bmcp6xDIXFIqPJz84o3sLtcxCgzM_JSQob6m6Vu3U-nU1sFKtXsF6Z9h6PuBACVMee6dYOwoGVJYsLBYHzgv5QZToyyhVaIwjaRaTpmc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#131313] to-transparent"></div>
+</div>
+<!-- Quick Actions -->
+<div class="bg-[#131313] border border-white/10 rounded-xl p-6">
+<h3 class="font-label-md text-neutral-400 uppercase tracking-widest mb-4">Quick Analysis</h3>
+<div class="space-y-4">
+<div class="flex items-center gap-3 p-3 bg-[#201f1f] rounded border border-white/5 hover:border-[#D4FF00]/30 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[#D4FF00]" data-icon="analytics">analytics</span>
+<div>
+<p class="text-xs font-label-md text-primary">Slot Optimization</p>
+<p class="text-[10px] text-neutral-500">Auto-adjust vacancy rates</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 bg-[#201f1f] rounded border border-white/5 hover:border-secondary/30 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-secondary" data-icon="hub">hub</span>
+<div>
+<p class="text-xs font-label-md text-primary">Vendor Matching</p>
+<p class="text-[10px] text-neutral-500">8 new profiles found</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Status Panel -->
+<div class="bg-[#131313] border border-white/10 rounded-xl p-6">
+<div class="flex items-center justify-between mb-4">
+<span class="text-[10px] font-label-sm text-neutral-500 uppercase">System Integrity</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-[#D4FF00]"></span>
+<span class="text-[10px] font-label-sm text-[#D4FF00]">OPTIMAL</span>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-[10px] font-label-sm text-neutral-400">
+<span>API Uptime</span>
+<span>99.98%</span>
+</div>
+<div class="w-full bg-[#201f1f] h-[2px] rounded-full overflow-hidden">
+<div class="bg-[#D4FF00] h-full w-[99%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Contextual FAB - Restricted to Dashboard/Home as per mandate -->
+<button class="fixed bottom-8 right-8 w-14 h-14 bg-[#D4FF00] rounded-full shadow-2xl flex items-center justify-center text-[#0e0e0e] active:scale-90 transition-transform z-50">
+<span class="material-symbols-outlined" data-icon="add" style="font-variation-settings: 'FILL' 1; font-size: 32px;">add</span>
+</button>
+</body></html>
