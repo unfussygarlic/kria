@@ -1,5 +1,8 @@
-from typing import Annotated
+import threading
+import time
+from typing import Annotated, Any
 
+import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import ExpiredSignatureError, JWTError, jwt
@@ -8,18 +11,55 @@ from app.config import settings
 
 bearer_scheme = HTTPBearer()
 
+# JWKS cache — refreshed every hour, handles Supabase key rotations automatically
+_jwks_cache: dict[str, Any] | None = None
+_jwks_lock = threading.Lock()
+_jwks_last_fetch: float = 0
+_JWKS_TTL = 3600  # seconds
+
+
+def _get_jwks() -> dict[str, Any]:
+    global _jwks_cache, _jwks_last_fetch
+    if _jwks_cache is None or (time.monotonic() - _jwks_last_fetch) > _JWKS_TTL:
+        with _jwks_lock:
+            if _jwks_cache is None or (time.monotonic() - _jwks_last_fetch) > _JWKS_TTL:
+                resp = httpx.get(
+                    f"{settings.supabase_url}/auth/v1/.well-known/jwks.json",
+                    timeout=5.0,
+                )
+                resp.raise_for_status()
+                _jwks_cache = resp.json()
+                _jwks_last_fetch = time.monotonic()
+    return _jwks_cache  # type: ignore[return-value]
+
 
 def _decode_token(token: str) -> dict:
     """Validate a Supabase-issued JWT and return its payload."""
+    # Primary path: verify against JWKS (current ES256/ECC P-256 keys)
     try:
-        payload = jwt.decode(
+        return jwt.decode(
+            token,
+            _get_jwks(),
+            algorithms=["ES256", "RS256"],
+            options={"verify_aud": False},
+        )
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception:
+        pass  # JWKS fetch failed or key mismatch — fall through to legacy
+
+    # Legacy fallback: HS256 shared secret for tokens issued before key rotation
+    try:
+        return jwt.decode(
             token,
             settings.supabase_jwt_secret,
             algorithms=["HS256"],
-            # Supabase sets audience to "authenticated" for logged-in users
             options={"verify_aud": False},
         )
-        return payload
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
