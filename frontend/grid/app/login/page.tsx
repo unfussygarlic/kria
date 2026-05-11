@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Users, BarChart3, Network } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-type Step = "email" | "otp" | "name";
+type Step = "email" | "sent";
 
 const FEATURES = [
   { icon: Users,    label: "Post Gigs in Seconds" },
@@ -20,84 +19,33 @@ const STATS = [
 ];
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [step, setStep] = useState<Step>("email");
-
+  const [step, setStep]   = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [otp, setOtp]     = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName,  setLastName]  = useState("");
-
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSendLink = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!email.trim() || !email.includes("@")) { setError("Enter a valid email address."); return; }
+    if (!email.trim() || !email.includes("@")) {
+      setError("Enter a valid email address.");
+      return;
+    }
     setLoading(true);
-    const { error: err } = await supabase.auth.signInWithOtp({ email: email.trim() });
+    const redirectTo = `${window.location.origin}/auth/confirm`;
+    const { error: err } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: { emailRedirectTo: redirectTo },
+    });
     setLoading(false);
     if (err) { setError(err.message); return; }
-    setStep("otp");
+    setStep("sent");
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    const { data, error: err } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: otp,
-      type: "email",
-    });
-    if (err) { setLoading(false); setError(err.message); return; }
-
-    // Check if profile exists — new user goes to name step, returning user to dashboard
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("id", data.user!.id)
-      .single();
-
-    setLoading(false);
-    if (profile) {
-      router.replace("/dashboard");
-    } else {
-      setStep("name");
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (!firstName.trim()) { setError("First name is required."); return; }
-    setLoading(true);
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); setError("Session expired. Please start again."); setStep("email"); return; }
-
-    const display = `${firstName.trim()} ${lastName.trim()}`.trim();
-    const { error: profileErr } = await supabase.from("profiles").upsert({
-      id: user.id,
-      first_name: firstName.trim(),
-      last_name: lastName.trim() || null,
-      display_name: display,
-    });
-
-    setLoading(false);
-    if (profileErr) { setError(profileErr.message); return; }
-    router.replace("/dashboard");
-  };
-
-  const goBack = () => {
-    setError(""); setOtp("");
-    if (step === "otp")  setStep("email");
-    if (step === "name") setStep("otp");
-  };
-
-  const cardTitle = step === "email" ? "Welcome" : step === "otp" ? "Check your email" : "Your Name";
-  const cardSub   = step === "email" ? "Sign in or create your host account" : step === "otp" ? `Code sent to ${email}` : "Complete your registration";
+  const cardTitle = step === "email" ? "Welcome" : "Check your inbox";
+  const cardSub   = step === "email"
+    ? "Sign in or create your host account"
+    : `We sent a sign-in link to ${email}`;
 
   return (
     <div
@@ -122,7 +70,6 @@ export default function LoginPage() {
 
           {/* ── Left: Marketing ── */}
           <div className="lg:col-span-7 hidden lg:flex flex-col justify-center py-16">
-            {/* Label */}
             <span
               className="text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-3 mb-4"
               style={{ color: "#D4FF00" }}
@@ -134,7 +81,6 @@ export default function LoginPage() {
               Source Top Talent
             </span>
 
-            {/* Headline */}
             <h1 className="text-[56px] xl:text-[72px] font-bold leading-[1.05] text-white tracking-tight max-w-2xl">
               The Professional
               <br />
@@ -146,7 +92,6 @@ export default function LoginPage() {
               streamlined workforce management ecosystem.
             </p>
 
-            {/* Feature list */}
             <ul className="mt-10 space-y-6">
               {FEATURES.map(({ icon: Icon, label }) => (
                 <li key={label} className="flex items-center gap-4">
@@ -164,7 +109,6 @@ export default function LoginPage() {
               ))}
             </ul>
 
-            {/* Stats row */}
             <div className="mt-16 flex gap-12 items-center" style={{ opacity: 0.6 }}>
               {STATS.map((s, i) => (
                 <div
@@ -196,11 +140,7 @@ export default function LoginPage() {
               {/* Corner glow */}
               <div
                 className="absolute -top-24 -right-24 w-64 h-64 pointer-events-none"
-                style={{
-                  backgroundColor: "#D4FF00",
-                  opacity: 0.03,
-                  filter: "blur(80px)",
-                }}
+                style={{ backgroundColor: "#D4FF00", opacity: 0.03, filter: "blur(80px)" }}
               />
 
               {/* Card header */}
@@ -211,7 +151,7 @@ export default function LoginPage() {
 
               {/* ── Step: Email ── */}
               {step === "email" && (
-                <form onSubmit={handleSendOtp} className="space-y-5">
+                <form onSubmit={handleSendLink} className="space-y-5">
                   <div className="space-y-2">
                     <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
                       Email Address
@@ -228,7 +168,7 @@ export default function LoginPage() {
                         border: "1px solid rgba(255,255,255,0.10)",
                       }}
                       onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(212,255,0,0.50)")}
-                      onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
+                      onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
                       autoFocus
                     />
                   </div>
@@ -240,154 +180,59 @@ export default function LoginPage() {
                     disabled={loading}
                     className="w-full py-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-60"
                     style={{ backgroundColor: "#D4FF00", color: "#0c0d0a" }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = "0 0 20px rgba(212,255,0,0.30)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 0 20px rgba(212,255,0,0.30)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
                   >
-                    {loading ? "Sending…" : "Send Code"}
+                    {loading ? "Sending…" : "Send Sign-in Link"}
                   </button>
                 </form>
               )}
 
-              {/* ── Step: OTP ── */}
-              {step === "otp" && (
-                <form onSubmit={handleVerifyOtp} className="space-y-5">
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                      One-Time Password
-                    </label>
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      placeholder="123456"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      className="w-full text-white px-4 py-4 rounded-xl text-2xl font-black tracking-[0.4em] placeholder:text-neutral-700 placeholder:tracking-normal placeholder:text-base placeholder:font-normal focus:outline-none transition-all"
-                      style={{
-                        backgroundColor: "rgba(255,255,255,0.05)",
-                        border: "1px solid rgba(255,255,255,0.10)",
-                      }}
-                      onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(212,255,0,0.50)")}
-                      onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
-                      autoFocus
-                    />
+              {/* ── Step: Sent ── */}
+              {step === "sent" && (
+                <div className="space-y-6">
+                  {/* Envelope icon */}
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{ backgroundColor: "rgba(212,255,0,0.08)", border: "1px solid rgba(212,255,0,0.20)" }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
                   </div>
 
-                  {error && <p className="text-sm" style={{ color: "#ff7351" }}>{error}</p>}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-60"
-                    style={{ backgroundColor: "#D4FF00", color: "#0c0d0a" }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = "0 0 20px rgba(212,255,0,0.30)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
-                  >
-                    {loading ? "Verifying…" : "Verify"}
-                  </button>
+                  <p className="text-sm text-neutral-400 leading-relaxed">
+                    Click the link in your email to sign in. It may take a minute to arrive — check your spam folder if you don&apos;t see it.
+                  </p>
 
                   <button
                     type="button"
-                    onClick={goBack}
-                    className="w-full py-3 rounded-xl text-xs font-bold text-neutral-500 uppercase tracking-wider transition-colors"
+                    onClick={() => { setStep("email"); setError(""); }}
+                    className="w-full py-3 rounded-xl text-xs font-bold text-neutral-400 uppercase tracking-wider transition-colors"
                     style={{ border: "1px solid rgba(255,255,255,0.10)" }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
-                    ← Back
+                    ← Use a different email
                   </button>
-                </form>
+                </div>
               )}
 
-              {/* ── Step: Name (register) ── */}
-              {step === "name" && (
-                <form onSubmit={handleRegister} className="space-y-5">
-                  <div className="space-y-3">
-                    {[
-                      { label: "First Name *", value: firstName, set: setFirstName, ph: "Arjun", auto: true },
-                      { label: "Last Name",    value: lastName,  set: setLastName,  ph: "Sharma", auto: false },
-                    ].map(({ label, value, set, ph, auto }) => (
-                      <div key={label} className="space-y-1.5">
-                        <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                          {label}
-                        </label>
-                        <input
-                          type="text"
-                          placeholder={ph}
-                          value={value}
-                          onChange={(e) => set(e.target.value)}
-                          className="w-full text-white px-4 py-4 rounded-xl text-sm focus:outline-none transition-all"
-                          style={{
-                            backgroundColor: "rgba(255,255,255,0.05)",
-                            border: "1px solid rgba(255,255,255,0.10)",
-                          }}
-                          onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(212,255,0,0.50)")}
-                          onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
-                          autoFocus={auto}
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  {error && <p className="text-sm" style={{ color: "#ff7351" }}>{error}</p>}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-60"
-                    style={{ backgroundColor: "#D4FF00", color: "#0c0d0a" }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = "0 0 20px rgba(212,255,0,0.30)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
-                  >
-                    {loading ? "Creating…" : "Create Account"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="w-full py-3 rounded-xl text-xs font-bold text-neutral-500 uppercase tracking-wider transition-colors"
-                    style={{ border: "1px solid rgba(255,255,255,0.10)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                  >
-                    ← Back
-                  </button>
-                </form>
-              )}
-
-              {/* Footer note */}
+              {/* Footer */}
               <div className="mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                 <p className="text-xs text-neutral-500 text-center">
                   By signing in, you agree to our{" "}
-                  <a
-                    href="#"
-                    className="text-white transition-colors"
+                  <a href="#" className="text-white transition-colors"
                     onMouseEnter={(e) => (e.currentTarget.style.color = "#D4FF00")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "#ffffff")}
-                  >
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#ffffff")}>
                     Terms of Service
-                  </a>{" "}
-                  and{" "}
-                  <a
-                    href="#"
-                    className="text-white transition-colors"
+                  </a>{" "}and{" "}
+                  <a href="#" className="text-white transition-colors"
                     onMouseEnter={(e) => (e.currentTarget.style.color = "#D4FF00")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "#ffffff")}
-                  >
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#ffffff")}>
                     Privacy Policy
-                  </a>
-                  .
+                  </a>.
                 </p>
               </div>
             </div>
@@ -409,13 +254,10 @@ export default function LoginPage() {
         </span>
         <div className="hidden md:flex gap-8">
           {["Legal", "Cookies", "Support", "Enterprise"].map((l) => (
-            <a
-              key={l}
-              href="#"
+            <a key={l} href="#"
               className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 transition-colors"
               onMouseEnter={(e) => (e.currentTarget.style.color = "#D4FF00")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "")}
-            >
+              onMouseLeave={(e) => (e.currentTarget.style.color = "")}>
               {l}
             </a>
           ))}
