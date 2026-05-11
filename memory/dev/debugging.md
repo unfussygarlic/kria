@@ -214,13 +214,40 @@ Same principle applies to stroke:
 
 **Fix:** Pin to `mediapipe==0.10.14` in `perceptrons/inspector/requirements.txt`. Do not use `>=`.
 
+## Grid Auth: 401 on All Authenticated Requests (Production)
+
+**Symptom:** `POST /api/v1/recommendations/geocode HTTP/1.1" 401 Unauthorized` — all authenticated API calls fail on EC2 despite correct JWT secret.
+
+**Root cause:** Supabase migrated the project from legacy HS256 JWT signing to **ECC P-256 (ES256)** asymmetric signing. The backend was verifying with HS256 using the shared secret, but new tokens (issued after the rotation) are signed with the new key. The JWKS endpoint at `{SUPABASE_URL}/auth/v1/.well-known/jwks.json` holds the current public keys.
+
+**Fix:** Updated `backend/api/app/auth/middleware.py` to:
+1. Fetch and cache JWKS from Supabase on first request (refreshed every hour, thread-safe double-checked locking)
+2. Verify with `ES256`/`RS256` as primary path
+3. Fall back to legacy `HS256` shared secret for tokens issued before the rotation (still valid until expiry)
+
+**`python-jose[cryptography]`** already in requirements — supports ES256 natively. Pass the JWKS dict directly to `jwt.decode()` and it matches keys by `kid` header automatically.
+
+**Supabase key location:** Dashboard → Settings → API Keys → JWT Signing Keys. Legacy HS256 = "Previously used keys"; Current = ECC P-256.
+
+## Grid Auth: "Unsupported phone provider" / "Email address invalid" in Production
+
+**Symptom:** Grid login returns "Unsupported phone provider" or "Email address '918148095499@kriya.dev' is invalid".
+
+**Root causes:**
+- "Unsupported phone provider" → phone SMS provider (Twilio) not configured in Supabase Cloud → `signInWithOtp({ phone })` fails.
+- "Email address invalid" → old deployed code was using `signUp({email: "91{phone}@kriya.dev"})` pattern; production Supabase rejects this email format.
+
+**Fix:** Switched Grid auth to **email OTP** (`signInWithOtp({ email })`). No Twilio needed — uses Supabase's built-in email service. No separate sign-in/sign-up flow needed: `signInWithOtp` auto-creates user if not exists.
+
+**Email template:** Supabase → Authentication → Email → Templates → Magic link → use `{{ .Token }}` in body to show 6-digit code instead of a link.
+
 ## Grid Auth: Email Rate Limit / RLS on profiles INSERT
 
 **Symptom:** "email rate limit exceeded" or "new row violates row-level security policy for table profiles"
 
 **Root cause:** Old Grid login used `supabase.auth.signUp({email: "91{phone}@kriya.dev"})`. In Supabase Cloud with email confirmation enabled, `signUp` returns a user but no session — so `auth.uid()` is null when trying to upsert profiles, violating the `WITH CHECK (auth.uid() = id)` RLS policy. Also triggered email rate limits.
 
-**Fix:** Replaced with phone OTP auth (`signInWithOtp` + `verifyOtp`). User is always authenticated before touching profiles. Also: disable "Confirm email" in Supabase → Authentication → Email.
+**Fix:** Replaced with email OTP auth (`signInWithOtp({ email })` + `verifyOtp({ email, token, type: "email" })`). User is always authenticated before touching profiles.
 
 ## PostgreSQL ENUM + asyncpg Bind Params (FastAPI)
 

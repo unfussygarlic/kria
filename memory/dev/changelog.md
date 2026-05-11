@@ -6,6 +6,51 @@ type: project
 
 # Changelog
 
+## 2026-05-12 — Grid Production Auth Fixes + JWT JWKS Migration + Vercel Analytics
+
+### Grid: Auth fully working on production (`grid.trykria.com`)
+
+Root-cause chain resolved across multiple issues:
+
+**Issue 1 — Old code deployed (email/password pattern):**
+- `origin/main` still had old `signUp({email: "91{phone}@kriya.dev"})` code; phone OTP fix was only on `redesign_stich_electriclime`.
+- Symptoms: "Email address invalid" + "Email not confirmed" on production.
+- Fix: merged branch, redeployed Grid.
+
+**Issue 2 — EC2 backend 401 on all authenticated requests:**
+- Supabase migrated project JWT signing from legacy HS256 → ECC P-256 (ES256) asymmetric keys.
+- Backend `middleware.py` was verifying with HS256 shared secret → all new tokens rejected.
+- Fix: rewrote `backend/api/app/auth/middleware.py` to fetch JWKS from `{SUPABASE_URL}/auth/v1/.well-known/jwks.json`, verify with ES256 primary + HS256 legacy fallback. JWKS cached in memory, refreshed every hour via thread-safe double-checked lock.
+
+**Issue 3 — "Unsupported phone provider":**
+- Supabase Cloud requires Twilio for phone SMS OTP; Twilio not configured.
+- Fix: switched Grid auth to **email OTP** (`signInWithOtp({ email })` + `verifyOtp({ email, token, type: "email" })`). No external provider needed.
+
+**Issue 4 — Email sending magic link instead of OTP code:**
+- `signInWithOtp({ email })` uses Magic link template by default.
+- Fix: updated template in Supabase Dashboard → Authentication → Email → Templates → Magic link → body uses `{{ .Token }}` to show 6-digit code.
+- Also set Site URL = `https://grid.trykria.com` and added redirect URL in Supabase URL Configuration.
+
+### Grid: Final email OTP login flow
+
+`app/login/page.tsx` — 3-step flow:
+1. Email input → `signInWithOtp({ email })` — handles sign-in and sign-up in one call
+2. 6-digit OTP input → `verifyOtp({ email, token, type: "email" })` — verify code from email
+3. Profile check → existing host: redirect to dashboard; new host: name form → `profiles.upsert()`
+
+`app/auth/confirm/page.tsx` — created during magic link attempt, now unused but harmless.
+
+### Grid: Vercel Analytics added
+
+`app/layout.tsx` — `import { Analytics } from "@vercel/analytics/next"` + `<Analytics />` in body.
+`package.json` — `@vercel/analytics` installed.
+
+### Grid + Backend: API URL port fix
+
+`frontend/grid/lib/config.ts` + `.env.local.example` — fallback was `http://localhost:8001/api/v1`, corrected to `http://localhost:8000/api/v1` (matches docker-compose.dev.yml port mapping `8000:8000`).
+
+---
+
 ## 2026-05-09 — Production Deployment (EC2 + Vercel) + Grid Auth Rewrite
 
 ### Infrastructure: Production Stack Live

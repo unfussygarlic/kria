@@ -60,7 +60,7 @@ export default function SectionMomentum() {
                 background: `${b.color}0e`,
                 color: b.color,
               }}>
-                {t.momentum.bands[b.label as keyof typeof t.momentum.bands]}
+                {t.momentum.bands[b.label as keyof typeof t.momentum.bands] ?? b.label}
                 <span style={{ marginLeft: 6, opacity: 0.5, fontSize: 10 }}>
                   {b.range[0]}–{b.range[1]}
                 </span>

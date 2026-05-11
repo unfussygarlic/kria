@@ -237,20 +237,24 @@ Pure SVG — no react-native-svg dependency. Works in browser.
 
 ## Auth Flow
 
-Phone OTP (same as mobile app — no email involved):
+Email OTP (no SMS/Twilio required):
 
-1. `/login` → user enters 10-digit phone
-2. `supabase.auth.signInWithOtp({ phone: "+91{phone}" })` — sends real SMS via Twilio in prod; dev OTP always `123456`
-3. OTP step → `supabase.auth.verifyOtp({ phone, token, type: "sms" })`
+1. `/login` → host enters email address
+2. `supabase.auth.signInWithOtp({ email })` — Supabase sends a 6-digit OTP via built-in email service. Handles sign-in and sign-up in one call (`shouldCreateUser: true` by default).
+3. OTP step → `supabase.auth.verifyOtp({ email, token, type: "email" })`
 4. After verify: check if profile row exists for user
-   - Profile exists → `router.replace("/dashboard")` (returning user)
-   - No profile → go to name step (new user)
-5. Name step → `supabase.from("profiles").upsert(...)` — user is authenticated at this point so RLS passes
+   - Profile exists → `router.replace("/dashboard")` (returning host)
+   - No profile → name step (new host)
+5. Name step → `supabase.from("profiles").upsert({ id, first_name, last_name, display_name })` — user is authenticated so RLS passes. No `phone` field set for email-auth hosts.
 6. `(dashboard)/layout.tsx` — auth guard on every dashboard page (server component with `force-dynamic`, client logic in `_DashboardLayoutClient.tsx`)
 
-**Dev OTP:** `123456` (shown as hint on OTP screen)
+**Email OTP template:** Supabase Dashboard → Authentication → Email → Templates → Magic link → body must use `{{ .Token }}` to show the 6-digit code (not `{{ .ConfirmationURL }}`).
 
-**Why email/password was removed:** Old approach used `signUp({email: "91{phone}@kriya.dev"})` which hit Supabase email rate limits in production and caused RLS failures (no session after signUp when email confirmation is enabled).
+**Supabase URL config required:** Authentication → URL Configuration → Site URL = `https://grid.trykria.com`; Redirect URLs includes `https://grid.trykria.com/**`.
+
+**Why phone OTP was abandoned:** Supabase Cloud requires Twilio for phone OTP. Twilio not yet configured. Email OTP works with Supabase's built-in email service, no external provider needed.
+
+**Why email/password was removed (original):** Old approach used `signUp({email: "91{phone}@kriya.dev"})` which hit Supabase email rate limits and caused RLS failures (no session after signUp with email confirmation enabled). Also rejected `918148095499@kriya.dev` format as invalid email in production.
 
 ## Gig Post Wizard (4 Steps)
 
@@ -294,7 +298,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 - **Deploy:** `cd frontend/grid && vercel --prod` (from EC2 after `git pull`)
 - **Vercel env vars:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (use `sb_publishable_xxx`), `NEXT_PUBLIC_API_URL=https://api.trykria.com/api/v1`
 - **DNS:** CNAME `grid` → `cname.vercel-dns.com` added in Vercel DNS panel (since trykria.com DNS is Vercel-managed)
-- **Supabase Auth:** must disable "Confirm email" in Authentication → Email settings
+- **Supabase Auth:** disable "Confirm email" in Authentication → Sign In / Providers → Email; set Site URL to `https://grid.trykria.com` in URL Configuration
 
 ## Supabase Client (`lib/supabase.ts`)
 

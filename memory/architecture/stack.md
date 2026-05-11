@@ -133,6 +133,12 @@ docker-compose down -v      # DESTROYS all DB data — never use casually
 - `sb_secret_xxx` → `SUPABASE_SERVICE_KEY` (backend)
 - Legacy JWT keys still work until end of 2026
 
+**Supabase JWT Signing Keys (CRITICAL):**
+- Project has been migrated to **ECC P-256 (ES256)** asymmetric signing. New tokens are signed with the current ECC key, NOT the legacy HS256 shared secret.
+- Backend `middleware.py` verifies via JWKS endpoint: `{SUPABASE_URL}/auth/v1/.well-known/jwks.json`
+- Legacy HS256 fallback kept for tokens issued before the rotation (still valid until expiry)
+- `SUPABASE_JWT_SECRET` in `.env.prod` still needed for the HS256 fallback path
+
 **DB connection:** Session mode pooler only — EC2 has no IPv6, Direct connection tab uses IPv6.
 
 ## Dynamic Backend URLs

@@ -6,6 +6,8 @@ import Footer from "./landing/Footer";
 import SectionHero from "./landing/sections/SectionHero";
 import SectionWhyKria from "./landing/sections/SectionWhyKria";
 import SectionMomentum from "./landing/sections/SectionMomentum";
+import SectionGrid from "./landing/sections/SectionGrid";
+import SectionFeatures from "./landing/sections/SectionFeatures";
 import SectionWaitlist from "./landing/sections/SectionWaitlist";
 import { LanguageProvider } from "./landing/LanguageContext";
 import type { Role } from "./landing/constants";
@@ -68,6 +70,26 @@ export default function LandingPage() {
         <SectionWhyKria />
 
         <SectionMomentum />
+
+        {/* Divider */}
+        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 48px" }}>
+          <div style={{
+            height: 1,
+            background: "linear-gradient(90deg, transparent, rgba(212,255,0,0.15) 35%, rgba(212,255,0,0.06) 65%, transparent)",
+          }} />
+        </div>
+
+        <SectionGrid />
+
+        {/* Divider */}
+        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 48px" }}>
+          <div style={{
+            height: 1,
+            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.06) 60%, transparent)",
+          }} />
+        </div>
+
+        <SectionFeatures />
 
         <SectionWaitlist />
 
