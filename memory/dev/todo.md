@@ -6,14 +6,15 @@ type: project
 
 # Todo & Open Issues
 
-Last updated: 2026-05-09 (session 7)
+Last updated: 2026-05-12 (session 8)
 
 ## High Priority
 
 | Issue | Location | Notes |
 |-------|----------|-------|
 | Grid Applications: left column not independently scrollable | `grid/app/(dashboard)/applications/page.tsx` | User wants applicant list to scroll while profile card stays in place. Fix: `overflow: hidden` on `main` in layout so inner columns own scroll, or `position: sticky` on profile column. `useLayoutEffect` approach tried and reverted. |
-| Pocket EAS build + app store submission | `frontend/pocket/` | See `infra/DEPLOY.md` Section 5. Twilio must be configured in Supabase first. |
+| Pocket EAS build + app store submission | `frontend/pocket/` | See `infra/DEPLOY.md` Section 5. Twilio must be configured in Supabase first (phone OTP for mobile). Grid uses email OTP so doesn't need Twilio. |
+| Configure Twilio for mobile phone OTP | Supabase Cloud → Authentication → Sign In / Providers → Phone | Required before Pocket goes to App Store. Grid is unaffected (uses email OTP). |
 
 ## Medium Priority
 

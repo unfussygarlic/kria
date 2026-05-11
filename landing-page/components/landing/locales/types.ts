@@ -56,12 +56,32 @@ export type Translations = {
     sub: string;
     points: [string, string, string];
     bands: {
-      Critical: string;
-      Developing: string;
-      Active: string;
-      Trusted: string;
-      Elite: string;
+      Newcomer: string;
+      Building: string;
+      Reliable: string;
+      Trusted:  string;
+      Elite:    string;
+      Legend:   string;
     };
+  };
+  grid: {
+    sectionLabel: string;
+    eyebrow: string;
+    headline: string;
+    headlineHighlight: string;
+    sub: string;
+    cta: string;
+    features: [string, string, string];
+  };
+  features: {
+    sectionLabel: string;
+    headline: string;
+    headlineHighlight: string;
+    items: [
+      { title: string; sub: string },
+      { title: string; sub: string },
+      { title: string; sub: string },
+    ];
   };
   waitlist: {
     headline: string;

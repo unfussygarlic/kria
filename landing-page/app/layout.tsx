@@ -13,7 +13,7 @@ const comfortaa = Comfortaa({
 });
 
 export const metadata: Metadata = {
-  title: "kria — Work without the wait.",
+  title: "kria",
   description:
     "kria is a swipe-based gig marketplace where workers and businesses connect instantly. No resumes. No waiting. Just swipe.",
   icons: {
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     apple: "/logo.svg",
   },
   openGraph: {
-    title: "kria — Work without the wait.",
+    title: "kria",
     description: "A gig economy app that works like Tinder for jobs.",
     type: "website",
   },

@@ -6,7 +6,7 @@ type: project
 
 # Kria — Current Product Status
 
-Last updated: 2026-05-11
+Last updated: 2026-05-12
 
 ## Mobile App (Runners)
 
@@ -35,10 +35,10 @@ Last updated: 2026-05-11
 ## Grid (Host Dashboard)
 
 - **Status:** Live at `grid.trykria.com` (Vercel) — deployed 2026-05-09
-- **Deploy:** `cd frontend/grid && vercel --prod` (from local or EC2 after `git pull`)
+- **Deploy:** `cd frontend/grid && vercel --prod`
 - **Vercel env vars:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`sb_publishable_xxx`), `NEXT_PUBLIC_API_URL=https://api.trykria.com/api/v1`
 - **Features complete:**
-  - Auth (phone OTP — no email/password), Dashboard, Post Gig (4-step), My Gigs, Gig Detail + Applicants + OTP
+  - Auth (email OTP — 6-digit code via Supabase built-in email, no Twilio needed), Dashboard, Post Gig (4-step), My Gigs, Gig Detail + Applicants + OTP
   - Events list, Create Event, Event Detail
   - **Applications inbox** — global view of all applicants with full profile modal, SkillGraph, signal legend, profile completion chips
   - Analytics Center, Profile

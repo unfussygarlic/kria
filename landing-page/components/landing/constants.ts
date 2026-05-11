@@ -19,9 +19,10 @@ export const GIG_CARDS: GigCardData[] = [
 ];
 
 export const BANDS = [
-  { label: "Critical",   range: [300, 449] as [number, number], color: "#ff7351" },
-  { label: "Developing", range: [450, 599] as [number, number], color: "#f09028" },
-  { label: "Active",     range: [600, 699] as [number, number], color: "#8097ff" },
-  { label: "Trusted",    range: [700, 799] as [number, number], color: LIME      },
-  { label: "Elite",      range: [800, 850] as [number, number], color: "#ffffff" },
+  { label: "Newcomer", range: [0,   99]   as [number, number], color: "#777575" },
+  { label: "Building", range: [100, 299]  as [number, number], color: "#ff7351" },
+  { label: "Reliable", range: [300, 499]  as [number, number], color: "#8097ff" },
+  { label: "Trusted",  range: [500, 699]  as [number, number], color: "#FFC83D" },
+  { label: "Elite",    range: [700, 899]  as [number, number], color: LIME      },
+  { label: "Legend",   range: [900, 1000] as [number, number], color: "#ffffff" },
 ];

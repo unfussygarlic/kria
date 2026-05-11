@@ -53,7 +53,8 @@ cd landing-page && npm run dev                         # Landing page
 ```
 
 ### Dev Auth
-- Phone OTP (mobile + Grid): any number → `123456`
+- Mobile (Pocket): phone OTP, any number → `123456`
+- Grid (web): email OTP — enter any email, get 6-digit code via Supabase built-in email
 - **Demo host account:** `9988776655` (Priya Mehta, Bangalore) — 15 seeded gigs, 16 runners
 
 ### Theme (key tokens)
