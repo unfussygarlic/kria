@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { Users, BarChart3, Network } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-type Step = "phone" | "otp" | "name";
-
-const DEV_OTP = "123456";
+type Step = "email" | "otp" | "name";
 
 const FEATURES = [
   { icon: Users,    label: "Post Gigs in Seconds" },
@@ -23,9 +21,9 @@ const STATS = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("phone");
+  const [step, setStep] = useState<Step>("email");
 
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [otp, setOtp]     = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName,  setLastName]  = useState("");
@@ -33,16 +31,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
 
-  const handlePhoneChange = (val: string) => {
-    setPhone(val.replace(/\D/g, "").slice(0, 10));
-  };
-
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (phone.length !== 10) { setError("Enter a valid 10-digit mobile number."); return; }
+    if (!email.trim() || !email.includes("@")) { setError("Enter a valid email address."); return; }
     setLoading(true);
-    const { error: err } = await supabase.auth.signInWithOtp({ phone: `+91${phone}` });
+    const { error: err } = await supabase.auth.signInWithOtp({ email: email.trim() });
     setLoading(false);
     if (err) { setError(err.message); return; }
     setStep("otp");
@@ -53,9 +47,9 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     const { data, error: err } = await supabase.auth.verifyOtp({
-      phone: `+91${phone}`,
+      email: email.trim(),
       token: otp,
-      type: "sms",
+      type: "email",
     });
     if (err) { setLoading(false); setError(err.message); return; }
 
@@ -81,12 +75,11 @@ export default function LoginPage() {
     setLoading(true);
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); setError("Session expired. Please start again."); setStep("phone"); return; }
+    if (!user) { setLoading(false); setError("Session expired. Please start again."); setStep("email"); return; }
 
     const display = `${firstName.trim()} ${lastName.trim()}`.trim();
     const { error: profileErr } = await supabase.from("profiles").upsert({
       id: user.id,
-      phone: `+91${phone}`,
       first_name: firstName.trim(),
       last_name: lastName.trim() || null,
       display_name: display,
@@ -99,12 +92,12 @@ export default function LoginPage() {
 
   const goBack = () => {
     setError(""); setOtp("");
-    if (step === "otp")  setStep("phone");
+    if (step === "otp")  setStep("email");
     if (step === "name") setStep("otp");
   };
 
-  const cardTitle = step === "phone" ? "Welcome" : step === "otp" ? "Verify OTP" : "Your Name";
-  const cardSub   = step === "phone" ? "Sign in or create your host account" : step === "otp" ? `Code sent to +91 ${phone}` : "Complete your registration";
+  const cardTitle = step === "email" ? "Welcome" : step === "otp" ? "Check your email" : "Your Name";
+  const cardSub   = step === "email" ? "Sign in or create your host account" : step === "otp" ? `Code sent to ${email}` : "Complete your registration";
 
   return (
     <div
@@ -216,54 +209,36 @@ export default function LoginPage() {
                 <p className="text-sm text-neutral-400 mt-1.5">{cardSub}</p>
               </div>
 
-              {/* ── Step: Phone ── */}
-              {step === "phone" && (
+              {/* ── Step: Email ── */}
+              {step === "email" && (
                 <form onSubmit={handleSendOtp} className="space-y-5">
                   <div className="space-y-2">
                     <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                      Phone Number
+                      Email Address
                     </label>
-                    <div className="relative flex items-center">
-                      <span
-                        className="absolute left-4 text-sm font-semibold pr-3 z-10"
-                        style={{
-                          color: "#D4FF00",
-                          borderRight: "1px solid rgba(255,255,255,0.10)",
-                        }}
-                      >
-                        +91
-                      </span>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        placeholder="98765 43210"
-                        value={phone}
-                        onChange={(e) => handlePhoneChange(e.target.value)}
-                        className="w-full text-white pl-20 pr-12 py-4 rounded-xl text-sm transition-all focus:outline-none"
-                        style={{
-                          backgroundColor: "rgba(255,255,255,0.05)",
-                          border: "1px solid rgba(255,255,255,0.10)",
-                        }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(212,255,0,0.50)")}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
-                        autoFocus
-                      />
-                      <span
-                        className={`absolute right-4 text-xs font-bold ${
-                          phone.length === 10 ? "" : "text-neutral-600"
-                        }`}
-                        style={phone.length === 10 ? { color: "#D4FF00" } : undefined}
-                      >
-                        {phone.length}/10
-                      </span>
-                    </div>
+                    <input
+                      type="email"
+                      inputMode="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full text-white px-4 py-4 rounded-xl text-sm transition-all focus:outline-none"
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.10)",
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(212,255,0,0.50)")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
+                      autoFocus
+                    />
                   </div>
 
                   {error && <p className="text-sm" style={{ color: "#ff7351" }}>{error}</p>}
 
                   <button
                     type="submit"
-                    className="w-full py-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-[0.98]"
+                    disabled={loading}
+                    className="w-full py-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-60"
                     style={{ backgroundColor: "#D4FF00", color: "#0c0d0a" }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.boxShadow = "0 0 20px rgba(212,255,0,0.30)";
@@ -272,9 +247,8 @@ export default function LoginPage() {
                       e.currentTarget.style.boxShadow = "none";
                     }}
                   >
-                    Continue
+                    {loading ? "Sending…" : "Send Code"}
                   </button>
-
                 </form>
               )}
 
@@ -282,14 +256,9 @@ export default function LoginPage() {
               {step === "otp" && (
                 <form onSubmit={handleVerifyOtp} className="space-y-5">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                        One-Time Password
-                      </label>
-                      <span className="text-[10px] font-bold" style={{ color: "#D4FF00" }}>
-                        Dev: {DEV_OTP}
-                      </span>
-                    </div>
+                    <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+                      One-Time Password
+                    </label>
                     <input
                       type="tel"
                       inputMode="numeric"
