@@ -165,6 +165,63 @@ Same principle applies to stroke:
 <polygon style={{ stroke: "var(--sg-grid)" }} />
 ```
 
+## EC2 Production Deployment Gotchas
+
+**Ubuntu 22.04+: SSH service name changed**
+- `systemctl restart sshd` → fails with "Unit sshd.service not found"
+- Correct: `systemctl restart ssh`
+
+**Nginx: must be HTTP-only before certbot**
+- Config with `listen 443 ssl` but no cert → nginx refuses to start → certbot can't do HTTP challenge
+- Ship nginx config as HTTP-only (`listen 80` only); certbot `--nginx` adds SSL block automatically
+- Order: copy config → `nginx -t && systemctl reload nginx` → `certbot --nginx -d api.trykria.com` → `nginx -t && reload`
+
+**EC2 has no IPv6 by default**
+- Supabase "Direct connection" tab gives an IPv6 address → `Network is unreachable` on EC2
+- Use **Session mode pooler** tab: `aws-0-[region].pooler.supabase.com:5432`
+- The region is encoded in the hostname — copy the exact URL from Supabase dashboard, don't construct manually
+
+**`docker compose environment:` vs `env_file:`**
+- `env_file: .env.prod` → injects vars INTO the container ✓
+- `environment: KEY: ${VAR}` → reads `${VAR}` from HOST shell environment, NOT from env_file ✗
+- Solution: remove redundant `environment:` block; pass `--env-file .env.prod` to the `docker compose` command so Compose can interpolate its own `${VAR}` references
+
+**`.env.prod` correct var names for backend**
+- `SUPABASE_JWT_SECRET` (not `JWT_SECRET`) — matches `config/__init__.py`
+- `SUPABASE_SERVICE_KEY` (not `SUPABASE_SERVICE_ROLE_KEY`) — docker-compose.prod.yml uses env_file directly
+
+**Supabase ENOTFOUND tenant not found**
+- Caused by wrong region in pooler URL — `aws-0-ap-south-1` only works if project is actually in ap-south-1
+- Always copy pooler URL from Supabase dashboard → Connect → Session mode tab
+
+## Grid: Next.js Static Prerender Crash (supabaseUrl is required)
+
+**Symptom:** Vercel build fails with `supabaseUrl is required` during static page generation.
+
+**Root cause:** `NEXT_PUBLIC_*` env vars must be set in Vercel dashboard BEFORE building. Next.js embeds them at build time. If missing, `createClient()` throws at module evaluation.
+
+**Fix:** Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Vercel → Settings → Environment Variables before deploying.
+
+**Secondary fix:** Dashboard pages use `export const dynamic = "force-dynamic"` in a server component layout to prevent static prerendering of auth-gated routes.
+
+**DO NOT use a Proxy to lazy-init the Supabase client** — `supabase.from()` loses `this` binding through a Proxy, causing silent runtime crashes on every query.
+
+## mediapipe Version Pin (Inspector)
+
+**Symptom:** Docker build fails: `AttributeError: module 'mediapipe' has no attribute 'solutions'`
+
+**Root cause:** MediaPipe 0.10.20+ removed the `mp.solutions` legacy API. Inspector's `liveness_checker.py` uses `mp.solutions.face_mesh`.
+
+**Fix:** Pin to `mediapipe==0.10.14` in `perceptrons/inspector/requirements.txt`. Do not use `>=`.
+
+## Grid Auth: Email Rate Limit / RLS on profiles INSERT
+
+**Symptom:** "email rate limit exceeded" or "new row violates row-level security policy for table profiles"
+
+**Root cause:** Old Grid login used `supabase.auth.signUp({email: "91{phone}@kriya.dev"})`. In Supabase Cloud with email confirmation enabled, `signUp` returns a user but no session — so `auth.uid()` is null when trying to upsert profiles, violating the `WITH CHECK (auth.uid() = id)` RLS policy. Also triggered email rate limits.
+
+**Fix:** Replaced with phone OTP auth (`signInWithOtp` + `verifyOtp`). User is always authenticated before touching profiles. Also: disable "Confirm email" in Supabase → Authentication → Email.
+
 ## PostgreSQL ENUM + asyncpg Bind Params (FastAPI)
 
 **Two separate gotchas in a single query:**

@@ -114,6 +114,27 @@ docker-compose down -v      # DESTROYS all DB data — never use casually
 | Grid (dev) | 3000 |
 | Landing page (dev) | varies |
 
+## Production Hosting
+
+| Component | Host | URL |
+|-----------|------|-----|
+| Landing page | Vercel | `trykria.com` |
+| Grid (host dashboard) | Vercel | `grid.trykria.com` |
+| Backend API | EC2 t3a.medium (ap-south-1) | `api.trykria.com` |
+| Database | Supabase Cloud | Session pooler (IPv4) |
+| Pocket (mobile) | EAS Build → App Store / Play Store | — |
+
+**EC2 deploy:** `ssh ubuntu@EC2_IP` → `cd ~/kria && bash infra/deploy.sh`
+
+**Grid deploy:** `cd ~/kria && git pull && cd frontend/grid && vercel --prod`
+
+**Supabase keys (new format):**
+- `sb_publishable_xxx` → `NEXT_PUBLIC_SUPABASE_ANON_KEY` (frontend)
+- `sb_secret_xxx` → `SUPABASE_SERVICE_KEY` (backend)
+- Legacy JWT keys still work until end of 2026
+
+**DB connection:** Session mode pooler only — EC2 has no IPv6, Direct connection tab uses IPv6.
+
 ## Dynamic Backend URLs
 
 `frontend/pocket/lib/config.ts` reads Metro bundler IP in dev; falls back to `EXPO_PUBLIC_*` env vars. Both `lib/api/client.ts` and `lib/supabase.ts` import from `lib/config.ts`. Never hardcode IPs.

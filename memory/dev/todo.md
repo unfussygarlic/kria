@@ -6,14 +6,14 @@ type: project
 
 # Todo & Open Issues
 
-Last updated: 2026-05-09 (session 6)
+Last updated: 2026-05-09 (session 7)
 
 ## High Priority
 
 | Issue | Location | Notes |
 |-------|----------|-------|
-| Deploy Grid to grid.trykria.com | `grid/` | Run `npm install`, set `NEXT_PUBLIC_API_URL=https://api.trykria.com/api/v1`, deploy to Vercel |
-| Grid Applications: left column not independently scrollable | `grid/app/(dashboard)/applications/page.tsx` | User wants applicant list to scroll while profile card stays in place. Current CSS: two-column grid inside a `flex-1` column inside the dashboard layout whose `main` element has `overflow-y-auto`. Inner columns cannot independently scroll because the outer `main` scrolls the page. Fix: either `overflow: hidden` on `main` so inner columns own their own scroll (requires a layout change in `(dashboard)/layout.tsx`), or switch to `position: sticky` on the profile column. A `useLayoutEffect` approach was tried and reverted per user request — pick a different route. |
+| Grid Applications: left column not independently scrollable | `grid/app/(dashboard)/applications/page.tsx` | User wants applicant list to scroll while profile card stays in place. Fix: `overflow: hidden` on `main` in layout so inner columns own scroll, or `position: sticky` on profile column. `useLayoutEffect` approach tried and reverted. |
+| Pocket EAS build + app store submission | `frontend/pocket/` | See `infra/DEPLOY.md` Section 5. Twilio must be configured in Supabase first. |
 
 ## Medium Priority
 

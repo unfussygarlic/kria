@@ -5,14 +5,9 @@ import { useRouter } from "next/navigation";
 import { Users, BarChart3, Network } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-type Mode = "signin" | "register";
 type Step = "phone" | "otp" | "name";
 
-function devEmail(digits: string): string {
-  return `91${digits}@kriya.dev`;
-}
 const DEV_OTP = "123456";
-const DEV_PASSWORD = "kriya-dev-2026";
 
 const FEATURES = [
   { icon: Users,    label: "Post Gigs in Seconds" },
@@ -28,7 +23,6 @@ const STATS = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("signin");
   const [step, setStep] = useState<Step>("phone");
 
   const [phone, setPhone] = useState("");
@@ -43,46 +37,41 @@ export default function LoginPage() {
     setPhone(val.replace(/\D/g, "").slice(0, 10));
   };
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (phone.length !== 10) {
-      setError("Enter a valid 10-digit mobile number.");
-      return;
-    }
+    if (phone.length !== 10) { setError("Enter a valid 10-digit mobile number."); return; }
+    setLoading(true);
+    const { error: err } = await supabase.auth.signInWithOtp({ phone: `+91${phone}` });
+    setLoading(false);
+    if (err) { setError(err.message); return; }
     setStep("otp");
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (otp !== DEV_OTP) {
-      setError(`Invalid OTP. Use ${DEV_OTP} in development.`);
-      return;
-    }
-    if (mode === "signin") {
-      signIn();
+    setLoading(true);
+    const { data, error: err } = await supabase.auth.verifyOtp({
+      phone: `+91${phone}`,
+      token: otp,
+      type: "sms",
+    });
+    if (err) { setLoading(false); setError(err.message); return; }
+
+    // Check if profile exists — new user goes to name step, returning user to dashboard
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", data.user!.id)
+      .single();
+
+    setLoading(false);
+    if (profile) {
+      router.replace("/dashboard");
     } else {
       setStep("name");
     }
-  };
-
-  const signIn = async () => {
-    setLoading(true);
-    const { error: err } = await supabase.auth.signInWithPassword({
-      email: devEmail(phone),
-      password: DEV_PASSWORD,
-    });
-    setLoading(false);
-    if (err) {
-      setError(
-        err.message.includes("Invalid login credentials")
-          ? "No account found for this number. Register instead."
-          : err.message
-      );
-      return;
-    }
-    router.replace("/dashboard");
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -91,31 +80,12 @@ export default function LoginPage() {
     if (!firstName.trim()) { setError("First name is required."); return; }
     setLoading(true);
 
-    const { error: signUpErr } = await supabase.auth.signUp({
-      email: devEmail(phone),
-      password: DEV_PASSWORD,
-    });
-
-    if (signUpErr && !signUpErr.message.toLowerCase().includes("already registered")) {
-      setLoading(false);
-      setError(signUpErr.message);
-      return;
-    }
-
-    // Always sign in after sign up — guarantees a session exists before touching profiles
-    // (Supabase Cloud may require email confirmation which leaves signUp sessionless)
-    const { data: siData, error: siErr } = await supabase.auth.signInWithPassword({
-      email: devEmail(phone),
-      password: DEV_PASSWORD,
-    });
-    if (siErr) { setLoading(false); setError(siErr.message); return; }
-
-    const userId = siData.user?.id;
-    if (!userId) { setLoading(false); setError("Something went wrong. Try again."); return; }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); setError("Session expired. Please start again."); setStep("phone"); return; }
 
     const display = `${firstName.trim()} ${lastName.trim()}`.trim();
     const { error: profileErr } = await supabase.from("profiles").upsert({
-      id: userId,
+      id: user.id,
       phone: `+91${phone}`,
       first_name: firstName.trim(),
       last_name: lastName.trim() || null,
@@ -127,28 +97,14 @@ export default function LoginPage() {
     router.replace("/dashboard");
   };
 
-  const switchMode = (m: Mode) => {
-    setMode(m); setStep("phone");
-    setOtp(""); setFirstName(""); setLastName(""); setError("");
-  };
-
   const goBack = () => {
     setError(""); setOtp("");
     if (step === "otp")  setStep("phone");
     if (step === "name") setStep("otp");
   };
 
-  const cardTitle = step === "phone"
-    ? "Welcome Back"
-    : step === "otp"
-    ? "Verify OTP"
-    : "Your Name";
-
-  const cardSub = step === "phone"
-    ? "Sign in to your professional account"
-    : step === "otp"
-    ? `For +91 ${phone}`
-    : "Complete your registration";
+  const cardTitle = step === "phone" ? "Welcome" : step === "otp" ? "Verify OTP" : "Your Name";
+  const cardSub   = step === "phone" ? "Sign in or create your host account" : step === "otp" ? `Code sent to +91 ${phone}` : "Complete your registration";
 
   return (
     <div
@@ -319,24 +275,6 @@ export default function LoginPage() {
                     Continue
                   </button>
 
-                  <div className="flex items-center gap-4 py-1">
-                    <div className="h-px flex-grow" style={{ backgroundColor: "rgba(255,255,255,0.08)" }} />
-                    <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider">
-                      {mode === "signin" ? "New host?" : "Have an account?"}
-                    </span>
-                    <div className="h-px flex-grow" style={{ backgroundColor: "rgba(255,255,255,0.08)" }} />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => switchMode(mode === "signin" ? "register" : "signin")}
-                    className="w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-white transition-colors"
-                    style={{ border: "1px solid rgba(255,255,255,0.10)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                  >
-                    {mode === "signin" ? "Create Account" : "Sign In"}
-                  </button>
                 </form>
               )}
 

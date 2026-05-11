@@ -6,7 +6,7 @@ type: project
 
 # Kria — Current Product Status
 
-Last updated: 2026-05-07
+Last updated: 2026-05-11
 
 ## Mobile App (Runners)
 
@@ -34,11 +34,11 @@ Last updated: 2026-05-07
 
 ## Grid (Host Dashboard)
 
-- **Status:** Fully built at `grid/`, not yet deployed
-- **Live URL (planned):** grid.trykria.com
-- **Setup needed:** `cd grid && npm install`, create `grid/.env.local` from `.env.local.example`
+- **Status:** Live at `grid.trykria.com` (Vercel) — deployed 2026-05-09
+- **Deploy:** `cd frontend/grid && vercel --prod` (from local or EC2 after `git pull`)
+- **Vercel env vars:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`sb_publishable_xxx`), `NEXT_PUBLIC_API_URL=https://api.trykria.com/api/v1`
 - **Features complete:**
-  - Auth (OTP), Dashboard, Post Gig (4-step), My Gigs, Gig Detail + Applicants + OTP
+  - Auth (phone OTP — no email/password), Dashboard, Post Gig (4-step), My Gigs, Gig Detail + Applicants + OTP
   - Events list, Create Event, Event Detail
   - **Applications inbox** — global view of all applicants with full profile modal, SkillGraph, signal legend, profile completion chips
   - Analytics Center, Profile
@@ -74,7 +74,6 @@ Last updated: 2026-05-07
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Deploy Grid to grid.trykria.com | High | Run `npm install`, set `.env.local`, deploy to Vercel |
 | Show badges on applicant cards (Grid) | Medium | Display `BadgeList` in `ApplicantProfileModal` and applicant list rows using `verified_id_types` |
 | Enable anti-spoof in prod | Medium | Set `ANTISPOOF_MODEL_ENABLED=True` in Inspector docker env once on controlled hardware/lighting |
 | Grid: Host rating UI (sub-scores) | Medium | Post-gig: collect punctuality/communication/professionalism sub-scores when rating runner |

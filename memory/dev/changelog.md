@@ -6,6 +6,66 @@ type: project
 
 # Changelog
 
+## 2026-05-09 — Production Deployment (EC2 + Vercel) + Grid Auth Rewrite
+
+### Infrastructure: Production Stack Live
+
+Backend deployed to EC2 t3a.medium at `api.trykria.com`. Grid deployed to Vercel at `grid.trykria.com`.
+
+**Files created:**
+- `infra/DEPLOY.md` — full deployment guide (EC2 → Supabase → Grid → Pocket)
+- `infra/deploy.sh` — repeatable deploy: `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build` + alembic migrations
+- `infra/setup-server.sh` — EC2 first-boot: Docker, Nginx, Certbot, Fail2ban, UFW, SSH hardening
+- `infra/nginx/api.trykria.com.conf` — HTTP-only initially; certbot adds SSL block
+- `docker-compose.prod.yml` — standalone (no base compose), `env_file: .env.prod` only (no `environment:` block interpolation)
+
+**Key deployment gotchas discovered:**
+- Ubuntu 22.04+: SSH service is `ssh` not `sshd` (`systemctl restart ssh`)
+- Nginx config must be HTTP-only before certbot runs; `listen 443 ssl` without certs prevents nginx starting which breaks certbot's HTTP challenge
+- EC2 has no IPv6 by default → Supabase Direct connection fails; use **Session mode pooler** (`aws-0-[region].pooler.supabase.com:5432`)
+- Pooler URL encodes the region — must copy exact URL from Supabase → Connect → Session mode tab
+- `docker compose environment:` block reads from host shell, NOT from `env_file`; removed redundant environment block from `docker-compose.prod.yml`
+- Correct backend env var names: `SUPABASE_JWT_SECRET` (not `JWT_SECRET`), `SUPABASE_SERVICE_KEY` (not `SUPABASE_SERVICE_ROLE_KEY`)
+- `docker compose --env-file .env.prod` needed in deploy.sh so Compose can interpolate `${ANTISPOOF_MODEL_ENABLED:-False}` in inspector block
+
+### Inspector: mediapipe version pinned
+
+`perceptrons/inspector/requirements.txt`: `mediapipe>=0.10.14` → `mediapipe==0.10.14`
+
+MediaPipe 0.10.20+ removed `mp.solutions` API entirely. Inspector's `liveness_checker.py` uses `mp.solutions.face_mesh` — pinned to last known-good version.
+
+### Grid: Auth rewritten to phone OTP
+
+`frontend/grid/app/login/page.tsx` — replaced email/password dev hack with real phone OTP:
+- Old: `signUp({email: "91{phone}@kriya.dev", password: "kriya-dev-2026"})` → hit Supabase email rate limits, RLS failures (no session after signUp with email confirm on)
+- New: `signInWithOtp({ phone: "+91{phone}" })` → `verifyOtp({ phone, token, type: "sms" })` → check profile existence → new user goes to name step, returning user to dashboard
+- Removed signin/register toggle — phone OTP auto-detects new vs returning users
+- `DEV_OTP = "123456"` constant kept for dev hint display
+
+### Grid: layout split for force-dynamic
+
+`frontend/grid/app/(dashboard)/layout.tsx` — converted to server component that exports `dynamic = "force-dynamic"` and re-exports the client layout from `_DashboardLayoutClient.tsx`. Prevents Next.js from statically prerendering auth-protected dashboard pages.
+
+### Grid: supabase.ts — reverted from Proxy to simple client
+
+Tried lazy Proxy init to prevent build-time crash (when env vars not set). Reverted because `supabase.from()` lost `this` binding through the Proxy → silent runtime crash. Proper fix: set env vars in Vercel before building, keep simple `createClient()`.
+
+### Grid: ApplicantProfileModal band.color fix
+
+`frontend/grid/components/applicants/ApplicantProfileModal.tsx`:
+- `band.color` → `bandColor = \`var(--${band.varName})\`` (5 occurrences)
+- `MOMENTUM_BANDS` type has `varName` not `color` — TypeScript build error
+
+### Supabase New API Key Format
+
+Supabase migrated from JWT-format keys to named keys:
+- `sb_publishable_xxx` → replaces `anon` key → use in frontend (`NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+- `sb_secret_xxx` → replaces `service_role` key → use in backend (`SUPABASE_SERVICE_KEY`)
+- Legacy JWT keys still work until end of 2026
+- Location: **Settings → API Keys** (new tabs) or **Legacy anon, service_role API keys** tab
+
+---
+
 ## 2026-05-09 — Badges System + Home Page Revamp + Profile Fixes
 
 ### Profile: Completion Percentage Fix
