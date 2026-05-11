@@ -237,14 +237,20 @@ Pure SVG — no react-native-svg dependency. Works in browser.
 
 ## Auth Flow
 
-1. `/login` → user enters 10-digit phone
-2. OTP step → dev OTP is always `123456`
-3. `signInWithPassword({ email: "91{digits}@kriya.dev", password: "kriya-dev-2026" })`
-4. Success → `router.replace("/dashboard")`
-5. `(dashboard)/layout.tsx` — auth guard on every dashboard page
+Phone OTP (same as mobile app — no email involved):
 
-**Dev email formula:** `91` + phone digits + `@kriya.dev` (e.g. `9988776655` → `919988776655@kriya.dev`)
-Dev OTP: `123456`.
+1. `/login` → user enters 10-digit phone
+2. `supabase.auth.signInWithOtp({ phone: "+91{phone}" })` — sends real SMS via Twilio in prod; dev OTP always `123456`
+3. OTP step → `supabase.auth.verifyOtp({ phone, token, type: "sms" })`
+4. After verify: check if profile row exists for user
+   - Profile exists → `router.replace("/dashboard")` (returning user)
+   - No profile → go to name step (new user)
+5. Name step → `supabase.from("profiles").upsert(...)` — user is authenticated at this point so RLS passes
+6. `(dashboard)/layout.tsx` — auth guard on every dashboard page (server component with `force-dynamic`, client logic in `_DashboardLayoutClient.tsx`)
+
+**Dev OTP:** `123456` (shown as hint on OTP screen)
+
+**Why email/password was removed:** Old approach used `signUp({email: "91{phone}@kriya.dev"})` which hit Supabase email rate limits in production and caused RLS failures (no session after signUp when email confirmation is enabled).
 
 ## Gig Post Wizard (4 Steps)
 
@@ -280,4 +286,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ```
 
-**Note:** FastAPI maps to host port 8000 (not 8001 — Supabase Kong uses 8001 internally). `.env.local.example` had the wrong value (8001); `.env.local` is now corrected to 8000.
+**Note:** FastAPI maps to host port 8000 (not 8001). `.env.local.example` has correct value.
+
+## Production Deployment
+
+- **URL:** `grid.trykria.com` (Vercel)
+- **Deploy:** `cd frontend/grid && vercel --prod` (from EC2 after `git pull`)
+- **Vercel env vars:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (use `sb_publishable_xxx`), `NEXT_PUBLIC_API_URL=https://api.trykria.com/api/v1`
+- **DNS:** CNAME `grid` → `cname.vercel-dns.com` added in Vercel DNS panel (since trykria.com DNS is Vercel-managed)
+- **Supabase Auth:** must disable "Confirm email" in Authentication → Email settings
+
+## Supabase Client (`lib/supabase.ts`)
+
+Simple `createClient()` at module level — no lazy init, no Proxy. Env vars must be set in Vercel before building (NEXT_PUBLIC_* vars are embedded at build time). The Proxy approach was tried and reverted — `supabase.from()` loses `this` binding through a Proxy, causing silent runtime crashes.

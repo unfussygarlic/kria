@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Comfortaa } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen bg-bg text-text antialiased">
         {children}
+        <Analytics />
       </body>
     </html>
   );

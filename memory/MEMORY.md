@@ -32,9 +32,12 @@
 
 ## Dev
 - [Setup](dev/setup.md) — run commands, ports, Docker, dev auth, env files
-- [Debugging](dev/debugging.md) — NativeWind/Animated, cache clearing, RLS, SVG CSS vars, asyncpg gotchas, Next.js 16 params
+- [Debugging](dev/debugging.md) — NativeWind/Animated, cache clearing, RLS, SVG CSS vars, asyncpg gotchas, Next.js 16 params, EC2/production gotchas
 - [Todo](dev/todo.md) — open bugs, pending work, testing checklists
 - [Changelog](dev/changelog.md) — session-by-session feature log
+
+## Infra
+- [Stack](architecture/stack.md) — includes production hosting table (EC2, Vercel, Supabase Cloud URLs)
 
 ---
 
@@ -50,8 +53,7 @@ cd landing-page && npm run dev                         # Landing page
 ```
 
 ### Dev Auth
-- Phone OTP: any number → `123456`
-- Grid email: `91{digits}@kriya.dev` + password `kriya-dev-2026`
+- Phone OTP (mobile + Grid): any number → `123456`
 - **Demo host account:** `9988776655` (Priya Mehta, Bangalore) — 15 seeded gigs, 16 runners
 
 ### Theme (key tokens)
