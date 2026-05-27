@@ -617,7 +617,7 @@ function MomentumSection() {
           <div>
             <div className="kicker" style={{ marginBottom: 12 }}>How it's built</div>
             <p className="note">
-              Show rate. On-time arrival. Performance. Communication. Professionalism. Every gig you complete updates each axis. There is no review form, no five-star slot machine — just the receipts.
+              Show rate. On-time arrival. Performance. Communication. Professionalism. Every gig you complete updates each axis. There is no review form, no five-star slot machine. Just the receipts.
             </p>
             <p className="note">
               Hosts have Momentum too. Runners see a Host's record before they swipe.
@@ -682,7 +682,7 @@ function MomentumSection() {
             {/* <div className="kicker">Skill graph · five signals</div> */}
             <h3>Hover an axis. <em>See where it's earned.</em></h3>
             <p className="lede">
-              Each axis on the radar measures one slice of how Priya works. The score is the average — but Hosts hiring for a wedding banquet care more about <i>Show rate</i> than <i>Communication</i>, and the graph tells them that in a glance.
+              Each axis on the radar measures one slice of how Priya works. The score is the average, but Hosts hiring for a wedding banquet care more about <i>Show rate</i> than <i>Communication</i>, and the graph tells them that in a glance.
             </p>
 
             <div style={{ margin: '24px -8px 0' }}>
