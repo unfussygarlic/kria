@@ -66,7 +66,7 @@ function Hero() {
       <div className="container hero-grid">
         <div className="hero-left">
           <div className="hero-meta-top">
-            <span className="stamp">Issue 04 · May 2026</span>
+            <span className="stamp">Issue 04 · June 2026</span>
             <span className="filed">Filed from Bengaluru, 28.6° C</span>
           </div>
 
@@ -76,7 +76,7 @@ function Hero() {
           </h1>
 
           <p className="hero-lead">
-            There are <span className="ink">12 million daily-wage workers</span> in India who can't put <i>reliable</i> on a CV. kria is the receipt book that proves it for them — and the dashboard that lets Hosts hire by track record, not a paragraph of hopes.
+            There are <span className="ink">12 million daily-wage workers</span> in India who can't put <i>reliable</i> on a CV. kria is the receipt book that proves it for them and the dashboard that lets Hosts hire by track record, not a paragraph of hopes.
           </p>
 
           <div className="hero-cta-row">
@@ -88,8 +88,8 @@ function Hero() {
                 </svg>
               </span>
             </a>
-            <a href="#pocket" className="btn btn-ghost">Pocket — coming soon</a>
-            <span className="hero-cta-meta">Free until you fill it.</span>
+            <a href="#pocket" className="btn btn-ghost">Pocket :: Coming Soon</a>
+            {/* <span className="hero-cta-meta">Free until you fill it.</span> */}
           </div>
         </div>
 
@@ -109,7 +109,7 @@ function Hero() {
         <div className="hero-ribbon">
           <div className="col">
             <div className="lbl">Runners onboarded</div>
-            <div className="val">12,418</div>
+            <div className="val">100+</div>
             <div className="sub">Bengaluru, Mumbai, Pune, Hyderabad</div>
           </div>
           <div className="col">
@@ -124,8 +124,8 @@ function Hero() {
           </div>
           <div className="col">
             <div className="lbl">Paid out, last 30 days</div>
-            <div className="val">₹2.8 Cr</div>
-            <div className="sub">Wages settled within 48 hours</div>
+            <div className="val">₹10K</div>
+            <div className="sub">Wages settled</div>
           </div>
         </div>
       </div>
@@ -689,7 +689,7 @@ function MomentumSection() {
               <SkillGraph active={active} setActive={setActive} size={440} />
             </div>
 
-            <div className="dim-list">
+            {/* <div className="dim-list">
               {DIMENSIONS.map((d) => (
                 <div
                   key={d.key}
@@ -704,7 +704,7 @@ function MomentumSection() {
                   <div className="dim-val">{d.val}</div>
                 </div>
               ))}
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -759,7 +759,7 @@ function CtaSection() {
               </svg>
             </span>
           </a>
-          <a href="#pocket" className="btn btn-ghost">Pocket — coming soon</a>
+          <a href="#pocket" className="btn btn-ghost">Pocket :: Coming Soon</a>
         </div>
         <div className="ps">P.S. Free until you fill it. We mean that.</div>
       </div>
@@ -805,7 +805,7 @@ function App() {
   return (
     <>
       <Nav />
-      <Ticker />
+      {/* <Ticker /> */}
       <Hero />
       {/* <PullQuote
         label="// Filed from a wedding shift, Indiranagar"
