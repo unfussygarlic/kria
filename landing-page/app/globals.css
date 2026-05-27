@@ -1,15 +1,67 @@
 @import "tailwindcss";
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-body {
-  background: #0B0F0A;
-  color: #ffffff;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+:root {
+  /* Background layers */
+  --ink: #0E120D;
+  --ink-2: #14180F;
+  --ink-3: #1A1F14;
+  --ink-4: #232A1C;
+  --card: #14180F;
+  --card-2: #1A1F14;
+  --card-rule: rgba(244, 239, 227, 0.14);
+  --hairline: rgba(244, 239, 227, 0.10);
+  --hairline-strong: rgba(244, 239, 227, 0.18);
+
+  /* Text */
+  --text: #F4EFE3;
+  --text-pure: #ffffff;
+  --muted: rgba(244, 239, 227, 0.48);
+  --muted-2: rgba(244, 239, 227, 0.72);
+
+  /* Brand */
+  --lime: #D4FF00;
+  --lime-ink: #0E120D;
+  --cobalt: #8097ff;
+  --gold: #FFC83D;
+  --mark: #FFC83D;
+  --grey: #777575;
+  --orange: #ff7351;
+
+  /* Band colors */
+  --band-newcomer: #777575;
+  --band-building: #ff7351;
+  --band-reliable: #8097ff;
+  --band-trusted: #FFC83D;
+  --band-elite: #D4FF00;
+  --band-legend: #F4EFE3;
+
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', Menlo, monospace;
+  --font-serif: var(--font-comfortaa), 'Comfortaa', cursive;
+}
+
+html, body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 9999;
 }

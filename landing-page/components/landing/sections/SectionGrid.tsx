@@ -1,154 +1,277 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
-import { LIME } from "../constants";
-import { useFadeIn, useWindowWidth } from "../utils";
-import { useT } from "../LanguageContext";
+import { useWindowWidth } from "../utils";
 
-function CheckIcon() {
+const RECENT_GIGS = [
+  { title: "Lead anchor", host: "Mama", skill: "Promoter", city: "Bangalore", date: "11 May", filled: "1/1", status: "progress" },
+  { title: "Saturday wedding — banquet servers", host: "Olive & Oak", skill: "Hospitality", city: "Bangalore", date: "17 May", filled: "8/12", status: "progress" },
+  { title: "Chennai Auto Expo — Tech Support Crew", host: "Chennai Trade Centre", skill: "Event Tech", city: "Chennai", date: "10 Jun", filled: "1/5", status: "open" },
+  { title: "Flipkart Big Shopping Days — Lead Gen", host: "Flipkart", skill: "Lead Collection", city: "Hyderabad", date: "22 May", filled: "4/8", status: "open" },
+  { title: "Sunburn Festival — Crowd Safety", host: "Sunburn Ent.", skill: "Usher", city: "Goa", date: "18 May", filled: "15/20", status: "open" },
+];
+
+const SIDEBAR_NAV = ["Dashboard", "Gigs", "Applications", "Events", "Analytics", "Profile"];
+
+function StatusPill({ status }: { status: string }) {
+  const isProgress = status === "progress";
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={LIME} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
+    <span style={{
+      padding: "3px 8px",
+      borderRadius: 6,
+      fontFamily: "var(--font-mono)",
+      fontSize: 10,
+      fontWeight: 600,
+      background: isProgress ? "rgba(212,255,0,0.12)" : "rgba(128,151,255,0.12)",
+      color: isProgress ? "var(--lime)" : "var(--cobalt)",
+      border: `1px solid ${isProgress ? "rgba(212,255,0,0.2)" : "rgba(128,151,255,0.2)"}`,
+    }}>
+      {isProgress ? "In progress" : "Open"}
+    </span>
   );
 }
 
-function GridMockup() {
+function GridMockup({ isMobile }: { isMobile: boolean }) {
   return (
     <div style={{
-      borderRadius: 16,
-      border: "1px solid rgba(255,255,255,0.1)",
-      background: "#111510",
+      border: "1px solid var(--hairline-strong)",
+      borderRadius: 14,
       overflow: "hidden",
-      boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,255,0,0.06)",
-      maxWidth: 480,
-      width: "100%",
+      background: "var(--ink-2)",
+      boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
     }}>
       {/* Browser chrome */}
       <div style={{
+        background: "var(--ink-3)",
+        borderBottom: "1px solid var(--hairline)",
         padding: "10px 16px",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        display: "flex", alignItems: "center", gap: 10,
-        background: "#0d120c",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
       }}>
-        <div style={{ display: "flex", gap: 5 }}>
-          {["#ff5f57","#febc2e","#28c840"].map(c => (
-            <div key={c} style={{ width: 10, height: 10, borderRadius: 99, background: c, opacity: 0.7 }} />
+        <div style={{ display: "flex", gap: 6 }}>
+          {["#ff5f57", "#febc2e", "#28c840"].map(c => (
+            <div key={c} style={{ width: 11, height: 11, borderRadius: 99, background: c }} />
           ))}
         </div>
         <div style={{
-          flex: 1, height: 22, borderRadius: 6,
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          display: "flex", alignItems: "center", paddingLeft: 10, gap: 6,
+          flex: 1,
+          maxWidth: 280,
+          margin: "0 auto",
+          background: "var(--ink-4)",
+          border: "1px solid var(--hairline)",
+          borderRadius: 7,
+          padding: "4px 10px",
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          color: "var(--muted)",
+          textAlign: "center",
         }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeLinecap="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", fontFamily: "monospace" }}>
-            grid.trykria.com
-          </span>
+          grid.trykria.com / dashboard
         </div>
       </div>
 
-      {/* Dashboard content */}
-      <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
-
-        {/* Header row */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: "0.05em" }}>DASHBOARD</p>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#fff" }}>Good morning, Priya</p>
-          </div>
+      {/* Dashboard body */}
+      <div style={{ display: "flex", minHeight: isMobile ? "auto" : 360 }}>
+        {/* Sidebar */}
+        {!isMobile && (
           <div style={{
-            padding: "6px 12px", borderRadius: 8,
-            background: LIME, color: "#000",
-            fontSize: 11, fontWeight: 700, cursor: "pointer",
+            width: 160,
+            borderRight: "1px solid var(--hairline)",
+            padding: "16px 0",
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
           }}>
-            + Post Gig
-          </div>
-        </div>
-
-        {/* Stats row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-          {[
-            { label: "Active Gigs", value: "3" },
-            { label: "Applicants", value: "12" },
-            { label: "Avg Score",  value: "648" },
-          ].map(s => (
-            <div key={s.label} style={{
-              padding: "10px 12px", borderRadius: 10,
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.06)",
+            <div style={{
+              padding: "0 16px 12px",
+              borderBottom: "1px solid var(--hairline)",
+              marginBottom: 8,
             }}>
-              <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#fff" }}>{s.value}</p>
-              <p style={{ margin: 0, fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>{s.label}</p>
+              <span style={{
+                fontFamily: "var(--font-serif)",
+                fontWeight: 700,
+                fontSize: 15,
+                color: "var(--text)",
+              }}>kria</span>
+              <span style={{ color: "var(--lime)" }}>.</span>
+              <span style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                color: "var(--muted)",
+                marginLeft: 4,
+              }}>Grid</span>
             </div>
-          ))}
-        </div>
 
-        {/* Applicant cards */}
-        <div>
-          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.3)", letterSpacing: "0.05em" }}>
-            RECENT APPLICANTS
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {SIDEBAR_NAV.map((item, i) => (
+              <div
+                key={item}
+                style={{
+                  padding: "7px 16px",
+                  fontSize: 12,
+                  fontWeight: i === 0 ? 600 : 400,
+                  color: i === 0 ? "var(--text)" : "var(--muted)",
+                  background: i === 0 ? "var(--ink-4)" : "transparent",
+                  borderRadius: 6,
+                  margin: "0 6px",
+                  cursor: "pointer",
+                }}
+              >{item}</div>
+            ))}
+
+            <div style={{ marginTop: "auto", padding: "12px 16px 0", borderTop: "1px solid var(--hairline)" }}>
+              <div style={{ padding: "7px 10px", fontSize: 12, color: "var(--muted)", cursor: "pointer" }}>Sign out</div>
+            </div>
+          </div>
+        )}
+
+        {/* Main area */}
+        <div style={{ flex: 1, padding: isMobile ? "16px" : "20px 24px", overflow: "hidden" }}>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 18,
+            gap: 12,
+          }}>
+            <div style={{
+              background: "var(--ink-3)",
+              border: "1px solid var(--hairline)",
+              borderRadius: 8,
+              padding: "6px 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              flex: 1,
+              maxWidth: 220,
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--muted)" }}>Search gigs…</span>
+            </div>
+            <div style={{
+              padding: "6px 14px",
+              borderRadius: 8,
+              background: "var(--lime)",
+              color: "var(--lime-ink)",
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}>+ Post gig</div>
+          </div>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)",
+            gap: 10,
+            marginBottom: 20,
+          }}>
             {[
-              { name: "Rahul M.", score: 742, band: "Elite",    color: LIME,      role: "Event Bartender" },
-              { name: "Sneha K.", score: 581, band: "Trusted",  color: "#FFC83D", role: "Brand Ambassador" },
-              { name: "Arjun P.", score: 334, band: "Reliable", color: "#8097ff", role: "Event Bartender" },
-            ].map(a => (
-              <div key={a.name} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "8px 12px", borderRadius: 10,
-                background: "rgba(255,255,255,0.025)",
-                border: "1px solid rgba(255,255,255,0.05)",
+              { label: "Active gigs", value: "5" },
+              { label: "Applications", value: "38" },
+              { label: "Filled today", value: "2" },
+              { label: "Total payout", value: "₹68K" },
+            ].map(({ label, value }) => (
+              <div key={label} style={{
+                background: "var(--ink-3)",
+                border: "1px solid var(--hairline)",
+                borderRadius: 8,
+                padding: "10px 14px",
               }}>
                 <div style={{
-                  width: 28, height: 28, borderRadius: 99, flexShrink: 0,
-                  background: `${a.color}1a`,
-                  border: `1px solid ${a.color}33`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: a.color }}>
-                    {a.name[0]}
-                  </span>
+                  fontFamily: "var(--font-serif)",
+                  fontWeight: 700,
+                  fontSize: 18,
+                  color: "var(--text)",
+                  lineHeight: 1,
+                }}>{value}</div>
+                <div style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: "var(--muted)",
+                  marginTop: 3,
+                }}>{label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{
+            border: "1px solid var(--hairline)",
+            borderRadius: 8,
+            overflow: "hidden",
+          }}>
+            <div style={{
+              padding: "10px 14px",
+              borderBottom: "1px solid var(--hairline)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              color: "var(--muted)",
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr auto" : "1fr auto auto auto",
+              gap: 12,
+            }}>
+              <span>Gig</span>
+              {!isMobile && <span>Skill</span>}
+              {!isMobile && <span>Date</span>}
+              <span>Filled</span>
+            </div>
+
+            {RECENT_GIGS.map((gig, i) => (
+              <div
+                key={i}
+                style={{
+                  padding: "10px 14px",
+                  borderBottom: i < RECENT_GIGS.length - 1 ? "1px solid var(--hairline)" : "none",
+                  display: "grid",
+                  gridTemplateColumns: isMobile ? "1fr auto" : "1fr auto auto auto",
+                  gap: 12,
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--text)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}>{gig.title}</div>
+                  <div style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: "var(--muted)",
+                    marginTop: 2,
+                  }}>{gig.host} · {gig.city}</div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#fff" }}>{a.name}</p>
-                  <p style={{ margin: 0, fontSize: 10, color: "rgba(255,255,255,0.3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {a.role}
-                  </p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {!isMobile && (
                   <span style={{
-                    fontSize: 10, fontWeight: 700, color: a.color,
-                    padding: "2px 7px", borderRadius: 99,
-                    background: `${a.color}12`,
-                    border: `1px solid ${a.color}30`,
-                  }}>
-                    {a.score} · {a.band}
-                  </span>
-                  <div style={{
-                    width: 22, height: 22, borderRadius: 6, cursor: "pointer",
-                    background: "rgba(212,255,0,0.1)",
-                    border: `1px solid ${LIME}30`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={LIME} strokeWidth="2.5" strokeLinecap="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </div>
-                  <div style={{
-                    width: 22, height: 22, borderRadius: 6, cursor: "pointer",
-                    background: "rgba(255,80,80,0.08)",
-                    border: "1px solid rgba(255,80,80,0.2)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgba(255,100,100,0.7)" strokeWidth="2.5" strokeLinecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </div>
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: "var(--muted)",
+                    whiteSpace: "nowrap",
+                  }}>{gig.skill}</span>
+                )}
+                {!isMobile && (
+                  <span style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: "var(--muted)",
+                    whiteSpace: "nowrap",
+                  }}>{gig.date}</span>
+                )}
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <span style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--text)",
+                    whiteSpace: "nowrap",
+                  }}>{gig.filled}</span>
+                  <StatusPill status={gig.status} />
                 </div>
               </div>
             ))}
@@ -160,133 +283,91 @@ function GridMockup() {
 }
 
 export default function SectionGrid() {
-  const { ref, visible } = useFadeIn(0.12);
-  const width    = useWindowWidth();
+  const width = useWindowWidth();
   const isMobile = width < 860;
-  const t        = useT();
 
   return (
-    <section ref={ref} style={{
-      padding: isMobile ? "80px 24px" : "120px 48px",
-      position: "relative", overflow: "hidden",
-      opacity: visible ? 1 : 0,
-      transform: visible ? "none" : "translateY(28px)",
-      transition: "opacity 0.7s ease, transform 0.7s ease",
+    <section id="grid" style={{
+      padding: isMobile ? "80px 20px" : "100px 48px",
+      maxWidth: 1200,
+      margin: "0 auto",
     }}>
-
-      {/* Ambient glow */}
       <div style={{
-        position: "absolute", width: 600, height: 600,
-        right: "-5%", top: "10%",
-        background: "radial-gradient(circle,rgba(212,255,0,0.06) 0%,transparent 65%)",
-        filter: "blur(90px)", pointerEvents: "none",
-      }} />
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+        color: "var(--muted)",
+        letterSpacing: "0.06em",
+        textTransform: "uppercase",
+        marginBottom: 20,
+      }}>
+        <span style={{
+          width: 7, height: 7, borderRadius: 99, background: "var(--lime)",
+          display: "inline-block", boxShadow: "0 0 8px var(--lime)",
+        }} />
+        Live — for Hosts
+      </div>
+
+      <h2 style={{
+        fontFamily: "var(--font-serif)",
+        fontWeight: 700,
+        fontSize: "clamp(32px, 4.8vw, 64px)",
+        lineHeight: 1.05,
+        letterSpacing: "-0.025em",
+        color: "var(--text)",
+        margin: "0 0 20px",
+        maxWidth: 700,
+      }}>
+        Post a gig at 3:42 pm. Watch it fill before chai.
+      </h2>
 
       <div style={{
-        position: "relative", zIndex: 1,
-        maxWidth: 1160, margin: "0 auto",
         display: "grid",
         gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-        gap: isMobile ? 48 : 80,
-        alignItems: "center",
+        gap: 24,
+        marginBottom: 48,
       }}>
+        <p style={{ fontSize: 17, lineHeight: 1.65, color: "var(--muted-2)", margin: 0 }}>
+          Grid is kria&apos;s web dashboard for Hosts. Post a gig in four steps — role, time, pay, location. Verified Runners apply within minutes.
+        </p>
+        <p style={{ fontSize: 17, lineHeight: 1.65, color: "var(--muted-2)", margin: 0 }}>
+          Browse applicants with full Momentum Scores. Accept, manage check-ins with OTP, and run events. Everything in one place.
+        </p>
+      </div>
 
-        {/* Left — copy */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <p style={{
-            fontSize: 12, fontWeight: 700, letterSpacing: "0.1em",
-            color: "rgba(255,255,255,0.28)", margin: 0, textTransform: "uppercase",
-          }}>
-            {t.grid.sectionLabel}
-          </p>
+      <GridMockup isMobile={isMobile} />
 
-          {/* LIVE badge */}
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "6px 14px", borderRadius: 99,
-            border: `1px solid ${LIME}33`,
-            background: `${LIME}0d`,
-            alignSelf: "flex-start",
-          }}>
-            <span style={{
-              width: 7, height: 7, borderRadius: 99, background: LIME,
-              boxShadow: `0 0 8px ${LIME}`,
-              animation: "pulseOpacity 2s ease-in-out infinite",
-            }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: LIME, letterSpacing: "0.08em" }}>
-              {t.grid.eyebrow}
-            </span>
-          </div>
-
-          <h2 style={{
-            fontSize: "clamp(28px, 3.8vw, 52px)", fontWeight: 900,
-            letterSpacing: "-0.03em", lineHeight: 1.1, margin: 0, color: "#fff",
-          }}>
-            {t.grid.headline}{" "}
-            <span style={{
-              background: `linear-gradient(90deg,${LIME},#b8e000)`,
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            }}>
-              {t.grid.headlineHighlight}
-            </span>
-          </h2>
-
-          <p style={{ fontSize: 16, lineHeight: 1.7, color: "rgba(255,255,255,0.46)", margin: 0, maxWidth: 460 }}>
-            {t.grid.sub}
-          </p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {t.grid.features.map((f, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div style={{
-                  width: 22, height: 22, borderRadius: 6, flexShrink: 0, marginTop: 1,
-                  background: "rgba(212,255,0,0.08)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <CheckIcon />
-                </div>
-                <p style={{ fontSize: 14, color: "rgba(255,255,255,0.52)", margin: 0, lineHeight: 1.55 }}>{f}</p>
-              </div>
-            ))}
-          </div>
-
-          <a
-            href="https://grid.trykria.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              alignSelf: "flex-start",
-              padding: "13px 28px", borderRadius: 12,
-              background: LIME, color: "#000",
-              fontSize: 14, fontWeight: 700,
-              textDecoration: "none",
-              display: "inline-flex", alignItems: "center", gap: 8,
-              boxShadow: `0 0 32px rgba(212,255,0,0.3), 0 4px 14px rgba(0,0,0,0.3)`,
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLAnchorElement).style.boxShadow = `0 0 48px rgba(212,255,0,0.5), 0 4px 16px rgba(0,0,0,0.3)`;
-              (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLAnchorElement).style.boxShadow = `0 0 32px rgba(212,255,0,0.3), 0 4px 14px rgba(0,0,0,0.3)`;
-              (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)";
-            }}
-          >
-            {t.grid.cta}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-            </svg>
-          </a>
-        </div>
-
-        {/* Right — dashboard mockup */}
-        <div style={{
-          display: "flex", justifyContent: isMobile ? "center" : "flex-end",
-          animation: visible ? "float 6s ease-in-out infinite" : "none",
-        }}>
-          <GridMockup />
-        </div>
+      <div style={{ marginTop: 32, textAlign: "center" }}>
+        <a
+          href="https://grid.trykria.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "inline-block",
+            padding: "13px 30px",
+            borderRadius: 12,
+            background: "var(--lime)",
+            color: "var(--lime-ink)",
+            fontSize: 15,
+            fontWeight: 700,
+            textDecoration: "none",
+            fontFamily: "var(--font-sans)",
+            boxShadow: "0 0 28px rgba(212,255,0,0.3)",
+            transition: "opacity 0.2s, transform 0.2s",
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.opacity = "0.88";
+            e.currentTarget.style.transform = "translateY(-1px)";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.opacity = "1";
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
+          Open Grid →
+        </a>
       </div>
     </section>
   );

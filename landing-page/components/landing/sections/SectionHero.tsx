@@ -1,187 +1,277 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import PhoneFrame from "../PhoneFrame";
-import { LIME, type Role } from "../constants";
+import SwipeStack from "../SwipeStack";
 import { useWindowWidth } from "../utils";
-import { useT } from "../LanguageContext";
 
-export default function SectionHero({ role, setRole }: { role: Role; setRole: (r: Role) => void }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-  const width    = useWindowWidth();
+const STATS = [
+  { value: "12,418", sub: "Bengaluru, Mumbai, Pune, Hyderabad", label: "Runners onboarded" },
+  { value: "8 min, 12 sec", sub: "Across all gigs filed last week", label: "Median apply→accept" },
+  { value: "94.2%", sub: "OTP-confirmed arrivals at check-in", label: "Show-up rate" },
+  { value: "₹2.8 Cr", sub: "Wages settled within 48 hours", label: "Paid out, last 30 days" },
+];
+
+export default function SectionHero() {
+  const width = useWindowWidth();
   const isMobile = width < 860;
-  const t        = useT();
 
   return (
-    <section style={{
-      minHeight: "100vh",
-      position: "relative",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      overflow: "hidden",
-    }}>
-
-      {/* Glow blobs */}
-      <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-        <div style={{
-          position: "absolute", width: 700, height: 700, left: "50%", top: "-10%",
-          transform: "translateX(-50%)",
-          background: "radial-gradient(circle, rgba(212,255,0,0.14) 0%, transparent 60%)",
-          filter: "blur(100px)", animation: "breathe 10s ease-in-out infinite",
-        }} />
-        <div style={{
-          position: "absolute", width: 500, height: 500, right: "-5%", top: "30%",
-          background: "radial-gradient(circle, rgba(212,255,0,0.08) 0%, transparent 60%)",
-          filter: "blur(110px)", animation: "breathe 13s ease-in-out infinite reverse",
-        }} />
-        <div style={{
-          position: "absolute", width: 400, height: 400, left: "-5%", top: "40%",
-          background: "radial-gradient(circle, rgba(128,151,255,0.07) 0%, transparent 60%)",
-          filter: "blur(90px)",
-        }} />
-      </div>
-
-      {/* ── Two-column body ── */}
-      <div style={{
-        position: "relative", zIndex: 10,
-        flex: 1, display: "flex",
-        alignItems: "center",
-        flexDirection: isMobile ? "column" : "row",
-        maxWidth: 1100, margin: "0 auto", width: "100%",
-        padding: isMobile ? "120px 24px 60px" : "100px 48px 80px",
-        gap: isMobile ? 44 : 60,
+    <>
+      <section style={{
+        background: "var(--ink)",
+        padding: isMobile ? "56px 20px 60px" : "72px 48px 80px",
+        maxWidth: 1200,
+        margin: "0 auto",
       }}>
-
-        {/* Left — copy */}
         <div style={{
-          flex: "1 1 0", minWidth: 0,
-          display: "flex", flexDirection: "column",
-          gap: 26,
-          alignItems: isMobile ? "center" : "flex-start",
-          textAlign: isMobile ? "center" : "left",
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "1.1fr 0.9fr",
+          gap: isMobile ? 48 : 64,
+          alignItems: "start",
         }}>
-
-          {/* Eyebrow */}
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "6px 14px", borderRadius: 99,
-            border: "1px solid rgba(212,255,0,0.2)",
-            background: "rgba(212,255,0,0.06)",
-          }}>
-            <span style={{
-              width: 6, height: 6, borderRadius: 99, background: LIME,
-              boxShadow: `0 0 8px ${LIME}`, display: "block",
-              animation: "pulseOpacity 2s ease-in-out infinite",
-            }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(212,255,0,0.8)", letterSpacing: "0.05em" }}>
-              {t.hero.eyebrow}
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h1 style={{ margin: 0 }}>
-            {[
-              { text: t.hero.headlineLine1, lime: false },
-              { text: t.hero.headlineLine2, lime: true  },
-            ].map(({ text, lime }) => (
-              <span key={text} style={{
-                display: "block",
-                fontSize: "clamp(44px, 6vw, 80px)",
-                fontWeight: 900, lineHeight: 1.0,
-                letterSpacing: "-0.04em",
-                ...(lime
-                  ? { background: `linear-gradient(95deg,${LIME},#b8e000)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }
-                  : { color: "#fff" }),
-              }}>{text}</span>
-            ))}
-          </h1>
-
-          {/* Sub */}
-          <p style={{
-            fontSize: 17, lineHeight: 1.7,
-            color: "rgba(255,255,255,0.5)", margin: 0, maxWidth: 400,
-          }}>
-            {t.hero.sub}
-          </p>
-
-          {/* Role toggle */}
-          <div style={{
-            display: "inline-flex",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 14, padding: 4, gap: 4,
-          }}>
-            {([["runner", t.hero.runnerLabel], ["host", t.hero.hostLabel]] as [Role, string][]).map(([r, label]) => (
-              <button key={r} onClick={() => setRole(r)} style={{
-                padding: "9px 22px", borderRadius: 10,
-                border: "none", cursor: "pointer",
-                fontSize: 13, fontWeight: 600,
-                transition: "all 0.25s",
-                fontFamily: "inherit",
-                ...(role === r
-                  ? { background: LIME, color: "#000", boxShadow: "0 0 18px rgba(212,255,0,0.3)" }
-                  : { background: "transparent", color: "rgba(255,255,255,0.38)" }),
+          {/* Left: copy */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {/* Meta top */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 16,
+              flexWrap: "wrap",
+            }}>
+              {/* Stamp */}
+              <div style={{
+                display: "inline-block",
+                border: "1.5px solid rgba(212,255,0,0.4)",
+                borderRadius: 6,
+                padding: "3px 9px",
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                color: "var(--lime)",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                transform: "rotate(-2deg)",
+                opacity: 0.85,
               }}>
-                {label}
+                Issue 04 · May 2026
+              </div>
+              <span style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                color: "var(--muted)",
+                letterSpacing: "0.03em",
+              }}>
+                Filed from Bengaluru, 28.6° C
+              </span>
+            </div>
+
+            {/* Headline */}
+            <h1 style={{
+              margin: 0,
+              lineHeight: 0.92,
+              letterSpacing: "-0.03em",
+            }}>
+              <span style={{
+                display: "block",
+                fontFamily: "var(--font-serif)",
+                fontWeight: 700,
+                fontSize: "clamp(56px, 8.4vw, 116px)",
+                color: "var(--text)",
+              }}>
+                Short gigs.
+              </span>
+              <span style={{
+                display: "block",
+                fontFamily: "var(--font-serif)",
+                fontWeight: 700,
+                fontSize: "clamp(56px, 8.4vw, 116px)",
+                color: "var(--text)",
+              }}>
+                Long{" "}
+                <em style={{
+                  fontStyle: "italic",
+                  color: "var(--lime)",
+                }}>momentum.</em>
+              </span>
+            </h1>
+
+            {/* Lead */}
+            <p style={{
+              fontSize: 18,
+              lineHeight: 1.65,
+              color: "var(--muted-2)",
+              margin: 0,
+              maxWidth: 520,
+            }}>
+              There are{" "}
+              <span style={{ textDecoration: "underline", textDecorationColor: "rgba(244,239,227,0.35)" }}>
+                12 million daily-wage workers in India
+              </span>{" "}
+              who can&apos;t put <em>reliable</em> on a CV. kria is the receipt book that proves it for them — and the dashboard that lets Hosts hire by track record, not{" "}
+              <span style={{
+                background: "rgba(212,255,0,0.22)",
+                borderRadius: 3,
+                padding: "0 3px",
+                color: "var(--text)",
+              }}>
+                a paragraph of hopes.
+              </span>
+            </p>
+
+            {/* CTA row */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 12,
+              marginTop: 4,
+            }}>
+              <a
+                href="https://grid.trykria.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-block",
+                  padding: "13px 26px",
+                  borderRadius: 12,
+                  background: "var(--lime)",
+                  color: "var(--lime-ink)",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  fontFamily: "var(--font-sans)",
+                  transition: "opacity 0.2s, transform 0.2s",
+                  boxShadow: "0 0 32px rgba(212,255,0,0.35)",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.opacity = "0.88";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.opacity = "1";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                Post a gig on Grid →
+              </a>
+
+              <button
+                style={{
+                  padding: "12px 22px",
+                  borderRadius: 12,
+                  border: "1px solid var(--hairline-strong)",
+                  background: "transparent",
+                  color: "var(--muted-2)",
+                  fontSize: 14,
+                  fontWeight: 500,
+                  cursor: "default",
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                Pocket — coming soon
               </button>
-            ))}
+
+              <span style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                color: "var(--muted)",
+              }}>
+                Free until you fill it.
+              </span>
+            </div>
           </div>
 
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.25)", margin: 0, fontWeight: 500 }}>
-            {role === "runner" ? t.hero.runnerHint : t.hero.hostHint}
-          </p>
+          {/* Right: SwipeStack */}
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            gap: 16,
+            paddingTop: isMobile ? 0 : 16,
+            position: "relative",
+          }}>
+            {/* Curved arrow hint */}
+            {!isMobile && (
+              <div style={{
+                position: "absolute",
+                top: -8,
+                left: -40,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 4,
+                opacity: 0.7,
+              }}>
+                <svg width="60" height="48" viewBox="0 0 60 48" fill="none">
+                  <path
+                    d="M8 4 C8 4, 40 0, 52 32"
+                    stroke="var(--lime)"
+                    strokeWidth="1.5"
+                    fill="none"
+                    strokeDasharray="4 3"
+                  />
+                  <path d="M46 38 L54 30 L58 40" stroke="var(--lime)" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "var(--lime)",
+                  letterSpacing: "0.04em",
+                }}>try it ↘</span>
+              </div>
+            )}
 
-          {/* CTA */}
-          <button
-            onClick={() => document.getElementById("waitlist")?.scrollIntoView({ behavior: "smooth" })}
-            style={{
-              alignSelf: isMobile ? "center" : "flex-start",
-              padding: "15px 32px", borderRadius: 14, border: "none",
-              background: LIME, color: "#000", fontSize: 15, fontWeight: 700,
-              cursor: "pointer",
-              boxShadow: "0 0 36px rgba(212,255,0,0.4), 0 4px 18px rgba(0,0,0,0.4)",
-              transition: "all 0.2s",
-              display: "inline-flex", alignItems: "center", gap: 8,
-              fontFamily: "inherit",
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.boxShadow = "0 0 52px rgba(212,255,0,0.6), 0 4px 20px rgba(0,0,0,0.4)";
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.boxShadow = "0 0 36px rgba(212,255,0,0.4), 0 4px 18px rgba(0,0,0,0.4)";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            {t.hero.cta}
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-            </svg>
-          </button>
+            <SwipeStack />
+          </div>
         </div>
+      </section>
 
-        {/* Right — phone */}
+      {/* Stats Ribbon */}
+      <div style={{
+        borderTop: "1px solid var(--hairline)",
+        borderBottom: "1px solid var(--hairline)",
+        background: "var(--ink-2)",
+      }}>
         <div style={{
-          flex: "0 0 auto",
-          display: "flex", justifyContent: "center", alignItems: "center",
-          animation: mounted ? "float 6s ease-in-out infinite" : "none",
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: isMobile ? "0 20px" : "0 48px",
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)",
         }}>
-          <PhoneFrame role={role} />
+          {STATS.map((s, i) => (
+            <div
+              key={s.label}
+              style={{
+                padding: isMobile ? "24px 0" : "28px 0",
+                paddingLeft: i > 0 ? (isMobile ? 16 : 28) : 0,
+                paddingRight: i < STATS.length - 1 ? (isMobile ? 16 : 28) : 0,
+                borderLeft: i > 0 ? "1px solid var(--hairline)" : "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+              }}
+            >
+              <span style={{
+                fontFamily: "var(--font-serif)",
+                fontWeight: 700,
+                fontSize: isMobile ? 22 : 28,
+                color: "var(--text)",
+                lineHeight: 1,
+              }}>{s.value}</span>
+              <span style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: isMobile ? 9 : 10,
+                color: "var(--muted)",
+                lineHeight: 1.4,
+                marginTop: 2,
+              }}>{s.sub}</span>
+              <span style={{
+                fontSize: isMobile ? 11 : 12,
+                color: "var(--muted-2)",
+                marginTop: 1,
+              }}>{s.label}</span>
+            </div>
+          ))}
         </div>
       </div>
-
-      {/* Scroll cue */}
-      {!isMobile && (
-        <div style={{
-          position: "absolute", bottom: 28, left: "50%", transform: "translateX(-50%)",
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 6, zIndex: 10,
-        }}>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.18)", letterSpacing: "0.08em", fontWeight: 500 }}>SCROLL</span>
-          <div style={{ width: 1, height: 28, background: "linear-gradient(to bottom,rgba(255,255,255,0.18),transparent)" }} />
-        </div>
-      )}
-    </section>
+    </>
   );
 }
