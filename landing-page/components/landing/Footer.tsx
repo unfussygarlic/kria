@@ -1,31 +1,68 @@
 "use client";
 
-import KriaWordmark from "./KriaWordmark";
-import { useT } from "./LanguageContext";
-
 export default function Footer() {
-  const t = useT();
-
   return (
     <footer style={{
-      borderTop: "1px solid rgba(255,255,255,0.05)",
+      borderTop: "1px solid var(--hairline)",
       padding: "28px 48px",
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      flexWrap: "wrap", gap: 16,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      flexWrap: "wrap",
+      gap: 16,
+      maxWidth: 1200,
+      margin: "0 auto",
     }}>
-      <KriaWordmark size={20} />
-      <div style={{ display: "flex", gap: 32 }}>
-        {[t.footer.privacy, t.footer.terms, t.footer.contact].map(item => (
-          <a key={item} href="mailto:support@trykria.com" style={{
-            fontSize: 13, color: "rgba(255,255,255,0.25)", textDecoration: "none", transition: "color 0.2s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
-          onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.25)"; }}>
-            {item}
+      {/* Wordmark */}
+      <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+        <span style={{
+          fontFamily: "var(--font-serif)",
+          fontWeight: 700,
+          fontSize: 20,
+          color: "var(--text)",
+          letterSpacing: "-0.02em",
+        }}>
+          kria<span style={{ color: "var(--lime)" }}>.</span>
+        </span>
+        <span style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          color: "var(--muted)",
+          letterSpacing: "0.04em",
+          marginTop: 2,
+        }}>India · 2026</span>
+      </div>
+
+      {/* Links */}
+      <div style={{ display: "flex", gap: 28 }}>
+        {[
+          { label: "Privacy", href: "mailto:support@trykria.com" },
+          { label: "Terms", href: "mailto:support@trykria.com" },
+          { label: "Contact", href: "mailto:support@trykria.com" },
+        ].map(({ label, href }) => (
+          <a
+            key={label}
+            href={href}
+            style={{
+              fontSize: 13,
+              color: "var(--muted)",
+              textDecoration: "none",
+              transition: "color 0.2s",
+              fontFamily: "var(--font-sans)",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--muted)"; }}
+          >
+            {label}
           </a>
         ))}
       </div>
-      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.2)" }}>{t.footer.copyright}</span>
+
+      <span style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+        color: "var(--muted)",
+      }}>© 2026 kria</span>
     </footer>
   );
 }

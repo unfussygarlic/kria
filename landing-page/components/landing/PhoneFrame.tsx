@@ -1,18 +1,24 @@
 "use client";
 
+// PhoneFrame is not used in the new design — kept for reference only.
+// It has been refactored to remove dependency on removed translation keys.
+
 import { useState, useRef, useEffect, useCallback } from "react";
-import { LIME, SURFACE, SURFACE2, GIG_CARDS, type Role } from "./constants";
+import { LIME, SURFACE, SURFACE2, GIG_CARDS } from "./constants";
 import KriaWordmark from "./KriaWordmark";
-import { useT } from "./LanguageContext";
 
 const THRESHOLD_X = 75;
 const THRESHOLD_Y = 65;
 
-// ── Card content ──────────────────────────────────────────────────────────────
-function CardContent({ index, role }: { index: number; role: Role }) {
-  const t    = useT();
-  const data = GIG_CARDS[index];    // structural: pay, categoryColor, spots
-  const str  = t.gigCards[index];   // translatable: title, company, date, location, category
+const CARD_STRINGS = [
+  { title: "Event Bartender",  company: "The Grand Venue", date: "Sat Apr 12 · 6pm – 2am",     location: "Bandra, Mumbai",          category: "Hospitality", spotsOpen: "spots open" },
+  { title: "Brand Ambassador", company: "Celsius Energy",  date: "Sun Apr 13 · 10am – 4pm",    location: "Koramangala, Bengaluru",   category: "Marketing",   spotsOpen: "spots open" },
+  { title: "Warehouse Lead",   company: "FlexLogix",       date: "Mon Apr 14 · 7am – 3pm",     location: "Gurugram, Delhi NCR",      category: "Logistics",   spotsOpen: "spots open" },
+];
+
+function CardContent({ index }: { index: number }) {
+  const data = GIG_CARDS[index];
+  const str  = CARD_STRINGS[index];
 
   return (
     <div style={{
@@ -23,7 +29,6 @@ function CardContent({ index, role }: { index: number; role: Role }) {
       display: "flex", flexDirection: "column", gap: 10,
       userSelect: "none",
     }}>
-      {/* tag + pay */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <span style={{
           fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
@@ -42,18 +47,16 @@ function CardContent({ index, role }: { index: number; role: Role }) {
         </span>
       </div>
 
-      {/* title */}
       <div style={{ pointerEvents: "none" }}>
         <p style={{ fontSize: 17, fontWeight: 800, color: "#fff", lineHeight: 1.2, margin: 0 }}>{str.title}</p>
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "3px 0 0" }}>{str.company}</p>
       </div>
 
-      {/* details */}
       <div style={{ display: "flex", flexDirection: "column", gap: 7, pointerEvents: "none" }}>
         {[
           { d: "M8 6h13M8 12h13M3 6h.01M3 12h.01", text: str.date },
           { d: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z", text: str.location },
-          { d: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", text: `${data.spots} ${t.phone.spotsOpen}`, accent: true },
+          { d: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", text: `${data.spots} ${str.spotsOpen}`, accent: true },
         ].map(({ d, text, accent }) => (
           <div key={d} style={{ display: "flex", alignItems: "center", gap: 7 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -68,7 +71,6 @@ function CardContent({ index, role }: { index: number; role: Role }) {
         ))}
       </div>
 
-      {/* swipe hint */}
       <div style={{
         marginTop: "auto", paddingTop: 10,
         borderTop: "1px solid rgba(255,255,255,0.06)",
@@ -81,17 +83,14 @@ function CardContent({ index, role }: { index: number; role: Role }) {
           <polyline points="18 15 12 9 6 15" />
         </svg>
         <span style={{ fontSize: 11, color: "rgba(212,255,0,0.5)", fontWeight: 500 }}>
-          {role === "runner" ? t.phone.runnerHint : t.phone.hostHint}
+          Swipe up to apply
         </span>
       </div>
     </div>
   );
 }
 
-// ── Phone frame ───────────────────────────────────────────────────────────────
-export default function PhoneFrame({ role }: { role: Role }) {
-  const t = useT();
-
+export default function PhoneFrame() {
   const [index, setIndex]       = useState(0);
   const [offset, setOffset]     = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -102,13 +101,7 @@ export default function PhoneFrame({ role }: { role: Role }) {
 
   const total = GIG_CARDS.length;
   const cur   = index % total;
-  const next1 = (index + 1) % total;
-  const next2 = (index + 2) % total;
 
-  // suppress unused warning — kept for future use
-  void next1; void next2;
-
-  // ── fly-off then advance index ────────────────────────────────────────────
   const flyOff = useCallback((dir: "left" | "right" | "up") => {
     setDragging(false);
     setFlyDir(dir);
@@ -119,7 +112,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
     }, 340);
   }, []);
 
-  // ── drag end logic ────────────────────────────────────────────────────────
   const onEnd = useCallback(() => {
     if (!dragging) return;
     const { x, y } = offset;
@@ -136,7 +128,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
     }
   }, [dragging, offset, flyOff]);
 
-  // ── non-passive touchmove ─────────────────────────────────────────────────
   useEffect(() => {
     const el = stackRef.current;
     if (!el) return;
@@ -152,7 +143,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
     return () => el.removeEventListener("touchmove", handleTouchMove);
   }, [dragging]);
 
-  // ── mouse handlers ────────────────────────────────────────────────────────
   const onMouseDown = (e: React.MouseEvent) => {
     if (flyDir) return;
     start.current = { x: e.clientX, y: e.clientY };
@@ -163,7 +153,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
     setOffset({ x: e.clientX - start.current.x, y: e.clientY - start.current.y });
   };
 
-  // ── touch handlers ────────────────────────────────────────────────────────
   const onTouchStart = (e: React.TouchEvent) => {
     if (flyDir) return;
     start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -171,7 +160,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
   };
   const onTouchEnd = () => onEnd();
 
-  // ── top card transform ────────────────────────────────────────────────────
   const rot = offset.x / 14;
   const topTransform = (() => {
     if (flyDir === "left")  return "translateX(-520px) rotate(-22deg)";
@@ -180,7 +168,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
     return `translate(${offset.x}px,${offset.y}px) rotate(${rot}deg)`;
   })();
 
-  // ── overlay opacities ─────────────────────────────────────────────────────
   const applyOpacity = (dragging || flyDir === "up")
     ? Math.min(Math.max((-offset.y - 20) / THRESHOLD_Y, 0), 1)
     : 0;
@@ -189,7 +176,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
     : 0;
   const navLeft = offset.x < 0;
 
-  // ── back card scale ───────────────────────────────────────────────────────
   const dragProgress = Math.min(
     Math.max(Math.abs(offset.x) / THRESHOLD_X, Math.abs(offset.y) / THRESHOLD_Y),
     1
@@ -207,8 +193,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
       border: "1px solid rgba(255,255,255,0.09)",
       boxShadow: "0 40px 90px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.07)",
     }}>
-
-      {/* Status bar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 6px 10px" }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.45)" }}>9:41</span>
         <div style={{ width: 68, height: 18, borderRadius: 99, background: "rgba(255,255,255,0.07)" }} />
@@ -219,7 +203,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
         </div>
       </div>
 
-      {/* App header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 4px 12px" }}>
         <KriaWordmark size={19} />
         <div style={{
@@ -232,7 +215,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
         </div>
       </div>
 
-      {/* ── Draggable card stack ── */}
       <div
         ref={stackRef}
         style={{ position: "relative", height: 300, cursor: dragging ? "grabbing" : "grab", overflow: "hidden", borderRadius: 20 }}
@@ -243,7 +225,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {/* Back card 2 */}
         <div style={{
           position: "absolute", inset: 0, zIndex: 1,
           transform: `translateY(${back2TransY}px) rotate(-2deg) scale(${back2Scale})`,
@@ -252,7 +233,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
           transition: dragging ? "none" : "transform 0.35s ease",
         }} />
 
-        {/* Back card 1 */}
         <div style={{
           position: "absolute", inset: 0, zIndex: 2,
           transform: `translateY(${back1TransY}px) rotate(2.5deg) scale(${back1Scale})`,
@@ -261,16 +241,14 @@ export default function PhoneFrame({ role }: { role: Role }) {
           transition: dragging ? "none" : "transform 0.35s ease",
         }} />
 
-        {/* Top card */}
         <div style={{
           position: "absolute", inset: 0, zIndex: 3,
           transform: topTransform,
           transition: (dragging || flyDir) ? "none" : "transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275)",
           willChange: "transform",
         }}>
-          <CardContent index={cur} role={role} />
+          <CardContent index={cur} />
 
-          {/* Apply overlay */}
           {applyOpacity > 0 && (
             <div style={{
               position: "absolute", inset: 0, borderRadius: 20,
@@ -287,12 +265,11 @@ export default function PhoneFrame({ role }: { role: Role }) {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round">
                   <polyline points="18 15 12 9 6 15" />
                 </svg>
-                <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>{t.phone.apply}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>APPLY</span>
               </div>
             </div>
           )}
 
-          {/* Skip/Next overlay */}
           {navOpacity > 0 && (
             <div style={{
               position: "absolute", inset: 0, borderRadius: 20,
@@ -304,14 +281,13 @@ export default function PhoneFrame({ role }: { role: Role }) {
               pointerEvents: "none",
             }}>
               <span style={{ fontSize: 22, fontWeight: 900, color: navLeft ? "#8097ff" : "#ff7351" }}>
-                {navLeft ? t.phone.skip : t.phone.next}
+                {navLeft ? "SKIP" : "NEXT"}
               </span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Action buttons */}
       <div style={{
         display: "flex", justifyContent: "center", gap: 10, marginTop: 12,
         paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.05)",
@@ -343,7 +319,6 @@ export default function PhoneFrame({ role }: { role: Role }) {
         ))}
       </div>
 
-      {/* Card counter */}
       <div style={{ display: "flex", justifyContent: "center", gap: 5, marginTop: 10 }}>
         {GIG_CARDS.map((_, i) => (
           <div key={i} style={{
