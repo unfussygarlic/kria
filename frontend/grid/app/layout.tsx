@@ -13,15 +13,20 @@ const comfortaa = Comfortaa({
 });
 
 export const metadata: Metadata = {
-  title: "Grid by Kria — Host Dashboard",
-  description: "Post gigs, manage events, and track your Runners — all in one place.",
-  icons: { icon: "/favicon.ico" },
+  title: "Grid by Kria",
+  description: "Post gigs, manage events, and track your Runners. All in one place.",
+  icons: {
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.className} ${comfortaa.variable}`} suppressHydrationWarning>
       <head>
+        <link rel="icon" type="image/svg+xml" href="/logo.svg" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){var t=localStorage.getItem('kria-grid-theme');document.documentElement.dataset.theme=t||'dark';})();`,
