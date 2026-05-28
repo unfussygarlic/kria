@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ScrollView, View, Text, Pressable, StyleSheet,
-  FlatList, ActivityIndicator, Animated,
+  FlatList, ActivityIndicator, Animated, Easing, PanResponder,
 } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -168,29 +168,104 @@ function GigStripCard({ gig }: { gig: MatchedGig }) {
   );
 }
 
-function GigMarquee({ gigs }: { gigs: MatchedGig[] }) {
+function GigMarquee({ gigs, onGrab, onRelease }: {
+  gigs: MatchedGig[];
+  onGrab: () => void;
+  onRelease: () => void;
+}) {
   const repeatCount = Math.max(3, Math.ceil((rw(400) * 2) / (gigs.length * GIG_STEP)));
   const items = Array.from({ length: repeatCount }, () => gigs).flat();
   const singlePassWidth = gigs.length * GIG_STEP;
 
-  // Use setValue in setInterval — JS-thread, so Pressable touch hits stay accurate
   const translateX = useRef(new Animated.Value(0)).current;
-  const xRef = useRef(0);
+  // posRef tracks current position via the animation listener (stays in sync with native side)
+  const posRef = useRef(0);
+  const dragStartX = useRef(0);
+  const animRef = useRef<{ stop: () => void } | null>(null);
+  const resumeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spRef = useRef(singlePassWidth);
+  spRef.current = singlePassWidth;
 
   useEffect(() => {
-    const id = setInterval(() => {
-      xRef.current += 0.3; // ~18 px/sec at 60fps
-      if (xRef.current >= singlePassWidth) xRef.current = 0;
-      translateX.setValue(-xRef.current);
-    }, 16);
-    return () => clearInterval(id);
-  }, [singlePassWidth]);
+    const id = translateX.addListener(({ value }) => { posRef.current = -value; });
+    return () => translateX.removeListener(id);
+  }, [translateX]);
+
+  const stopScroll = useCallback(() => {
+    animRef.current?.stop();
+    animRef.current = null;
+  }, []);
+
+  const startAutoScroll = useCallback((fromX: number) => {
+    stopScroll();
+    const sp = spRef.current;
+    const fullMs = Math.round((sp / 18.75) * 1000); // 18.75 px/sec ≈ original speed
+
+    const runLoop = () => {
+      translateX.setValue(0);
+      posRef.current = 0;
+      const anim = Animated.loop(
+        Animated.timing(translateX, {
+          toValue: -sp,
+          duration: fullMs,
+          easing: Easing.linear,
+          useNativeDriver: true, // runs on native thread — no JS jank
+        })
+      );
+      animRef.current = anim;
+      anim.start();
+    };
+
+    if (fromX > 0 && fromX < sp) {
+      // Finish the current pass at the same speed, then loop
+      const resumeMs = Math.round(((sp - fromX) / sp) * fullMs);
+      translateX.setValue(-fromX);
+      const anim = Animated.timing(translateX, {
+        toValue: -sp,
+        duration: resumeMs,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      });
+      animRef.current = anim;
+      anim.start(({ finished }) => { if (finished) runLoop(); });
+    } else {
+      runLoop();
+    }
+  }, [stopScroll, translateX]);
+
+  const scheduleResume = useCallback((currentX: number) => {
+    if (resumeRef.current) clearTimeout(resumeRef.current);
+    resumeRef.current = setTimeout(() => startAutoScroll(currentX), 1500);
+  }, [startAutoScroll]);
+
+  useEffect(() => {
+    startAutoScroll(0);
+    return () => { stopScroll(); if (resumeRef.current) clearTimeout(resumeRef.current); };
+  }, [startAutoScroll, stopScroll]);
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gs) =>
+      Math.abs(gs.dx) > 5 && Math.abs(gs.dx) > Math.abs(gs.dy),
+    onPanResponderGrant: () => {
+      onGrab(); // disable parent ScrollView scroll
+      stopScroll();
+      if (resumeRef.current) { clearTimeout(resumeRef.current); resumeRef.current = null; }
+      dragStartX.current = posRef.current;
+    },
+    onPanResponderMove: (_, gs) => {
+      const sp = spRef.current;
+      let newX = dragStartX.current - gs.dx;
+      newX = ((newX % sp) + sp) % sp;
+      posRef.current = newX;
+      translateX.setValue(-newX);
+    },
+    onPanResponderRelease: () => { onRelease(); scheduleResume(posRef.current); },
+    onPanResponderTerminate: () => { onRelease(); scheduleResume(posRef.current); },
+  }), [stopScroll, scheduleResume, translateX, onGrab, onRelease]);
 
   return (
-    <View style={styles.marqueeClip}>
-      <Animated.View
-        style={[styles.gigList, { transform: [{ translateX }] }]}
-      >
+    <View style={styles.marqueeClip} {...panResponder.panHandlers}>
+      <Animated.View style={[styles.gigList, { transform: [{ translateX }] }]}>
         {items.map((gig, i) => (
           <GigStripCard key={`${gig.gig_id}-${i}`} gig={gig} />
         ))}
@@ -215,7 +290,11 @@ const BADGE_CARD_W = rw(110);
 const BADGE_CARD_GAP = rw(8);
 const BADGE_STEP = rw(110) + rw(8); // card + gap
 
-function BadgeMarquee({ badges }: { badges: Badge[] }) {
+function BadgeMarquee({ badges, onGrab, onRelease }: {
+  badges: Badge[];
+  onGrab: () => void;
+  onRelease: () => void;
+}) {
   const earned = badges.filter((b) => b.earned);
   const shouldScroll = earned.length > 3;
 
@@ -225,19 +304,90 @@ function BadgeMarquee({ badges }: { badges: Badge[] }) {
   const items = Array.from({ length: Math.max(repeatCount, 1) }, () => earned).flat();
   const singlePassWidth = earned.length * BADGE_STEP;
 
-  // Use setValue in setInterval — same approach as GigMarquee, no ScrollView
   const translateX = useRef(new Animated.Value(0)).current;
-  const xRef = useRef(0);
+  const posRef = useRef(0);
+  const dragStartX = useRef(0);
+  const animRef = useRef<{ stop: () => void } | null>(null);
+  const resumeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spRef = useRef(singlePassWidth);
+  spRef.current = singlePassWidth;
+
+  useEffect(() => {
+    const id = translateX.addListener(({ value }) => { posRef.current = -value; });
+    return () => translateX.removeListener(id);
+  }, [translateX]);
+
+  const stopScroll = useCallback(() => {
+    animRef.current?.stop();
+    animRef.current = null;
+  }, []);
+
+  const startAutoScroll = useCallback((fromX: number) => {
+    stopScroll();
+    const sp = spRef.current;
+    const fullMs = Math.round((sp / 15.625) * 1000); // 15.625 px/sec ≈ original speed
+
+    const runLoop = () => {
+      translateX.setValue(0);
+      posRef.current = 0;
+      const anim = Animated.loop(
+        Animated.timing(translateX, {
+          toValue: -sp,
+          duration: fullMs,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      );
+      animRef.current = anim;
+      anim.start();
+    };
+
+    if (fromX > 0 && fromX < sp) {
+      const resumeMs = Math.round(((sp - fromX) / sp) * fullMs);
+      translateX.setValue(-fromX);
+      const anim = Animated.timing(translateX, {
+        toValue: -sp,
+        duration: resumeMs,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      });
+      animRef.current = anim;
+      anim.start(({ finished }) => { if (finished) runLoop(); });
+    } else {
+      runLoop();
+    }
+  }, [stopScroll, translateX]);
+
+  const scheduleResume = useCallback((currentX: number) => {
+    if (resumeRef.current) clearTimeout(resumeRef.current);
+    resumeRef.current = setTimeout(() => startAutoScroll(currentX), 1500);
+  }, [startAutoScroll]);
 
   useEffect(() => {
     if (!shouldScroll) return;
-    const id = setInterval(() => {
-      xRef.current += 0.25;
-      if (xRef.current >= singlePassWidth) xRef.current = 0;
-      translateX.setValue(-xRef.current);
-    }, 16);
-    return () => clearInterval(id);
-  }, [shouldScroll, singlePassWidth]);
+    startAutoScroll(0);
+    return () => { stopScroll(); if (resumeRef.current) clearTimeout(resumeRef.current); };
+  }, [shouldScroll, startAutoScroll, stopScroll]);
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gs) =>
+      Math.abs(gs.dx) > 5 && Math.abs(gs.dx) > Math.abs(gs.dy),
+    onPanResponderGrant: () => {
+      onGrab();
+      stopScroll();
+      if (resumeRef.current) { clearTimeout(resumeRef.current); resumeRef.current = null; }
+      dragStartX.current = posRef.current;
+    },
+    onPanResponderMove: (_, gs) => {
+      const sp = spRef.current;
+      let newX = dragStartX.current - gs.dx;
+      newX = ((newX % sp) + sp) % sp;
+      posRef.current = newX;
+      translateX.setValue(-newX);
+    },
+    onPanResponderRelease: () => { onRelease(); scheduleResume(posRef.current); },
+    onPanResponderTerminate: () => { onRelease(); scheduleResume(posRef.current); },
+  }), [stopScroll, scheduleResume, translateX, onGrab, onRelease]);
 
   if (earned.length === 0) return null;
 
@@ -249,7 +399,7 @@ function BadgeMarquee({ badges }: { badges: Badge[] }) {
           <Text style={styles.sectionLink}>See all →</Text>
         </Pressable>
       </View>
-      <View style={styles.marqueeClip}>
+      <View style={styles.marqueeClip} {...panResponder.panHandlers}>
         <Animated.View style={[styles.marqueeList, { transform: [{ translateX }] }]}>
           {items.map((badge, i) => {
             const color = BADGE_CATEGORY_COLOR[badge.category] ?? T.textMuted;
@@ -331,6 +481,14 @@ export default function HomeScreen() {
   const [nearbyGigs, setNearbyGigs] = useState<MatchedGig[]>([]);
   const [gigsLoading, setGigsLoading] = useState(true);
 
+  const scrollViewRef = useRef<ScrollView>(null);
+  const onMarqueeGrab = useCallback(() => {
+    scrollViewRef.current?.setNativeProps({ scrollEnabled: false });
+  }, []);
+  const onMarqueeRelease = useCallback(() => {
+    scrollViewRef.current?.setNativeProps({ scrollEnabled: true });
+  }, []);
+
   const isHost = SHOW_HOST_ROLE && activeRole === "host";
 
   const firstName = profile?.first_name || profile?.display_name || "there";
@@ -371,6 +529,7 @@ export default function HomeScreen() {
 
   return (
     <ScrollView
+      ref={scrollViewRef}
       style={styles.screen}
       contentContainerStyle={{ paddingBottom: rw(40) }}
       showsVerticalScrollIndicator={false}
@@ -413,12 +572,12 @@ export default function HomeScreen() {
             <Text style={styles.gigsEmptyText}>No gigs nearby right now</Text>
           </View>
         ) : (
-          <GigMarquee gigs={nearbyGigs} />
+          <GigMarquee gigs={nearbyGigs} onGrab={onMarqueeGrab} onRelease={onMarqueeRelease} />
         )}
       </View>
 
       {/* ── Recent badges ── */}
-      <BadgeMarquee badges={badges} />
+      <BadgeMarquee badges={badges} onGrab={onMarqueeGrab} onRelease={onMarqueeRelease} />
 
       {/* ── Recent gigs ── */}
       {activeApplications.length > 0 && (
