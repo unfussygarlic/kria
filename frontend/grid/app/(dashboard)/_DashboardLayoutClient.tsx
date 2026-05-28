@@ -29,10 +29,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .eq("id", session.user.id)
         .single();
 
-      if (mounted) {
-        setProfile(data as Profile | null);
-        setChecking(false);
+      if (!mounted) return;
+
+      if (!data) {
+        router.replace("/onboarding");
+        return;
       }
+
+      setProfile(data as Profile);
+      setChecking(false);
     };
 
     init();

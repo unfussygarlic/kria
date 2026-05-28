@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Users, BarChart3, Network } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-type Step = "email" | "otp" | "name";
+type Step = "email" | "otp";
 
 const FEATURES = [
   { icon: Users,     label: "Post Gigs in Seconds" },
@@ -19,17 +19,31 @@ const STATS = [
   { label: "Placements / Mo", value: "4.8k" },
 ];
 
+const RESEND_COOLDOWN = 60;
+
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep]   = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [otp,   setOtp]   = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName,  setLastName]  = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error,   setError]     = useState("");
+  const [cooldown, setCooldown] = useState(0);
 
-  // ── Step 1: send OTP ──────────────────────────────────────────────────────
+  // Countdown ticker
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  // Auto-submit when all 6 digits are entered
+  useEffect(() => {
+    if (otp.length === 6 && !loading) verifyOtp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otp]);
+
+  // ── Step 1: send OTP ────────────────────────────────────────────────────────
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -38,16 +52,28 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-    // shouldCreateUser: true (default) — handles sign-up and sign-in in one call
     const { error: err } = await supabase.auth.signInWithOtp({ email: email.trim() });
     setLoading(false);
     if (err) { setError(err.message); return; }
+    setCooldown(RESEND_COOLDOWN);
     setStep("otp");
   };
 
-  // ── Step 2: verify OTP ────────────────────────────────────────────────────
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ── Resend OTP ──────────────────────────────────────────────────────────────
+  const handleResend = async () => {
+    if (cooldown > 0 || loading) return;
+    setError("");
+    setOtp("");
+    setLoading(true);
+    const { error: err } = await supabase.auth.signInWithOtp({ email: email.trim() });
+    setLoading(false);
+    if (err) { setError(err.message); return; }
+    setCooldown(RESEND_COOLDOWN);
+  };
+
+  // ── Step 2: verify OTP ──────────────────────────────────────────────────────
+  const verifyOtp = async () => {
+    if (loading) return;
     setError("");
     setLoading(true);
     const { data, error: err } = await supabase.auth.verifyOtp({
@@ -57,61 +83,26 @@ export default function LoginPage() {
     });
     if (err) { setLoading(false); setError(err.message); return; }
 
-    // Returning host → dashboard / New host → name step
     const { data: profile } = await supabase
       .from("profiles")
       .select("id")
       .eq("id", data.user!.id)
       .single();
 
-    setLoading(false);
-    if (profile) {
-      router.replace("/dashboard");
-    } else {
-      setStep("name");
-    }
+    // Existing host → dashboard | New host → onboarding
+    router.replace(profile ? "/dashboard" : "/onboarding");
   };
 
-  // ── Step 3: create profile (new hosts only) ───────────────────────────────
-  const handleCreateProfile = async (e: React.FormEvent) => {
+  const handleVerifyOtp = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName.trim()) { setError("First name is required."); return; }
-    setError("");
-    setLoading(true);
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      setError("Session expired. Please start over.");
-      setStep("email");
-      return;
-    }
-
-    const display = `${firstName.trim()} ${lastName.trim()}`.trim();
-    const { error: profileErr } = await supabase.from("profiles").upsert({
-      id: user.id,
-      first_name: firstName.trim(),
-      last_name:  lastName.trim() || null,
-      display_name: display,
-    });
-
-    setLoading(false);
-    if (profileErr) { setError(profileErr.message); return; }
-    router.replace("/dashboard");
+    verifyOtp();
   };
 
   const goBack = () => {
     setError("");
-    if (step === "otp")  { setOtp("");   setStep("email"); }
-    if (step === "name") { setStep("otp"); }
+    setOtp("");
+    setStep("email");
   };
-
-  const cardTitle = step === "email" ? "Welcome"
-    : step === "otp"  ? "Check your email"
-    : "Your Name";
-  const cardSub = step === "email" ? "Sign in or create your host account"
-    : step === "otp"  ? `Enter the code sent to ${email}`
-    : "Complete your host account";
 
   return (
     <div
@@ -196,8 +187,14 @@ export default function LoginPage() {
                 style={{ backgroundColor: "#D4FF00", opacity: 0.03, filter: "blur(80px)" }} />
 
               <div className="mb-8 relative">
-                <h2 className="text-2xl font-bold text-white tracking-tight">{cardTitle}</h2>
-                <p className="text-sm text-neutral-400 mt-1.5">{cardSub}</p>
+                <h2 className="text-2xl font-bold text-white tracking-tight">
+                  {step === "email" ? "Welcome" : "Check your email"}
+                </h2>
+                <p className="text-sm text-neutral-400 mt-1.5">
+                  {step === "email"
+                    ? "Sign in or create your host account"
+                    : `We sent a 6-digit code to ${email}`}
+                </p>
               </div>
 
               {/* ── Email step ── */}
@@ -270,69 +267,33 @@ export default function LoginPage() {
                     {loading ? "Verifying…" : "Verify"}
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="w-full py-3 rounded-xl text-xs font-bold text-neutral-500 uppercase tracking-wider transition-colors"
-                    style={{ border: "1px solid rgba(255,255,255,0.10)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                  >
-                    ← Back
-                  </button>
-                </form>
-              )}
-
-              {/* ── Name step (new hosts only) ── */}
-              {step === "name" && (
-                <form onSubmit={handleCreateProfile} className="space-y-5">
-                  <div className="space-y-3">
-                    {[
-                      { label: "First Name *", value: firstName, set: setFirstName, ph: "Arjun",  auto: true  },
-                      { label: "Last Name",    value: lastName,  set: setLastName,  ph: "Sharma", auto: false },
-                    ].map(({ label, value, set, ph, auto }) => (
-                      <div key={label} className="space-y-1.5">
-                        <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                          {label}
-                        </label>
-                        <input
-                          type="text"
-                          placeholder={ph}
-                          value={value}
-                          onChange={(e) => set(e.target.value)}
-                          className="w-full text-white px-4 py-4 rounded-xl text-sm focus:outline-none transition-all"
-                          style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}
-                          onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(212,255,0,0.50)")}
-                          onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
-                          autoFocus={auto}
-                        />
-                      </div>
-                    ))}
+                  {/* Resend + Back row */}
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={goBack}
+                      className="flex-1 py-3 rounded-xl text-xs font-bold text-neutral-500 uppercase tracking-wider transition-colors"
+                      style={{ border: "1px solid rgba(255,255,255,0.10)" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      ← Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResend}
+                      disabled={cooldown > 0 || loading}
+                      className="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-40"
+                      style={{
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        color: cooldown > 0 ? "#555" : "#D4FF00",
+                      }}
+                      onMouseEnter={(e) => { if (cooldown === 0) e.currentTarget.style.backgroundColor = "rgba(212,255,0,0.05)"; }}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      {cooldown > 0 ? `Resend (${cooldown}s)` : "Resend"}
+                    </button>
                   </div>
-
-                  {error && <p className="text-sm" style={{ color: "#ff7351" }}>{error}</p>}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-60"
-                    style={{ backgroundColor: "#D4FF00", color: "#0c0d0a" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 0 20px rgba(212,255,0,0.30)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
-                  >
-                    {loading ? "Creating…" : "Create Account"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="w-full py-3 rounded-xl text-xs font-bold text-neutral-500 uppercase tracking-wider transition-colors"
-                    style={{ border: "1px solid rgba(255,255,255,0.10)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                  >
-                    ← Back
-                  </button>
                 </form>
               )}
 
