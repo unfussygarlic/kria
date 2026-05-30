@@ -37,28 +37,38 @@ async def recalculate_momentum(
     compute() is called. Results stored in signal_scores JSONB column.
     """
     mp_result = await db.execute(
-        text("SELECT * FROM momentum_profiles WHERE user_id = :uid"),
+        text("""
+            SELECT worker_score, worker_penalty_points, last_calculated_at
+            FROM momentum_profiles WHERE user_id = :uid
+        """),
         {"uid": user_id},
     )
     mp = mp_result.mappings().first()
     if not mp:
-        # Auto-create profile row so new users get momentum computed
         await db.execute(
-            text("""
-                INSERT INTO momentum_profiles (user_id)
-                VALUES (:uid)
-                ON CONFLICT (user_id) DO NOTHING
-            """),
+            text("INSERT INTO momentum_profiles (user_id) VALUES (:uid) ON CONFLICT (user_id) DO NOTHING"),
             {"uid": user_id},
         )
         await db.commit()
         mp_result = await db.execute(
-            text("SELECT * FROM momentum_profiles WHERE user_id = :uid"),
+            text("""
+                SELECT worker_score, worker_penalty_points, last_calculated_at
+                FROM momentum_profiles WHERE user_id = :uid
+            """),
             {"uid": user_id},
         )
         mp = mp_result.mappings().first()
         if not mp:
             logger.warning("Failed to create momentum_profiles row for %s", user_id)
+            return
+
+    # Debounce: skip if recalculated within the last 60 seconds.
+    # Prevents triple-recalculation when OTP verify + badge check + rating
+    # all fire in quick succession for the same gig completion.
+    if mp["last_calculated_at"] is not None:
+        seconds_since = (datetime.utcnow() - mp["last_calculated_at"]).total_seconds()
+        if seconds_since < 60:
+            logger.debug("Skipping momentum recalc for %s (%.1fs since last)", user_id, seconds_since)
             return
 
     old_score = int(mp["worker_score"] or 0)

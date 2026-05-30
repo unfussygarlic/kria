@@ -20,7 +20,8 @@ grid/
 │   ├── globals.css              # Tailwind v4 + Solar Flare @theme + skill graph CSS vars
 │   ├── layout.tsx               # Space Grotesk font, bg-bg text-text
 │   ├── page.tsx                 # redirect("/dashboard")
-│   ├── login/page.tsx           # Phone OTP auth
+│   ├── login/page.tsx           # Email OTP auth (2-step: email → OTP, auto-submit at 6 digits, 60s resend)
+│   ├── onboarding/page.tsx      # New host onboarding (2-step: name → city/state with skip)
 │   └── (dashboard)/
 │       ├── layout.tsx           # Auth guard + Sidebar
 │       ├── dashboard/page.tsx   # Stats overview + recent gigs
@@ -67,7 +68,8 @@ grid/
 | Path | Page |
 |------|------|
 | `/` | → redirect to `/dashboard` |
-| `/login` | Phone OTP sign in |
+| `/login` | Email OTP sign in (email → 6-digit code) |
+| `/onboarding` | New host onboarding (name + optional city/state) |
 | `/dashboard` | Stats: Active Gigs, Total Events, Slots Filled, Total Posted |
 | `/gigs` | Gig list (status filter tabs + search) |
 | `/gigs/new` | Post a Gig wizard (4 steps) |
@@ -239,7 +241,14 @@ Pure SVG — no react-native-svg dependency. Works in browser.
 
 Email OTP (no SMS/Twilio required):
 
-1. `/login` → host enters email address
+1. `/login` → host enters email
+2. `supabase.auth.signInWithOtp({ email })` sends 6-digit OTP via email
+3. OTP auto-submits at 6 digits; 60s resend cooldown
+4. After verify: profile exists → `/dashboard`; no profile → `/onboarding`
+5. `/onboarding` → Step 1 (first/last name) → Step 2 (city/state, skippable) → `profiles.upsert` → `/dashboard`
+6. Dashboard layout guard: no profile → `/onboarding` (catches edge cases)
+
+OLD STEP (removed):
 2. `supabase.auth.signInWithOtp({ email })` — Supabase sends a 6-digit OTP via built-in email service. Handles sign-in and sign-up in one call (`shouldCreateUser: true` by default).
 3. OTP step → `supabase.auth.verifyOtp({ email, token, type: "email" })`
 4. After verify: check if profile row exists for user

@@ -108,9 +108,15 @@ def score_gig(
 
 # ── Database helpers ──────────────────────────────────────────────────────────
 
-async def _fetch_open_gigs(db: AsyncSession) -> list[GigRow]:
+async def _fetch_open_gigs(db: AsyncSession, excluded_ids: set) -> list[GigRow]:
+    """Fetch open future gigs, excluding already-seen IDs in SQL to avoid loading them into memory."""
+    params: dict = {"today": "CURRENT_DATE"}
+    excl_filter = ""
+    if excluded_ids:
+        params["excluded"] = list(excluded_ids)
+        excl_filter = "AND id != ALL(:excluded)"
     result = await db.execute(
-        text("""
+        text(f"""
             SELECT id, poster_id, title, category::text, pay_amount, pay_type::text,
                    status::text,
                    (location_point IS NULL) AS is_remote,
@@ -121,49 +127,51 @@ async def _fetch_open_gigs(db: AsyncSession) -> list[GigRow]:
             FROM gigs
             WHERE status = 'open'
               AND event_date >= CURRENT_DATE
-        """)
+              {excl_filter}
+            LIMIT 500
+        """),
+        params,
     )
     return [GigRow.model_validate(dict(r)) for r in result.mappings().all()]
 
 
 async def _fetch_worker_context(db: AsyncSession, worker_id: str) -> dict:
-    completed = await db.execute(
+    """Fetch all worker context in a single CTE query (4 queries → 1)."""
+    result = await db.execute(
         text("""
-            SELECT DISTINCT g.category::text
-            FROM gig_assignments a JOIN gigs g ON g.id = a.gig_id
-            WHERE a.worker_id = :wid AND a.status = 'completed'
+            WITH completed AS (
+                SELECT DISTINCT g.category::text AS category, g.poster_id
+                FROM gig_assignments a JOIN gigs g ON g.id = a.gig_id
+                WHERE a.worker_id = :wid AND a.status = 'completed'
+            ),
+            applied AS (
+                SELECT DISTINCT g.category::text AS category
+                FROM gig_applications ap JOIN gigs g ON g.id = ap.gig_id
+                WHERE ap.applicant_id = :wid
+            ),
+            negative AS (
+                SELECT DISTINCT g.poster_id
+                FROM gig_assignments a JOIN gigs g ON g.id = a.gig_id
+                WHERE a.worker_id = :wid AND a.status IN ('no_show', 'disputed')
+            )
+            SELECT
+                COALESCE(ARRAY_AGG(DISTINCT c.category) FILTER (WHERE c.category IS NOT NULL), '{}') AS completed_categories,
+                COALESCE(ARRAY_AGG(DISTINCT ap.category) FILTER (WHERE ap.category IS NOT NULL), '{}') AS applied_categories,
+                COALESCE(ARRAY_AGG(DISTINCT c.poster_id::text) FILTER (WHERE c.poster_id IS NOT NULL), '{}') AS prev_successful_posters,
+                COALESCE(ARRAY_AGG(DISTINCT n.poster_id::text) FILTER (WHERE n.poster_id IS NOT NULL), '{}') AS prev_negative_posters
+            FROM (SELECT 1) base
+            LEFT JOIN completed c ON true
+            LEFT JOIN applied ap ON true
+            LEFT JOIN negative n ON true
         """),
         {"wid": worker_id},
     )
-    applied = await db.execute(
-        text("""
-            SELECT DISTINCT g.category::text
-            FROM gig_applications ap JOIN gigs g ON g.id = ap.gig_id
-            WHERE ap.applicant_id = :wid
-        """),
-        {"wid": worker_id},
-    )
-    prev_successful = await db.execute(
-        text("""
-            SELECT DISTINCT g.poster_id
-            FROM gig_assignments a JOIN gigs g ON g.id = a.gig_id
-            WHERE a.worker_id = :wid AND a.status = 'completed'
-        """),
-        {"wid": worker_id},
-    )
-    prev_negative = await db.execute(
-        text("""
-            SELECT DISTINCT g.poster_id
-            FROM gig_assignments a JOIN gigs g ON g.id = a.gig_id
-            WHERE a.worker_id = :wid AND a.status IN ('no_show', 'disputed')
-        """),
-        {"wid": worker_id},
-    )
+    row = result.mappings().first()
     return {
-        "completed_categories": {r[0] for r in completed},
-        "applied_categories": {r[0] for r in applied},
-        "prev_successful_posters": {r[0] for r in prev_successful},
-        "prev_negative_posters": {r[0] for r in prev_negative},
+        "completed_categories": set(row["completed_categories"] or []),
+        "applied_categories": set(row["applied_categories"] or []),
+        "prev_successful_posters": set(UUID(p) for p in (row["prev_successful_posters"] or [])),
+        "prev_negative_posters": set(UUID(p) for p in (row["prev_negative_posters"] or [])),
     }
 
 
@@ -178,29 +186,36 @@ async def _avg_pay_by_category(db: AsyncSession) -> dict[str, float]:
     return {row[0]: float(row[1]) for row in result}
 
 
-async def _poster_momentum_scores(db: AsyncSession, poster_ids: set) -> dict[str, int]:
+async def _fetch_poster_info(db: AsyncSession, poster_ids: set) -> tuple[dict, dict]:
+    """Fetch poster avg ratings + momentum scores in a single JOIN (2 queries → 1)."""
     if not poster_ids:
-        return {}
-    result = await db.execute(
-        text("SELECT user_id, poster_score FROM momentum_profiles WHERE user_id = ANY(:ids)"),
-        {"ids": list(poster_ids)},
-    )
-    return {str(row[0]): int(row[1]) for row in result}
-
-
-async def _poster_avg_ratings(db: AsyncSession, poster_ids: set) -> dict:
-    if not poster_ids:
-        return {}
+        return {}, {}
     result = await db.execute(
         text("""
-            SELECT ratee_id, AVG(score)
-            FROM ratings
-            WHERE rating_type = 'poster_rating' AND ratee_id = ANY(:ids)
-            GROUP BY ratee_id
+            SELECT
+                mp.user_id::text,
+                r.avg_score         AS avg_rating,
+                mp.poster_score
+            FROM momentum_profiles mp
+            LEFT JOIN (
+                SELECT ratee_id, AVG(score) AS avg_score
+                FROM ratings
+                WHERE rating_type = 'poster_rating'
+                  AND ratee_id = ANY(:ids)
+                GROUP BY ratee_id
+            ) r ON r.ratee_id = mp.user_id
+            WHERE mp.user_id = ANY(:ids)
         """),
         {"ids": list(poster_ids)},
     )
-    return {str(row[0]): float(row[1]) for row in result}
+    ratings: dict = {}
+    scores: dict = {}
+    for row in result.mappings():
+        uid = row["user_id"]
+        if row["avg_rating"] is not None:
+            ratings[uid] = float(row["avg_rating"])
+        scores[uid] = int(row["poster_score"] or 0)
+    return ratings, scores
 
 
 # ── Public entry point ────────────────────────────────────────────────────────
@@ -210,16 +225,18 @@ async def match_gigs_for_worker(
     worker_id: str,
     request: GigMatchRequest,
 ) -> GigMatchResponse:
-    gigs = await _fetch_open_gigs(db)
+    excluded_set = set(request.excluded_ids)
+
+    # Fetch open gigs (excluded_ids filtered in SQL), worker context, and
+    # category pay averages in sequence — SQLAlchemy AsyncSession is not
+    # safe for concurrent use within the same request.
+    gigs = await _fetch_open_gigs(db, excluded_set)
     worker_ctx = await _fetch_worker_context(db, worker_id)
     avg_pay = await _avg_pay_by_category(db)
 
-    excluded_set = set(request.excluded_ids)
-    gigs = [g for g in gigs if g.id not in excluded_set]
-
+    # Single JOIN for poster ratings + momentum scores (was 2 separate queries)
     poster_ids = {g.poster_id for g in gigs}
-    poster_ratings = await _poster_avg_ratings(db, poster_ids)
-    poster_scores = await _poster_momentum_scores(db, poster_ids)
+    poster_ratings, poster_scores = await _fetch_poster_info(db, poster_ids)
 
     scored: list[tuple[float, float | None, GigRow]] = []
     for gig in gigs:

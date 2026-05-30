@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 10.0.0"
+    "version": ">= 10.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -18,8 +19,8 @@
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_API_URL": "https://api.trykria.com",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://your-ref.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ixxwllowuzlpbkghnjrm.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_iD0ksLcL4Rqwhcv0q-v4gw_DgpJf5G2"
       }
     },
     "production": {
@@ -27,8 +28,8 @@
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_API_URL": "https://api.trykria.com",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://your-ref.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ixxwllowuzlpbkghnjrm.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_iD0ksLcL4Rqwhcv0q-v4gw_DgpJf5G2"
       }
     }
   },

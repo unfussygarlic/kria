@@ -6,6 +6,37 @@ type: project
 
 # Changelog
 
+## 2026-05-28 — Grid Auth/Onboarding Overhaul + Home Marquee Manual Scroll
+
+### Grid: Login page rewritten
+`frontend/grid/app/login/page.tsx` — simplified to clean 2-step email OTP flow:
+- OTP auto-submits when all 6 digits entered (no button press)
+- 60s resend cooldown with live countdown; lime color when available
+- After verify: profile exists → `/dashboard`, no profile → `/onboarding`
+- Removed name step from login — moved to dedicated onboarding page
+
+### Grid: Onboarding page created (new)
+`frontend/grid/app/onboarding/page.tsx` — 2-step flow for new hosts:
+- Auth-guarded: no session → `/login`; existing profile → `/dashboard`
+- Step 1: first name (required) + last name (optional)
+- Step 2: city + state (both skippable via "Skip for now" button)
+- Creates profile via `supabase.from("profiles").upsert(...)` → redirects to `/dashboard`
+- Same dark glassmorphism style as login; dot step indicator
+
+### Grid: Dashboard layout null-profile guard
+`frontend/grid/app/(dashboard)/_DashboardLayoutClient.tsx`:
+- After profile fetch: if `data` is null → `router.replace("/onboarding")` instead of rendering with null profile
+- Also fixed: checks `mounted` before calling router to avoid memory leak on unmount
+
+### Mobile: Home marquees — manual drag + auto-scroll
+`frontend/pocket/app/(main)/(tabs)/home.tsx` — "Hot near you" + "Recent badges" marquees:
+- Auto-scroll via `Animated.loop + Easing.linear + useNativeDriver: true` (native thread, no jank)
+- Manual drag in both directions via `PanResponder`; modulo wrapping for seamless loop
+- Auto-scroll resumes 1.5s after release, picking up from exact current position
+- Vertical scroll conflict fixed: `scrollViewRef.current?.setNativeProps({ scrollEnabled: false/true })` on grab/release
+
+---
+
 ## 2026-05-12 — Grid Production Auth Fixes + JWT JWKS Migration + Vercel Analytics
 
 ### Grid: Auth fully working on production (`grid.trykria.com`)
