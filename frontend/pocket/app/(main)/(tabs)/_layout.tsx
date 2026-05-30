@@ -2,6 +2,7 @@ import { memo, useCallback, useRef } from "react";
 import { View } from "react-native";
 import { Tabs, router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { T } from "@/constants/colors";
 import { L } from "@/constants/labels";
 import { useAuthStore } from "@/stores/authStore";
@@ -27,30 +28,33 @@ const HOST_FAB_OPTIONS: SpeedDialOption[] = [
   },
 ];
 
-// ── Static screen options ─────────────────────────────────────────────────────
+// ── Screen options — built inside components so we can read safe-area insets ──
 
-const SCREEN_OPTIONS = {
-  headerShown: false,
-  tabBarActiveTintColor: T.primary,
-  tabBarInactiveTintColor: T.textMuted,
-  tabBarStyle: {
-    backgroundColor: "rgba(19,19,19,0.97)",
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-    height: 64,
-    marginHorizontal: 16,
-    marginBottom: 20,
-    borderRadius: 24,
-    elevation: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    paddingBottom: 0,
-  },
-  tabBarLabelStyle: { fontSize: 11, fontWeight: "600" as const, fontFamily: "SpaceGrotesk_600SemiBold" },
-  tabBarItemStyle: { paddingVertical: 4 },
-} as const;
+function useScreenOptions() {
+  const insets = useSafeAreaInsets();
+  return {
+    headerShown: false,
+    tabBarActiveTintColor: T.primary,
+    tabBarInactiveTintColor: T.textMuted,
+    tabBarStyle: {
+      backgroundColor: "rgba(19,19,19,0.97)",
+      borderTopWidth: 1,
+      borderTopColor: T.border,
+      height: 64,
+      marginHorizontal: 16,
+      marginBottom: Math.max(insets.bottom, 12),
+      borderRadius: 24,
+      elevation: 12,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.4,
+      shadowRadius: 20,
+      paddingBottom: 0,
+    },
+    tabBarLabelStyle: { fontSize: 11, fontWeight: "600" as const, fontFamily: "SpaceGrotesk_600SemiBold" },
+    tabBarItemStyle: { paddingVertical: 4 },
+  } as const;
+}
 
 const HOME_OPT = {
   title: L.TAB_HOME,
@@ -87,8 +91,9 @@ const POST_OPT = {
 // memo() with zero props: never re-renders from parent state.
 
 const RunnerTabsNavigator = memo(function RunnerTabsNavigator() {
+  const screenOptions = useScreenOptions();
   return (
-    <Tabs screenOptions={SCREEN_OPTIONS}>
+    <Tabs screenOptions={screenOptions}>
       <Tabs.Screen name="home"        options={HOME_OPT} />
       <Tabs.Screen name="explore"     options={EXPLORE_OPT} />
       <Tabs.Screen name="search"      options={JOBS_OPT} />
@@ -105,8 +110,9 @@ const RunnerTabsNavigator = memo(function RunnerTabsNavigator() {
 // ── Host tabs — with FAB ────────────────────────────────────────────────────
 
 const HostTabsNavigator = memo(function HostTabsNavigator() {
+  const screenOptions = useScreenOptions();
   return (
-    <Tabs screenOptions={SCREEN_OPTIONS}>
+    <Tabs screenOptions={screenOptions}>
       <Tabs.Screen name="home"        options={HOME_OPT} />
       <Tabs.Screen name="explore"     options={EXPLORE_OPT} />
       <Tabs.Screen name="post"        options={POST_OPT} />

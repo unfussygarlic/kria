@@ -161,12 +161,14 @@ async def _search_events(
                 e.title,
                 e.event_date::text AS event_date,
                 e.city,
-                (
-                    SELECT COUNT(*)
-                    FROM gigs
-                    WHERE event_id = e.id AND status = 'open'
-                ) AS open_job_count
+                COALESCE(gig_counts.cnt, 0) AS open_job_count
             FROM events e
+            LEFT JOIN (
+                SELECT event_id, COUNT(*) AS cnt
+                FROM gigs
+                WHERE status = 'open'
+                GROUP BY event_id
+            ) gig_counts ON gig_counts.event_id = e.id
             WHERE {where}
             ORDER BY {order}
             LIMIT :limit OFFSET :offset

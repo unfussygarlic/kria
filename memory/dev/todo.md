@@ -6,7 +6,41 @@ type: project
 
 # Todo & Open Issues
 
-Last updated: 2026-05-12 (session 8)
+Last updated: 2026-05-30
+
+## Backend Optimisation Backlog
+
+Audited 2026-05-30. Fix in priority order.
+
+### Critical (blocks scale)
+
+| # | Issue | File | Fix |
+|---|-------|------|-----|
+| B1 | `sync_all_badges()` fires on every `GET /badges/me` — 700k+ wasted writes/day at 10k DAU | `services/badge_service.py`, `routers/badges.py` | Remove from GET handler; trigger only from `check_gig_badges()` on gig complete + `check_id_badges()` on ID verified |
+| B2 | Momentum recalculated 3× per gig completion (OTP verify + no-show + rating), each running all 5 signals sequentially | `routers/applicants.py`, `momentum/recalculate.py` | Debounce / batch; call once after all events settle |
+| B3 | `_fetch_open_gigs()` loads **all** open gigs into Python memory, filters in code | `recommendations/engine.py` | Push filters (category, city, excluded_ids, date) into SQL with WHERE + LIMIT |
+| B4 | 7–8 sequential DB queries per `/gigs/match` request (worker context, avg pay, poster ratings, poster scores) | `recommendations/engine.py` | Parallelise with `asyncio.gather()` |
+
+### Medium (noticeable at moderate load)
+
+| # | Issue | File | Fix |
+|---|-------|------|-----|
+| B5 | Missing index on `gig_assignments(worker_id, status)` — full scan on every signal compute | migration needed | Add composite index in next migration |
+| B6 | Missing index on `ratings(ratee_id, rating_type)` — full scan for 3 rating-based signals | migration needed | Add composite index in next migration |
+| B7 | `pool_size` left at SQLAlchemy default (5) — will exhaust connections at ~50 concurrent requests | `db/session.py` | Set `pool_size=20, max_overflow=40` |
+| B8 | `SELECT *` in momentum router + recalculate + profiles — fetches 20–30 columns when 4–6 needed | `momentum/router.py`, `momentum/recalculate.py`, `routers/profiles.py` | Select only required columns |
+| B9 | Correlated subquery per event row in search (`SELECT COUNT(*) FROM gigs WHERE event_id = e.id`) | `routers/search.py` | Replace with LEFT JOIN + GROUP BY |
+
+### Low (nice to have)
+
+| # | Issue | File | Fix |
+|---|-------|------|-----|
+| B10 | Duplicate rating pre-check SELECT before INSERT — UNIQUE constraint already handles it | `routers/ratings.py` | Remove pre-check query |
+| B11 | `_poster_momentum_scores()` fetched but `poster_score` never used in `score_gig()` | `recommendations/engine.py` | Remove dead query |
+| B12 | `momentum_profiles` INSERT race on new users — INSERT logic duplicated in router + recalculate | `momentum/router.py`, `momentum/recalculate.py` | Centralise with `INSERT ... ON CONFLICT DO NOTHING` at first login |
+| B13 | Verification status polled every 5s with no cache/ETag — hits DB on every poll | `routers/profiles.py`, mobile `verify-identity.tsx` | Add short-lived cache or `Last-Modified` header |
+
+---
 
 ## High Priority
 
@@ -24,7 +58,7 @@ Last updated: 2026-05-12 (session 8)
 | Enable anti-spoof in prod | `perceptrons/inspector/docker-compose.yml` env + Kria `docker-compose.dev.yml` | Set `ANTISPOOF_MODEL_ENABLED=True`; test with real selfies first to check for false positives |
 | Grid: Host rating form (sub-scores) | Grid gig detail | After gig complete: collect punctuality/communication/professionalism sub-scores when rating runner |
 | Chat: receiver real-time broken | `frontend/pocket/app/(main)/chat/[id].tsx` | See `features/chat.md` for investigation steps |
-| Grid: Host onboarding flow | `grid/app/(dashboard)/layout.tsx` | Currently assumes profile exists — new Hosts with no mobile profile will have `profile = null` |
+| ~~Grid: Host onboarding flow~~ | ~~`grid/app/(dashboard)/layout.tsx`~~ | ✅ Done 2026-05-28 — `/onboarding` page created, dashboard layout guard added |
 
 ## Low Priority
 

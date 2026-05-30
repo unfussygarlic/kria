@@ -504,17 +504,22 @@ export default function HomeScreen() {
     fetchBadges();
 
     (async () => {
-      let coords: { latitude: number; longitude: number } | undefined;
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        const loc = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+      try {
+        let coords: { latitude: number; longitude: number } | undefined;
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+        }
+        const res = await matchGigs({ limit: 5, ...coords });
+        setNearbyGigs(res.data?.gigs ?? []);
+      } catch {
+        // silently show empty state
+      } finally {
+        setGigsLoading(false);
       }
-      const res = await matchGigs({ limit: 5, ...coords });
-      setNearbyGigs(res.data?.gigs ?? []);
-      setGigsLoading(false);
     })();
   }, []);
 

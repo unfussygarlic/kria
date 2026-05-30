@@ -7,6 +7,7 @@ Routes:
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.middleware import CurrentUser
@@ -106,41 +107,34 @@ async def submit_rating(
             detail="No completed assignment found for this gig/user combination.",
         )
 
-    # Check for duplicate
-    dup = await db.execute(
-        text("""
-            SELECT id FROM ratings
-            WHERE gig_id = :gig_id AND rater_id = :rater_id AND rating_type = :rating_type
-        """),
-        {"gig_id": payload.gig_id, "rater_id": current_user.user_id, "rating_type": payload.rating_type},
-    )
-    if dup.mappings().first():
+    try:
+        result = await db.execute(
+            text("""
+                INSERT INTO ratings
+                  (gig_id, rater_id, ratee_id, rating_type, score, comment,
+                   punctuality_score, communication_score, professionalism_score)
+                VALUES
+                  (:gig_id, :rater_id, :ratee_id, :rating_type, :score, :comment,
+                   :punctuality_score, :communication_score, :professionalism_score)
+                RETURNING id
+            """),
+            {
+                "gig_id":                payload.gig_id,
+                "rater_id":              current_user.user_id,
+                "ratee_id":              payload.ratee_id,
+                "rating_type":           payload.rating_type,
+                "score":                 score,
+                "comment":               payload.comment,
+                "punctuality_score":     payload.punctuality_score,
+                "communication_score":   payload.communication_score,
+                "professionalism_score": payload.professionalism_score,
+            },
+        )
+        row = result.mappings().first()
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You have already rated this gig.")
-
-    result = await db.execute(
-        text("""
-            INSERT INTO ratings
-              (gig_id, rater_id, ratee_id, rating_type, score, comment,
-               punctuality_score, communication_score, professionalism_score)
-            VALUES
-              (:gig_id, :rater_id, :ratee_id, :rating_type, :score, :comment,
-               :punctuality_score, :communication_score, :professionalism_score)
-            RETURNING id
-        """),
-        {
-            "gig_id":                payload.gig_id,
-            "rater_id":              current_user.user_id,
-            "ratee_id":              payload.ratee_id,
-            "rating_type":           payload.rating_type,
-            "score":                 score,
-            "comment":               payload.comment,
-            "punctuality_score":     payload.punctuality_score,
-            "communication_score":   payload.communication_score,
-            "professionalism_score": payload.professionalism_score,
-        },
-    )
-    row = result.mappings().first()
-    await db.commit()
 
     if payload.rating_type == "worker_rating":
         await recalculate_momentum(payload.ratee_id, db, event_type="rating_received", gig_id=payload.gig_id)

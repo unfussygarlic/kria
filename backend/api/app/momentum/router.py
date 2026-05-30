@@ -39,7 +39,10 @@ _PROFILE_COLS = ", ".join(cfg.PROFILE_SIGNALS.keys())
 async def _fetch_profile(user_id: str, db: AsyncSession):
     """Fetch momentum_profiles row, auto-creating if missing."""
     result = await db.execute(
-        text("SELECT * FROM momentum_profiles WHERE user_id = :uid"),
+        text("""
+            SELECT signal_scores, worker_penalty_points, worker_gig_count
+            FROM momentum_profiles WHERE user_id = :uid
+        """),
         {"uid": user_id},
     )
     row = result.mappings().first()

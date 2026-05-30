@@ -19,7 +19,15 @@ async def get_my_badges(
     db: AsyncSession = Depends(get_db),
 ) -> BadgesResponse:
     """Return all badge definitions with earned status for the current user."""
-    await sync_all_badges(db, current_user.user_id)
+    # Only run the full retroactive sync when the user has never earned any badge.
+    # Ongoing badges are awarded by event triggers (gig complete, ID verified, etc.)
+    # so this path fires at most once per user lifetime.
+    earned_count = (await db.execute(
+        text("SELECT COUNT(*) FROM user_badges WHERE profile_id = :uid"),
+        {"uid": current_user.user_id},
+    )).scalar_one()
+    if earned_count == 0:
+        await sync_all_badges(db, current_user.user_id)
 
     rows = (await db.execute(
         text("""
