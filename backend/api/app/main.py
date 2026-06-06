@@ -41,11 +41,23 @@ _PROD_ORIGINS = [
     "https://grid.trykria.com",
 ]
 
+# allow_credentials=True + allow_origins=["*"] is invalid per the CORS spec —
+# browsers require the server to echo the exact origin when credentials are in
+# play. Starlette ≥ 0.27 returns 400 on preflight for that combination.
+# In dev we list the known local origins explicitly; in prod we use the real domains.
+_DEV_ORIGINS = [
+    "http://localhost:3000",   # Grid (Next.js dev)
+    "http://localhost:8081",   # Expo Metro
+    "exp://localhost:8081",    # Expo Go
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8081",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if settings.environment == "development" else _PROD_ORIGINS,
+    allow_origins=_DEV_ORIGINS if settings.environment == "development" else _PROD_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
