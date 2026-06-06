@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.middleware import CurrentUser
 from app.db.session import get_db
 
-router = APIRouter(prefix="/account", tags=["account"])
+router = APIRouter(tags=["account"])
 
 
 # ── Models ────────────────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ _DURATION_DAYS: dict[str, Optional[int]] = {
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.post("/deactivate", status_code=200)
+@router.post("/account/deactivate", status_code=200)
 async def deactivate_account(
     payload: DeactivateRequest,
     current_user: CurrentUser,
@@ -86,7 +86,7 @@ async def deactivate_account(
     }
 
 
-@router.post("/reactivate", status_code=200)
+@router.post("/account/reactivate", status_code=200)
 async def reactivate_account(
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
@@ -126,7 +126,7 @@ async def reactivate_account(
     return {"ok": True, "message": "Account reactivated."}
 
 
-@router.delete("", status_code=200)
+@router.delete("/account", status_code=200)
 async def delete_account(
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
