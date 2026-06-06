@@ -11,6 +11,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<Step>("name");
   const [checking, setChecking] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -33,6 +34,7 @@ export default function OnboardingPage() {
       if (profile) { router.replace("/dashboard"); return; }
 
       setUserId(session.user.id);
+      setPhone(session.user.phone ?? null);
       setChecking(false);
     });
   }, [router]);
@@ -56,6 +58,7 @@ export default function OnboardingPage() {
       first_name: firstName.trim(),
       last_name: lastName.trim() || null,
       display_name: displayName,
+      phone: phone,
       city: skip ? null : city.trim() || null,
       state: skip ? null : state.trim() || null,
     });
