@@ -23,16 +23,17 @@ def upgrade() -> None:
         ADD COLUMN IF NOT EXISTS reactivate_at    TIMESTAMPTZ
     """)
 
-    # Fast lookup for the reactivation worker (future cron job)
-    op.execute("""
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_profiles_reactivate_at
-        ON profiles(reactivate_at)
-        WHERE reactivate_at IS NOT NULL AND is_active = FALSE
-    """)
+    with op.get_context().autocommit_block():
+        op.execute("""
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_profiles_reactivate_at
+            ON profiles(reactivate_at)
+            WHERE reactivate_at IS NOT NULL AND is_active = FALSE
+        """)
 
 
 def downgrade() -> None:
-    op.execute("DROP INDEX CONCURRENTLY IF EXISTS idx_profiles_reactivate_at")
+    with op.get_context().autocommit_block():
+        op.execute("DROP INDEX CONCURRENTLY IF EXISTS idx_profiles_reactivate_at")
     op.execute("""
         ALTER TABLE profiles
         DROP COLUMN IF EXISTS reactivate_at,
