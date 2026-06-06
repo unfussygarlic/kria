@@ -171,9 +171,11 @@ async def delete_account(
     await db.execute(text("DELETE FROM gigs WHERE poster_id = :uid"), {"uid": uid})
 
     # Momentum & badges
-    await db.execute(text("DELETE FROM user_badges              WHERE profile_id = :uid"), {"uid": uid})
-    await db.execute(text("DELETE FROM momentum_transactions    WHERE profile_id = :uid"), {"uid": uid})
-    await db.execute(text("DELETE FROM momentum_profiles        WHERE user_id    = :uid"), {"uid": uid})
+    await db.execute(text("DELETE FROM user_badges           WHERE profile_id = :uid"), {"uid": uid})
+    await db.execute(text("DELETE FROM momentum_transactions WHERE wallet_id IN (SELECT id FROM momentum_wallets WHERE profile_id = :uid)"), {"uid": uid})
+    await db.execute(text("DELETE FROM momentum_wallets      WHERE profile_id = :uid"), {"uid": uid})
+    await db.execute(text("DELETE FROM momentum_events       WHERE user_id    = :uid"), {"uid": uid})
+    await db.execute(text("DELETE FROM momentum_profiles     WHERE user_id    = :uid"), {"uid": uid})
 
     # Profile row — auth.users row is not touched (JWT stays valid until expiry)
     await db.execute(text("DELETE FROM profiles WHERE id = :uid"), {"uid": uid})
