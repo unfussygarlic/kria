@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, Briefcase, Calendar, User, LogOut, BarChart2, Inbox,
+  LayoutDashboard, Briefcase, Calendar, User, LogOut, BarChart2, Inbox, Settings,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -16,6 +16,7 @@ const NAV = [
   { href: "/events",       label: "Events",       Icon: Calendar },
   { href: "/analytics",    label: "Analytics",    Icon: BarChart2 },
   { href: "/profile",      label: "Profile",      Icon: User },
+  { href: "/settings",     label: "Settings",     Icon: Settings },
 ];
 
 interface Props {

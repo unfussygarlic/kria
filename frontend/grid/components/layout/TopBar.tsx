@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, Settings, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { Profile } from "@/types";
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function TopBar({ profile }: Props) {
+  const router = useRouter();
   const initials = (
     profile?.first_name?.[0] ?? profile?.display_name?.[0] ?? "H"
   ).toUpperCase();
@@ -52,6 +54,8 @@ export function TopBar({ profile }: Props) {
             <Bell size={18} />
           </button>
           <button
+            onClick={() => router.push("/settings")}
+            title="Settings"
             className="text-text-muted hover:text-primary transition-colors p-2 rounded-lg"
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--hover-bg)")}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}

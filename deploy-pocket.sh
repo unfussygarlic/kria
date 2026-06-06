@@ -70,6 +70,7 @@ if [[ "$SUBMIT" == true ]]; then
   eas submit \
     --platform android \
     --profile production \
+    --latest \
     --non-interactive
 
   echo ""

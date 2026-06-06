@@ -22,8 +22,10 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { T } from "@/constants/colors";
+import { rf, rw } from "@/constants/responsive";
 import { fetchRatingDimensions, submitRating } from "@/lib/api/ratings";
 import type { RatingDimension } from "@/lib/api/ratings";
 
@@ -71,7 +73,7 @@ function StarRow({
           >
             <Feather
               name="star"
-              size={28}
+              size={rw(32)}
               color={score >= star ? T.accent : T.border}
             />
           </Pressable>
@@ -90,6 +92,7 @@ export function RatingModal({
   rateeName,
   onSuccess,
 }: RatingModalProps) {
+  const insets = useSafeAreaInsets();
   const [dimensions, setDimensions] = useState<RatingDimension[]>([]);
   const [dimScores, setDimScores]   = useState<Record<string, number>>({});
   const [overallScore, setOverallScore] = useState(0); // used only for poster_rating
@@ -173,7 +176,7 @@ export function RatingModal({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.sheetWrapper}
       >
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
           <View style={styles.handle} />
 
           <View style={styles.header}>
@@ -224,7 +227,7 @@ export function RatingModal({
                     >
                       <Feather
                         name="star"
-                        size={32}
+                        size={rw(36)}
                         color={overallScore >= star ? T.accent : T.border}
                       />
                     </Pressable>
@@ -265,53 +268,53 @@ export function RatingModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.55)",
   },
   sheetWrapper: {
     justifyContent: "flex-end",
   },
   sheet: {
     backgroundColor: T.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    paddingTop: 12,
-    maxHeight: "85%",
+    borderTopLeftRadius: rw(24),
+    borderTopRightRadius: rw(24),
+    paddingHorizontal: rw(20),
+    paddingTop: rw(12),
+    minHeight: rw(380),
+    maxHeight: "90%",
   },
   handle: {
-    width: 40,
+    width: rw(40),
     height: 4,
     backgroundColor: T.border,
     borderRadius: 2,
     alignSelf: "center",
-    marginBottom: 12,
+    marginBottom: rw(14),
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: rw(6),
   },
   title: {
-    fontSize: 18,
+    fontSize: rf(18),
     fontWeight: "700",
     color: T.text,
   },
   prompt: {
-    fontSize: 14,
+    fontSize: rf(14),
     color: T.textSub,
-    marginBottom: 16,
+    marginBottom: rw(16),
   },
   scrollArea: {
     flexGrow: 0,
   },
   scrollContent: {
-    gap: 20,
-    paddingBottom: 8,
+    gap: rw(20),
+    paddingBottom: rw(8),
   },
   dimRow: {
-    gap: 4,
+    gap: rw(6),
   },
   dimHeader: {
     flexDirection: "row",
@@ -319,45 +322,45 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   dimLabel: {
-    fontSize: 13,
+    fontSize: rf(13),
     fontWeight: "700",
     color: T.text,
   },
   dimStarLabel: {
-    fontSize: 11,
+    fontSize: rf(12),
     fontWeight: "600",
     color: T.accent,
   },
   dimQuestion: {
-    fontSize: 12,
+    fontSize: rf(12),
     color: T.textMuted,
-    marginBottom: 4,
+    marginBottom: rw(4),
   },
   stars: {
     flexDirection: "row",
-    gap: 6,
+    gap: rw(8),
   },
   starBtn: {
-    padding: 2,
+    padding: rw(4),
   },
   input: {
     backgroundColor: T.bg,
-    borderRadius: 10,
+    borderRadius: rw(12),
     borderWidth: 1,
     borderColor: T.border,
-    padding: 12,
-    fontSize: 14,
+    padding: rw(12),
+    fontSize: rf(14),
     color: T.text,
-    minHeight: 70,
+    minHeight: rw(70),
     textAlignVertical: "top",
   },
   submitBtn: {
     backgroundColor: T.ctaBg,
-    borderRadius: 10,
-    height: 48,
+    borderRadius: rw(12),
+    height: rw(50),
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 16,
+    marginTop: rw(16),
   },
   submitDisabled: {
     opacity: 0.5,
@@ -365,6 +368,6 @@ const styles = StyleSheet.create({
   submitText: {
     color: T.ctaText,
     fontWeight: "700",
-    fontSize: 15,
+    fontSize: rf(15),
   },
 });

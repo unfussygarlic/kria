@@ -17,6 +17,9 @@ interface GigFilters {
   maxPay?: number;
 }
 
+const APPLICATIONS_TTL = 60 * 1000;   // 1 min — statuses can change quickly
+const POSTED_TTL      = 2 * 60 * 1000; // 2 min — posted gigs/events change less often
+
 interface GigState {
   gigs: Gig[];
   myPostedGigs: Gig[];        // standalone gigs (event_id IS NULL)
@@ -29,6 +32,8 @@ interface GigState {
   filters: GigFilters;
   seenGigIds: Set<string>;    // Track all gig IDs shown to user
   posterScores: Record<string, number>; // gigId → poster's momentum score
+  _applicationsFetchedAt: number;
+  _postedFetchedAt: number;
 
   // Actions
   fetchGigs: (filters?: GigFilters, location?: MatchGigsParams) => Promise<void>;
@@ -47,6 +52,8 @@ interface GigState {
 export const useGigStore = create<GigState>((set, get) => ({
   gigs: [],
   myPostedGigs: [],
+  _applicationsFetchedAt: 0,
+  _postedFetchedAt: 0,
   myPostedEvents: [],
   myApplications: [],
   isLoading: false,
@@ -209,6 +216,10 @@ export const useGigStore = create<GigState>((set, get) => ({
   },
 
   fetchMyPostedGigs: async () => {
+    const { _postedFetchedAt, myPostedGigs } = get();
+    const now = Date.now();
+    if (myPostedGigs.length > 0 && (now - _postedFetchedAt) < POSTED_TTL) return;
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -220,18 +231,26 @@ export const useGigStore = create<GigState>((set, get) => ({
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      set({ myPostedGigs: data });
+      set({ myPostedGigs: data, _postedFetchedAt: Date.now() });
     }
   },
 
   fetchMyPostedEvents: async () => {
+    const { _postedFetchedAt, myPostedEvents } = get();
+    const now = Date.now();
+    if (myPostedEvents.length > 0 && (now - _postedFetchedAt) < POSTED_TTL) return;
+
     const result = await getMyEvents();
     if (result.data) {
-      set({ myPostedEvents: result.data });
+      set({ myPostedEvents: result.data, _postedFetchedAt: Date.now() });
     }
   },
 
   fetchMyApplications: async () => {
+    const { myApplications, _applicationsFetchedAt } = get();
+    const now = Date.now();
+    if (myApplications.length > 0 && (now - _applicationsFetchedAt) < APPLICATIONS_TTL) return;
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -251,7 +270,7 @@ export const useGigStore = create<GigState>((set, get) => ({
           gig: a.gig as unknown as Gig,
           status: a.status,
         }));
-      set({ myApplications: applications });
+      set({ myApplications: applications, _applicationsFetchedAt: Date.now() });
     }
   },
 
@@ -284,7 +303,8 @@ export const useGigStore = create<GigState>((set, get) => ({
       return { data: null, error: error.message };
     }
 
-    // Refresh my posted gigs
+    // Bust TTL then refresh so we always see the new gig immediately
+    set({ _postedFetchedAt: 0 });
     await get().fetchMyPostedGigs();
 
     return { data, error: null };
@@ -310,10 +330,12 @@ export const useGigStore = create<GigState>((set, get) => ({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Not authenticated" };
 
-    // Optimistic update — card is already gone from the deck, mark as applied instantly
+    // Optimistic update — card is already gone from the deck, mark as applied instantly.
+    // Also bust the TTL so the next fetch always re-validates.
     if (gig) {
       set((state) => ({
         myApplications: [...state.myApplications, { gig, status: "pending" }],
+        _applicationsFetchedAt: 0,
       }));
     }
 

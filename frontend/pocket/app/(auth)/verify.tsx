@@ -12,6 +12,7 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
+import { rf, rw } from "@/constants/responsive";
 
 const OTP_LENGTH = 6;
 
@@ -140,6 +141,9 @@ export default function VerifyScreen() {
           onBlur={() => setIsFocused(false)}
           caretHidden
           autoFocus
+          autoComplete="off"
+          importantForAutofill="no"
+          textContentType="none"
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -200,14 +204,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 16,
+    gap: rw(8),
   },
   otpBox: {
-    width: 48,
-    height: 56,
+    flex: 1,
+    height: rw(60),
     backgroundColor: T.surface,
     borderWidth: 1.5,
     borderColor: T.border,
-    borderRadius: 12,
+    borderRadius: rw(14),
     justifyContent: "center",
     alignItems: "center",
   },
@@ -222,26 +227,28 @@ const styles = StyleSheet.create({
   },
   otpBoxError: {
     borderColor: T.error,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: "rgba(239,68,68,0.08)",
   },
   otpDigit: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: rf(22),
+    fontWeight: "700",
     color: T.text,
+    lineHeight: rf(28),
   },
   cursor: {
     width: 2,
-    height: 24,
+    height: rw(24),
     backgroundColor: T.selText,
     borderRadius: 1,
   },
-  // Invisible — positioned off-screen so the keyboard never overlaps the UI
+  // Invisible — positioned far off-screen; avoids Android autofill overlay over boxes
   hiddenInput: {
     position: "absolute",
     width: 1,
     height: 1,
     opacity: 0,
-    top: -100,
+    left: -1000,
+    top: -1000,
   },
   error: {
     color: T.error,

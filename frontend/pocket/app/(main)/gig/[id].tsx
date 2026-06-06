@@ -29,7 +29,12 @@ export default function GigDetailScreen() {
   const profile = useAuthStore((s) => s.profile);
 
   useEffect(() => {
-    if (id) {
+    if (!id) return;
+    // Check the in-memory deck first — avoids a round-trip when user taps from explore
+    const cached = useGigStore.getState().gigs.find((g) => g.id === id);
+    if (cached) {
+      setGig(cached);
+    } else {
       getGig(id).then(setGig);
     }
   }, [id]);

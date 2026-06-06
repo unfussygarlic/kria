@@ -6,7 +6,7 @@
  * Signals with no data render as dimmed empty axis.
  */
 
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
 import Svg, { Circle, Line, Polygon, Text as SvgText } from "react-native-svg";
 
@@ -30,7 +30,7 @@ function polarToXY(cx: number, cy: number, r: number, angleRad: number) {
   };
 }
 
-export function SkillGraph({ score, signals, onPress, size = rw(260) }: SkillGraphProps) {
+export const SkillGraph = memo(function SkillGraph({ score, signals, onPress, size = rw(260) }: SkillGraphProps) {
   const band = getBand(score);
   const cx = size / 2;
   const cy = size / 2;
@@ -193,7 +193,7 @@ export function SkillGraph({ score, signals, onPress, size = rw(260) }: SkillGra
       )}
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

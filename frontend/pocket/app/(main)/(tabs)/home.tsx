@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import {
   ScrollView, View, Text, Pressable, StyleSheet,
   FlatList, ActivityIndicator, Animated, Easing, PanResponder,
@@ -63,7 +63,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function BandHeroCard({ score, gigsDone, streak }: {
+const BandHeroCard = memo(function BandHeroCard({ score, gigsDone, streak }: {
   score: number;
   gigsDone: number;
   streak: number;
@@ -128,7 +128,7 @@ function BandHeroCard({ score, gigsDone, streak }: {
       </View>
     </Pressable>
   );
-}
+});
 
 const GIG_CARD_W = rw(150);
 const GIG_CARD_GAP = rw(10);
@@ -168,7 +168,7 @@ function GigStripCard({ gig }: { gig: MatchedGig }) {
   );
 }
 
-function GigMarquee({ gigs, onGrab, onRelease }: {
+const GigMarquee = memo(function GigMarquee({ gigs, onGrab, onRelease }: {
   gigs: MatchedGig[];
   onGrab: () => void;
   onRelease: () => void;
@@ -272,7 +272,7 @@ function GigMarquee({ gigs, onGrab, onRelease }: {
       </Animated.View>
     </View>
   );
-}
+});
 
 // ── Badge marquee ─────────────────────────────────────────────────────────────
 
@@ -290,7 +290,7 @@ const BADGE_CARD_W = rw(110);
 const BADGE_CARD_GAP = rw(8);
 const BADGE_STEP = rw(110) + rw(8); // card + gap
 
-function BadgeMarquee({ badges, onGrab, onRelease }: {
+const BadgeMarquee = memo(function BadgeMarquee({ badges, onGrab, onRelease }: {
   badges: Badge[];
   onGrab: () => void;
   onRelease: () => void;
@@ -422,9 +422,9 @@ function BadgeMarquee({ badges, onGrab, onRelease }: {
       </View>
     </View>
   );
-}
+});
 
-function RecentGigCard({ gig, status }: { gig: any; status: string }) {
+const RecentGigCard = memo(function RecentGigCard({ gig, status }: { gig: any; status: string }) {
   const cfg = STATUS_CONFIG[status] ?? { label: status, color: T.textMuted };
   const catColor = CategoryColors[gig.category] ?? T.textMuted;
   const catLabel = getCatLabel(gig.category);
@@ -466,7 +466,11 @@ function RecentGigCard({ gig, status }: { gig: any; status: string }) {
       </View>
     </Pressable>
   );
-}
+});
+
+// ── Shared separator ──────────────────────────────────────────────────────────
+
+const RecentGigSeparator = () => <View style={{ width: rw(10) }} />;
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -508,10 +512,17 @@ export default function HomeScreen() {
         let coords: { latitude: number; longitude: number } | undefined;
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === "granted") {
-          const loc = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+          // Last-known position is instant (cached by OS) — no GPS wait.
+          // Fall back to a fresh low-accuracy fix only when there's no cache.
+          const last = await Location.getLastKnownPositionAsync();
+          if (last) {
+            coords = { latitude: last.coords.latitude, longitude: last.coords.longitude };
+          } else {
+            const fresh = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Low,
+            });
+            coords = { latitude: fresh.coords.latitude, longitude: fresh.coords.longitude };
+          }
         }
         const res = await matchGigs({ limit: 5, ...coords });
         setNearbyGigs(res.data?.gigs ?? []);
@@ -528,8 +539,16 @@ export default function HomeScreen() {
   const gigsDone = momentumData?.gig_count ?? profile?.total_gigs_completed ?? 0;
   const streak = profile?.streak_count ?? 0;
 
-  const activeApplications = myApplications.filter(
-    (a) => a.status === "pending" || a.status === "accepted"
+  const activeApplications = useMemo(
+    () => myApplications.filter((a) => a.status === "pending" || a.status === "accepted"),
+    [myApplications],
+  );
+
+  const renderRecentGig = useCallback(
+    ({ item }: { item: { gig: any; status: string } }) => (
+      <RecentGigCard gig={item.gig} status={item.status} />
+    ),
+    [],
   );
 
   return (
@@ -599,10 +618,8 @@ export default function HomeScreen() {
             keyExtractor={(item) => item.gig.id}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.recentGigList}
-            ItemSeparatorComponent={() => <View style={{ width: rw(10) }} />}
-            renderItem={({ item }) => (
-              <RecentGigCard gig={item.gig} status={item.status} />
-            )}
+            ItemSeparatorComponent={RecentGigSeparator}
+            renderItem={renderRecentGig}
           />
         </View>
       )}
