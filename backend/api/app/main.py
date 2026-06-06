@@ -8,7 +8,7 @@ from app.config import settings
 from app.db.session import engine
 from app.momentum import router as momentum
 from app.recommendations import router as recommendations
-from app.routers import applicants, badges, chat, events, gigs, health, profiles, ratings, search
+from app.routers import account, applicants, badges, chat, events, gigs, health, profiles, ratings, search
 
 
 @asynccontextmanager
@@ -58,5 +58,6 @@ app.include_router(chat.router,       prefix=f"/api/{settings.api_version}")
 app.include_router(momentum.router,   prefix=f"/api/{settings.api_version}")
 app.include_router(ratings.router,    prefix=f"/api/{settings.api_version}")
 app.include_router(badges.router,     prefix=f"/api/{settings.api_version}")
-app.include_router(search.router,         prefix=f"/api/{settings.api_version}")
+app.include_router(search.router,          prefix=f"/api/{settings.api_version}")
 app.include_router(recommendations.router, prefix=f"/api/{settings.api_version}")
+app.include_router(account.router,         prefix=f"/api/{settings.api_version}")

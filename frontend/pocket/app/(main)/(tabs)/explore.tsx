@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useShallow } from "zustand/react/shallow";
 import { useGigStore } from "@/stores/gigStore";
 import { useAuthStore } from "@/stores/authStore";
 import { Gig } from "@/types/database";
@@ -35,7 +36,18 @@ export default function ExploreScreen() {
     fetchMoreGigs,
     fetchMyApplications,
     applyToGig,
-  } = useGigStore();
+  } = useGigStore(useShallow((s) => ({
+    gigs: s.gigs,
+    myApplications: s.myApplications,
+    isLoading: s.isLoading,
+    hasMore: s.hasMore,
+    isFetchingMore: s.isFetchingMore,
+    posterScores: s.posterScores,
+    fetchGigs: s.fetchGigs,
+    fetchMoreGigs: s.fetchMoreGigs,
+    fetchMyApplications: s.fetchMyApplications,
+    applyToGig: s.applyToGig,
+  })));
   const profile = useAuthStore((s) => s.profile);
   const canApply = true;
 
@@ -47,14 +59,15 @@ export default function ExploreScreen() {
     const init = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {
-        const loc = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        locationRef.current = {
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        };
+        const last = await Location.getLastKnownPositionAsync();
+        if (last) {
+          locationRef.current = { latitude: last.coords.latitude, longitude: last.coords.longitude };
+        } else {
+          const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+          locationRef.current = { latitude: fresh.coords.latitude, longitude: fresh.coords.longitude };
+        }
       }
+      // TTL guard is inside each store fn — safe to call unconditionally
       fetchGigs(undefined, locationRef.current);
       fetchMyApplications();
     };

@@ -146,6 +146,7 @@ export default function ProfileScreen() {
         <QuickBox
           icon="settings"
           label="Settings"
+          onPress={() => router.push("/(main)/settings")}
         />
         <QuickBox
           icon="help-circle"

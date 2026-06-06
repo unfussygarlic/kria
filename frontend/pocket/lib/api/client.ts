@@ -79,22 +79,37 @@ export async function apiPostFormData<T>(
   }
 }
 
+// Deduplicates concurrent GET calls to the same path — the second caller
+// awaits the same in-flight promise instead of firing a second request.
+const _inFlight = new Map<string, Promise<ApiResult<unknown>>>();
+
 export async function apiGet<T>(path: string): Promise<ApiResult<T>> {
+  if (_inFlight.has(path)) {
+    return _inFlight.get(path) as Promise<ApiResult<T>>;
+  }
+
   const auth = await getAuthHeader();
   if (!auth) return { data: null, error: "Not authenticated" };
 
-  try {
-    const res = await fetch(`${API_URL}${path}`, {
-      headers: { Authorization: auth },
-    });
+  const req = (async (): Promise<ApiResult<T>> => {
+    try {
+      const res = await fetch(`${API_URL}${path}`, {
+        headers: { Authorization: auth },
+      });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-      return { data: null, error: extractError(err.detail, res.status) };
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+        return { data: null, error: extractError(err.detail, res.status) };
+      }
+
+      return { data: (await res.json()) as T, error: null };
+    } catch {
+      return { data: null, error: "Network error" };
+    } finally {
+      _inFlight.delete(path);
     }
+  })();
 
-    return { data: (await res.json()) as T, error: null };
-  } catch {
-    return { data: null, error: "Network error" };
-  }
+  _inFlight.set(path, req as Promise<ApiResult<unknown>>);
+  return req;
 }
