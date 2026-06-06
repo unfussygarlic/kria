@@ -14,8 +14,11 @@ $COMPOSE up -d --build --remove-orphans
 echo "==> Running database migrations"
 $COMPOSE exec kria-api alembic upgrade head
 
-echo "==> Cleaning up unused images"
+echo "==> Cleaning up unused Docker resources"
 docker image prune -f
+docker volume prune -f
+docker network prune -f
+docker builder prune -f
 
 echo "==> Deploy complete"
 $COMPOSE ps
