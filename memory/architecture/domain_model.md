@@ -9,9 +9,10 @@ type: reference
 ## Core Tables
 
 ### `profiles`
-One row per user. Created automatically on phone OTP signup via Supabase trigger.
+One row per user. **Created explicitly at onboarding completion** (migration 0024 made the auth trigger a no-op).
 - `id` (uuid, FK → auth.users)
-- `phone`, `display_name`, `first_name`, `last_name`
+- `phone` (nullable), `email` (nullable, added migration 0023), `display_name`, `first_name`, `last_name`
+- `default_role` TEXT ('runner' | 'host') — set at onboarding: Grid sets 'host', Pocket sets 'runner' (added migration 0025)
 - `city`, `state`, `gender`, `date_of_birth`
 - `worker_reputation` (0–5 float), `poster_reputation` (0–5 float)
 - **isOnboarded check:** `first_name + date_of_birth + gender + city + state` all present (`authStore.ts:157`)
@@ -155,7 +156,14 @@ events ──< gigs (event_id nullable FK)
 | `0018_gig_categories_revamp.py` | Converts `gig_category` enum to text + CHECK constraint; updates category values to 17-item set (event_registration, usher, booth_staff, promoter, sampling_promoter, lead_collection, event_helper, hospitality_staff, guest_management, front_desk, event_tech_support, sound_light_assistant, photographer, videographer, social_media_creator, emcee, other) |
 | `0019_revamp_badges.py` | Converts `badge_category` enum to text + CHECK; ADD `streak_count`, `longest_streak`, `last_active_date` to `profiles`; rebuilds badge seed data with 18 new badges across milestone/streak/identity |
 
-**Next migration number:** `0020`
+| `0020_performance_indexes.py` | Performance indexes |
+| `0021_account_deactivation.py` | Account deactivation |
+| `0022_nullable_phone.py` | Makes profiles.phone nullable |
+| `0023_add_email_to_profiles.py` | ADD `email TEXT` (nullable, unique) to profiles; update handle_new_user to store email |
+| `0024_defer_profile_creation.py` | handle_new_user made no-op; profile created at onboarding; wallet created by on_profile_created trigger on profiles INSERT |
+| `0025_role_and_phone_normalize.py` | ADD `default_role TEXT CHECK IN ('runner','host')` to profiles; backfill from email domain; normalize phone → E.164 (+91XXXXXXXXXX) |
+
+**Next migration number:** `0026`
 
 Migrations live at: `backend/api/alembic/versions/`
 Auto-run on backend startup.

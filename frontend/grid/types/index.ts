@@ -66,7 +66,9 @@ export type GenderPreference = "any" | "male" | "female";
 
 export interface Profile {
   id: string;
-  phone: string;
+  phone: string | null;
+  email: string | null;
+  default_role: "runner" | "host" | null;
   display_name: string;
   first_name: string | null;
   last_name: string | null;

@@ -45,6 +45,8 @@ export default function ProfilePage() {
   const [bio, setBio] = useState("");
   const [city, setCity] = useState("");
   const [stateVal, setStateVal] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [savedProfile, setSavedProfile] = useState(false);
 
@@ -67,6 +69,7 @@ export default function ProfilePage() {
         setBio(data.bio ?? "");
         setCity(data.city ?? "");
         setStateVal(data.state ?? "");
+        setPhone(data.phone ?? "");
         setIdType(data.id_type ?? "");
         setIdValue(data.id_value ?? "");
       }
@@ -75,7 +78,28 @@ export default function ProfilePage() {
     load();
   }, []);
 
+  const normalizePhone = (raw: string): string | null => {
+    const digits = raw.replace(/\D/g, "");
+    if (!digits) return null;
+    if (/^[6-9]\d{9}$/.test(digits)) return `+91${digits}`;
+    if (/^91[6-9]\d{9}$/.test(digits)) return `+${digits}`;
+    if (/^91[6-9]\d{9}$/.test(digits.replace(/^\+/, ""))) return `+${digits.replace(/^\+/, "")}`;
+    return `+${digits}`;
+  };
+
   const handleSaveProfile = async () => {
+    setPhoneError("");
+    const trimmedPhone = phone.trim();
+    let normalizedPhone: string | null = null;
+    if (trimmedPhone) {
+      normalizedPhone = normalizePhone(trimmedPhone);
+      const digits = trimmedPhone.replace(/\D/g, "");
+      // Must be 10-digit mobile or full 12-digit with 91 prefix
+      if (!/^([6-9]\d{9}|91[6-9]\d{9})$/.test(digits)) {
+        setPhoneError("Enter a valid 10-digit Indian mobile number.");
+        return;
+      }
+    }
     setSavingProfile(true);
     setSavedProfile(false);
     const { data: { user } } = await supabase.auth.getUser();
@@ -87,7 +111,9 @@ export default function ProfilePage() {
       bio: bio || null,
       city: city || null,
       state: stateVal || null,
+      phone: normalizedPhone,
     }).eq("id", user.id);
+    if (normalizedPhone) setPhone(normalizedPhone);
     setSavingProfile(false);
     setSavedProfile(true);
     setTimeout(() => setSavedProfile(false), 2500);
@@ -173,7 +199,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Phone</span>
           </div>
-          <p className="text-lg font-bold text-text">{profile?.phone ?? "—"}</p>
+          <p className="text-lg font-bold text-text">{phone || "—"}</p>
           <div className="absolute bottom-0 left-0 w-full h-[2px] bg-secondary/20 group-hover:bg-secondary transition-colors duration-300" />
         </div>
       </div>
@@ -230,6 +256,20 @@ export default function ProfilePage() {
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Your name or brand"
               />
+            </div>
+            <div>
+              <label className={labelCls}>Phone Number</label>
+              <input
+                className={`${inputCls}${phoneError ? " border-red-500/60" : ""}`}
+                value={phone}
+                onChange={(e) => { setPhone(e.target.value); setPhoneError(""); }}
+                placeholder="9876543210"
+                type="tel"
+                inputMode="numeric"
+              />
+              {phoneError && (
+                <p className="text-xs mt-1.5" style={{ color: "#ff7351" }}>{phoneError}</p>
+              )}
             </div>
           </div>
 
