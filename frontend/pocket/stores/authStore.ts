@@ -157,6 +157,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       .single();
 
     if (error) {
+      if (error.code === "PGRST116") {
+        // No profile row yet — new user who hasn't completed onboarding.
+        // Session is valid; don't sign out, just send them to onboarding.
+        set({ profile: null, isOnboarded: false });
+        return true;
+      }
       console.error("Fetch profile error:", error);
       return false;
     }
