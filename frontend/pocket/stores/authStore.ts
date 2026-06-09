@@ -181,7 +181,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { data, error } = await supabase
       .from("profiles")
       .upsert(
-        { id: session.user.id, phone: get().profile?.phone ?? null, display_name: "New User", ...updates },
+        { id: session.user.id, phone: get().profile?.phone ?? null, display_name: "New User", default_role: "runner", ...updates },
         { onConflict: "id" }
       )
       .select()

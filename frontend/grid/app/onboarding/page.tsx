@@ -62,6 +62,7 @@ export default function OnboardingPage() {
       display_name: displayName,
       email: userEmail,
       phone: phone,
+      default_role: "host",
       city: skip ? null : city.trim() || null,
       state: skip ? null : state.trim() || null,
     });

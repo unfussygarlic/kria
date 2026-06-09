@@ -66,6 +66,7 @@ export interface Database {
           id: string;
           phone: string | null;
           email: string | null;
+          default_role: "runner" | "host" | null;
           display_name: string;
           avatar_url: string | null;
           bio: string | null;
