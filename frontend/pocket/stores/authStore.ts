@@ -170,10 +170,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { session } = get();
     if (!session) return { error: "Not authenticated" };
 
+    // Use upsert so onboarding works even if the DB trigger failed to create
+    // the profile row (e.g. permission issue or wallet conflict).
     const { data, error } = await supabase
       .from("profiles")
-      .update(updates)
-      .eq("id", session.user.id)
+      .upsert(
+        { id: session.user.id, phone: get().profile?.phone ?? null, display_name: "New User", ...updates },
+        { onConflict: "id" }
+      )
       .select()
       .single();
 

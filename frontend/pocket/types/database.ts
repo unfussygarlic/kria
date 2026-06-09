@@ -64,7 +64,8 @@ export interface Database {
       profiles: {
         Row: {
           id: string;
-          phone: string;
+          phone: string | null;
+          email: string | null;
           display_name: string;
           avatar_url: string | null;
           bio: string | null;
@@ -105,7 +106,8 @@ export interface Database {
         };
         Insert: {
           id: string;
-          phone: string;
+          phone?: string | null;
+          email?: string | null;
           display_name: string;
           avatar_url?: string | null;
           bio?: string | null;
