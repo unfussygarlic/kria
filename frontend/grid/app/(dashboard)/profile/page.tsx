@@ -147,7 +147,10 @@ export default function ProfilePage() {
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold text-text tracking-tight mb-8">Profile</h1>
+      <div className="mb-8">
+        <p className="pg-eyebrow">Account</p>
+        <h1 className="pg-title">Profile</h1>
+      </div>
 
       {/* Identity card */}
       <div className="bg-surface-1 border border-white/10 rounded-xl p-6 mb-6">

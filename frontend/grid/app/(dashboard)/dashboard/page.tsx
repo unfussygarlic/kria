@@ -79,8 +79,9 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-end justify-between mb-10">
         <div>
-          <h1 className="text-3xl font-bold text-text tracking-tight">Host Dashboard</h1>
-          <p className="text-sm text-text-muted mt-1">Real-time performance and gig management.</p>
+          <p className="pg-eyebrow">Overview</p>
+          <h1 className="pg-title">Host Dashboard</h1>
+          <p className="pg-sub">Real-time performance and gig management.</p>
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 px-4 py-2 bg-surface-1 border border-white/10 text-text text-xs font-bold uppercase tracking-wider rounded hover:bg-surface-2 transition-colors">

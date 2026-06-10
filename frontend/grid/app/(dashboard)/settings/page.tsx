@@ -251,8 +251,9 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-10 space-y-8">
       <div>
-        <h1 className="text-xl font-bold text-text">Settings</h1>
-        <p className="text-xs text-text-muted mt-1">Manage your account preferences</p>
+        <p className="pg-eyebrow">Account</p>
+        <h1 className="pg-title">Settings</h1>
+        <p className="pg-sub">Manage your account preferences</p>
       </div>
 
       {/* Account section */}

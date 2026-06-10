@@ -96,7 +96,8 @@ export default function AnalyticsPage() {
   if (gigs.length === 0) {
     return (
       <div className="p-8 max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-text tracking-tight mb-8">Analytics</h1>
+        <p className="pg-eyebrow">Analytics</p>
+        <h1 className="pg-title mb-8">Analytics</h1>
         <div className="bg-surface-1 border border-white/10 rounded-xl p-16 text-center">
           <BarChart2 size={32} className="text-text-muted mx-auto mb-4" />
           <p className="text-sm text-text-muted">Post your first gig to see analytics here.</p>
@@ -207,8 +208,9 @@ export default function AnalyticsPage() {
     <div className="p-8 max-w-6xl mx-auto space-y-5">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-text tracking-tight">Analytics</h1>
-        <p className="text-sm text-text-muted mt-1">
+        <p className="pg-eyebrow">Analytics</p>
+        <h1 className="pg-title">Analytics</h1>
+        <p className="pg-sub">
           {gigs.length} gig{gigs.length !== 1 ? "s" : ""} · {applications.length} applications · {assignments.length} assignments
         </p>
       </div>

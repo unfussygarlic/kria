@@ -42,7 +42,8 @@ export default function EventsPage() {
       {/* Header */}
       <div className="flex items-end justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-text tracking-tight">My Events</h1>
+          <p className="pg-eyebrow">Events</p>
+          <h1 className="pg-title">My Events</h1>
           <p className="text-sm text-text-muted mt-1">{events.length} event{events.length !== 1 ? "s" : ""} created</p>
         </div>
         <button

@@ -356,8 +356,9 @@ export default function ApplicationsPage() {
       <div className="px-8 pt-7 pb-0 flex-shrink-0">
         <div className="flex items-end justify-between mb-5">
           <div>
-            <h1 className="text-2xl font-bold text-text tracking-tight">Applications</h1>
-            <p className="text-sm text-text-muted mt-0.5">
+            <p className="pg-eyebrow">Applications</p>
+            <h1 className="pg-title">Applicants</h1>
+            <p className="pg-sub">
               {totalPending > 0
                 ? `${totalPending} pending across ${gigs.length} gig${gigs.length !== 1 ? "s" : ""}`
                 : `${gigs.length} gig${gigs.length !== 1 ? "s" : ""} · all caught up`}

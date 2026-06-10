@@ -206,6 +206,46 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   --color-amber:   #8a6200;
 }
 
+/* ─────────────────────────────────────────────────────────────────
+   Global Typography System
+   ─────────────────────────────────────────────────────────────────
+   pg-eyebrow   → tiny uppercase label above a page title
+   pg-title     → main page heading (Comfortaa bold)
+   pg-sub       → subtitle / description line under pg-title
+   section-title → card / panel heading inside a page
+   ───────────────────────────────────────────────────────────────── */
+
+.pg-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+
+.pg-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-comfortaa), system-ui, sans-serif;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+.pg-sub {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--color-text-muted);
+}
+
 /* ── Nav item base classes (Sidebar + ThemeToggle) ── */
 .nav-item {
   background-color: transparent;

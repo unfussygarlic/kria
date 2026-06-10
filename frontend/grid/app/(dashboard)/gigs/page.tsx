@@ -68,8 +68,9 @@ export default function GigsPage() {
       {/* Header */}
       <div className="flex items-end justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-text tracking-tight">My Gigs</h1>
-          <p className="text-sm text-text-muted mt-1">{gigs.length} gig{gigs.length !== 1 ? "s" : ""} posted</p>
+          <p className="pg-eyebrow">Gigs</p>
+          <h1 className="pg-title">My Gigs</h1>
+          <p className="pg-sub">{gigs.length} gig{gigs.length !== 1 ? "s" : ""} posted</p>
         </div>
         <button
           onClick={() => router.push("/gigs/new")}

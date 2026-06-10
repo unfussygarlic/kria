@@ -117,12 +117,8 @@ export default function SubscriptionPage() {
     <div className="p-8 max-w-3xl mx-auto">
       {/* Header */}
       <div className="mb-10">
-        <p className="text-[11px] font-bold uppercase tracking-[0.25em] mb-1" style={{ color: "var(--text-muted)" }}>
-          Billing
-        </p>
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)", fontFamily: "var(--font-comfortaa)" }}>
-          Subscription
-        </h1>
+        <p className="pg-eyebrow">Billing</p>
+        <h1 className="pg-title">Subscription</h1>
       </div>
 
       {isExpired ? (
@@ -187,9 +183,7 @@ export default function SubscriptionPage() {
             className="rounded-2xl p-8"
             style={{ backgroundColor: "var(--card-bg)", border: "1px solid var(--border-color)" }}
           >
-            <h3 className="text-sm font-bold uppercase tracking-[0.15em] mb-5" style={{ color: "var(--text-muted)" }}>
-              What's included
-            </h3>
+            <h3 className="section-title mb-5">What's included</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {PLAN_FEATURES.map((f) => (
                 <div key={f} className="flex items-center gap-3">
