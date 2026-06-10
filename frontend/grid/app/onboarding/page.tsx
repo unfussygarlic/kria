@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { initializeSubscription } from "@/lib/api/subscriptions";
 
 type Step = "name" | "location";
 
@@ -69,6 +70,10 @@ export default function OnboardingPage() {
 
     setLoading(false);
     if (err) { setError(err.message); return; }
+
+    // Snapshot trial start — idempotent if called twice
+    await initializeSubscription();
+
     router.replace("/dashboard");
   };
 

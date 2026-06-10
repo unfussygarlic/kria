@@ -3,14 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { getSubscription, type SubscriptionStatus } from "@/lib/api/subscriptions";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
+import { TrialBanner } from "@/components/layout/TrialBanner";
 import { Spinner } from "@/components/ui/Spinner";
 import type { Profile } from "@/types";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -23,32 +26,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return;
       }
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
+      const [profileResult, subResult] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", session.user.id).single(),
+        getSubscription(),
+      ]);
 
       if (!mounted) return;
 
-      if (!data) {
+      if (!profileResult.data) {
         router.replace("/onboarding");
         return;
       }
 
-      setProfile(data as Profile);
+      setProfile(profileResult.data as Profile);
+      if (subResult.data) setSubscription(subResult.data);
       setChecking(false);
     };
 
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") router.replace("/login");
     });
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      authSub.unsubscribe();
     };
   }, [router]);
 
@@ -60,11 +63,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
+  const showBanner =
+    subscription &&
+    !subscription.is_expired &&
+    subscription.days_remaining <= 14;
+
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: "var(--content-bg)" }}>
-      <Sidebar profile={profile} />
+      <Sidebar profile={profile} trialDaysRemaining={subscription?.days_remaining} />
       <div className="flex-1 min-w-0 flex flex-col">
         <TopBar profile={profile} />
+        {showBanner && (
+          <TrialBanner daysRemaining={subscription!.days_remaining} />
+        )}
         <main className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--content-bg)" }}>
           {children}
         </main>

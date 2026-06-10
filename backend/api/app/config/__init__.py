@@ -19,5 +19,9 @@ class Settings(BaseSettings):
     # Recommendations
     google_maps_api_key: str = ""
 
+    # Subscriptions — change here to adjust the trial for NEW sign-ups only.
+    # Existing users keep whatever trial_duration_days is stored in their subscriptions row.
+    default_trial_days: int = 90
+
 
 settings = Settings()

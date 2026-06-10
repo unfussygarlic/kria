@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, Briefcase, Calendar, User, LogOut, BarChart2, Inbox, Settings,
+  LayoutDashboard, Briefcase, Calendar, User, LogOut, BarChart2, Inbox, Settings, Zap,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -17,15 +17,21 @@ const NAV = [
   { href: "/analytics",    label: "Analytics",    Icon: BarChart2 },
   { href: "/profile",      label: "Profile",      Icon: User },
   { href: "/settings",     label: "Settings",     Icon: Settings },
+  { href: "/subscription", label: "Subscription", Icon: Zap },
 ];
 
 interface Props {
   profile: Profile | null;
+  trialDaysRemaining?: number;
 }
 
-export function Sidebar({ profile }: Props) {
+export function Sidebar({ profile, trialDaysRemaining }: Props) {
   const pathname = usePathname();
   const router = useRouter();
+
+  const showTrialDot =
+    trialDaysRemaining !== undefined && trialDaysRemaining >= 0 && trialDaysRemaining <= 14;
+  const trialDotColor = trialDaysRemaining !== undefined && trialDaysRemaining <= 7 ? "#ff7351" : "#FFC83D";
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -50,6 +56,7 @@ export function Sidebar({ profile }: Props) {
       <nav className="flex-1 flex flex-col">
         {NAV.map(({ href, label, Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
+          const isSubscription = href === "/subscription";
           return (
             <Link
               key={href}
@@ -60,6 +67,12 @@ export function Sidebar({ profile }: Props) {
             >
               <Icon size={16} />
               {label}
+              {isSubscription && showTrialDot && (
+                <span
+                  className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: trialDotColor, boxShadow: `0 0 4px ${trialDotColor}` }}
+                />
+              )}
             </Link>
           );
         })}
