@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { getSubscription, type SubscriptionStatus } from "@/lib/api/subscriptions";
+import { getSubscription, initializeSubscription, type SubscriptionStatus } from "@/lib/api/subscriptions";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { TrialBanner } from "@/components/layout/TrialBanner";
@@ -39,7 +39,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
 
       setProfile(profileResult.data as Profile);
-      if (subResult.data) setSubscription(subResult.data);
+
+      // trial_ends_at === null means no subscription row exists yet (e.g. existing users
+      // who pre-date the subscription feature, or onboarding was skipped).
+      // Initialize it now so the countdown starts immediately.
+      if (subResult.data && subResult.data.trial_ends_at === null) {
+        const { data: initialized } = await initializeSubscription();
+        if (mounted && initialized) setSubscription(initialized);
+      } else if (subResult.data) {
+        setSubscription(subResult.data);
+      }
       setChecking(false);
     };
 
