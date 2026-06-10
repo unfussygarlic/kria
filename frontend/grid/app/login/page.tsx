@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -12,37 +12,58 @@ const HOW_IT_WORKS = [
   { n: "03", title: "Confirm", sub: "OTP check-in. Know exactly who showed up." },
 ];
 
-const STATS = [
-  { label: "Median apply→accept", value: "8 min" },
-  { label: "OTP-confirmed show-up rate", value: "94.2%" },
-  { label: "Paid out, last 30 days", value: "₹2.8 Cr" },
-];
-
+const STEP_DURATION = 3200;
 const RESEND_COOLDOWN = 60;
 
 export default function LoginPage() {
   const router = useRouter();
-  const [step, setStep]   = useState<Step>("email");
-  const [email, setEmail] = useState("");
-  const [otp,   setOtp]   = useState("");
+
+  // ── Auth state ───────────────────────────────────────────────────────────────
+  const [step, setStep]     = useState<Step>("email");
+  const [email, setEmail]   = useState("");
+  const [otp,   setOtp]     = useState("");
   const [loading, setLoading]   = useState(false);
   const [error,   setError]     = useState("");
   const [cooldown, setCooldown] = useState(0);
 
-  // Countdown ticker
+  // ── Animated list state ──────────────────────────────────────────────────────
+  const [active, setActive]           = useState(0);
+  const [progressKey, setProgressKey] = useState(0);
+  const pausedRef   = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const advance = useCallback((from?: number) => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      if (pausedRef.current) return;
+      setActive(prev => (prev + 1) % HOW_IT_WORKS.length);
+      setProgressKey(k => k + 1);
+    }, STEP_DURATION);
+  }, []);
+
+  useEffect(() => {
+    advance();
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [advance]);
+
+  const handleSelect = (i: number) => {
+    setActive(i);
+    setProgressKey(k => k + 1);
+    advance(i);
+  };
+
+  // ── Auth countdown ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    const t = setTimeout(() => setCooldown(c => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  // Auto-submit when all 6 digits are entered
   useEffect(() => {
     if (otp.length === 6 && !loading) verifyOtp();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp]);
 
-  // ── Step 1: send OTP ────────────────────────────────────────────────────────
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -58,7 +79,6 @@ export default function LoginPage() {
     setStep("otp");
   };
 
-  // ── Resend OTP ──────────────────────────────────────────────────────────────
   const handleResend = async () => {
     if (cooldown > 0 || loading) return;
     setError("");
@@ -70,7 +90,6 @@ export default function LoginPage() {
     setCooldown(RESEND_COOLDOWN);
   };
 
-  // ── Step 2: verify OTP ──────────────────────────────────────────────────────
   const verifyOtp = async () => {
     if (loading) return;
     setError("");
@@ -88,7 +107,6 @@ export default function LoginPage() {
       .eq("id", data.user!.id)
       .single();
 
-    // Existing host → dashboard | New host → onboarding
     router.replace(profile ? "/dashboard" : "/onboarding");
   };
 
@@ -108,6 +126,13 @@ export default function LoginPage() {
       className="min-h-screen overflow-hidden relative flex flex-col"
       style={{ backgroundColor: "#0c0d0a" }}
     >
+      <style>{`
+        @keyframes sweepProgress {
+          from { width: 0%; }
+          to   { width: 100%; }
+        }
+      `}</style>
+
       {/* Soft lime glow */}
       <div
         className="fixed inset-0 z-0 pointer-events-none"
@@ -125,12 +150,10 @@ export default function LoginPage() {
 
           {/* ── Left: Marketing ── */}
           <div className="lg:col-span-7 hidden lg:flex flex-col justify-center py-16 pr-16">
+
             {/* Kicker */}
             <div className="flex items-center gap-3 mb-8">
-              <span
-                className="font-mono text-[10px] uppercase tracking-[0.12em]"
-                style={{ color: "#D4FF00" }}
-              >
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: "#D4FF00" }}>
                 kria · Grid
               </span>
               <span className="font-mono text-[10px] text-neutral-600 tracking-[0.06em]">
@@ -144,43 +167,100 @@ export default function LoginPage() {
               style={{ fontSize: "clamp(48px, 5.5vw, 80px)" }}
             >
               <span className="block text-white">Fill your roster</span>
-              <span className="block" style={{ color: "#D4FF00" }}>
-                before chai.
-              </span>
+              <span className="block" style={{ color: "#D4FF00" }}>before chai.</span>
             </h1>
 
             {/* Lead */}
-            <p className="text-[17px] leading-relaxed text-neutral-400 max-w-md mb-12">
+            <p className="text-[17px] leading-relaxed text-neutral-400 max-w-md mb-10">
               Post a gig in four steps. Browse applicants ranked by Momentum Score — a verified track record built from real shifts, not a CV.
             </p>
 
-            {/* How it works — numbered list */}
-            <div className="flex flex-col divide-y" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-              {HOW_IT_WORKS.map(({ n, title, sub }) => (
-                <div key={n} className="flex gap-5 items-start py-5">
-                  <span className="font-mono text-[11px] text-neutral-600 tracking-wider pt-0.5 w-6 flex-shrink-0">{n}</span>
-                  <div>
-                    <span className="font-mono text-[12px] font-bold tracking-wider" style={{ color: "#D4FF00" }}>
-                      · {title}
-                    </span>
-                    <p className="text-[15px] text-neutral-400 mt-1">{sub}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* ── Animated step list ── */}
+            <div
+              className="flex flex-col"
+              style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+              onMouseEnter={() => { pausedRef.current = true; }}
+              onMouseLeave={() => { pausedRef.current = false; }}
+            >
+              {HOW_IT_WORKS.map(({ n, title, sub }, i) => {
+                const isActive = active === i;
+                return (
+                  <button
+                    key={n}
+                    onClick={() => handleSelect(i)}
+                    style={{
+                      all: "unset",
+                      cursor: "pointer",
+                      display: "block",
+                      position: "relative",
+                      borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      borderLeft: `2px solid ${isActive ? "#D4FF00" : "rgba(255,255,255,0.08)"}`,
+                      paddingLeft: 20,
+                      paddingTop: 20,
+                      paddingBottom: 20,
+                      opacity: isActive ? 1 : 0.35,
+                      transition: "opacity 0.4s ease, border-left-color 0.35s ease",
+                    }}
+                  >
+                    {/* Number + title row */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+                      <span
+                        className="font-mono"
+                        style={{
+                          fontSize: 11,
+                          letterSpacing: "0.08em",
+                          color: isActive ? "#D4FF00" : "rgba(255,255,255,0.25)",
+                          transition: "color 0.35s ease",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {n}
+                      </span>
+                      <span
+                        className="font-mono"
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 700,
+                          letterSpacing: "0.06em",
+                          color: isActive ? "#ffffff" : "rgba(255,255,255,0.4)",
+                          transition: "color 0.35s ease",
+                        }}
+                      >
+                        · {title}
+                      </span>
+                    </div>
 
-            {/* Stats */}
-            <div className="mt-10 grid grid-cols-3 gap-0" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-              {STATS.map((s, i) => (
-                <div
-                  key={s.label}
-                  className="pt-6"
-                  style={i > 0 ? { paddingLeft: 24, borderLeft: "1px solid rgba(255,255,255,0.06)" } : {}}
-                >
-                  <span className="block text-[26px] font-bold text-white leading-none">{s.value}</span>
-                  <span className="block font-mono text-[10px] text-neutral-600 mt-2 leading-snug uppercase tracking-wider">{s.label}</span>
-                </div>
-              ))}
+                    {/* Sub text */}
+                    <p
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 1.55,
+                        color: "rgba(255,255,255,0.4)",
+                        margin: 0,
+                        paddingLeft: 30,
+                      }}
+                    >
+                      {sub}
+                    </p>
+
+                    {/* Progress sweep — remount on each activation to restart animation */}
+                    {isActive && (
+                      <span
+                        key={progressKey}
+                        style={{
+                          position: "absolute",
+                          bottom: 0,
+                          left: 0,
+                          height: 1,
+                          backgroundColor: "#D4FF00",
+                          opacity: 0.6,
+                          animation: `sweepProgress ${STEP_DURATION}ms linear forwards`,
+                        }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -196,8 +276,10 @@ export default function LoginPage() {
                 boxShadow: "0 25px 50px -12px rgba(0,0,0,0.50)",
               }}
             >
-              <div className="absolute -top-24 -right-24 w-64 h-64 pointer-events-none"
-                style={{ backgroundColor: "#D4FF00", opacity: 0.03, filter: "blur(80px)" }} />
+              <div
+                className="absolute -top-24 -right-24 w-64 h-64 pointer-events-none"
+                style={{ backgroundColor: "#D4FF00", opacity: 0.03, filter: "blur(80px)" }}
+              />
 
               <div className="mb-8 relative">
                 <h2 className="text-2xl font-bold text-white tracking-tight">
@@ -280,7 +362,6 @@ export default function LoginPage() {
                     {loading ? "Verifying…" : "Verify"}
                   </button>
 
-                  {/* Resend + Back row */}
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
@@ -313,20 +394,27 @@ export default function LoginPage() {
               <div className="mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                 <p className="text-xs text-neutral-500 text-center">
                   By signing in, you agree to our{" "}
-                  <a href="#" className="text-white transition-colors"
+                  <a
+                    href="#"
+                    className="text-white transition-colors"
                     onMouseEnter={(e) => (e.currentTarget.style.color = "#D4FF00")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "#ffffff")}>
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#ffffff")}
+                  >
                     Terms of Service
                   </a>{" "}and{" "}
-                  <a href="#" className="text-white transition-colors"
+                  <a
+                    href="#"
+                    className="text-white transition-colors"
                     onMouseEnter={(e) => (e.currentTarget.style.color = "#D4FF00")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "#ffffff")}>
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#ffffff")}
+                  >
                     Privacy Policy
                   </a>.
                 </p>
               </div>
             </div>
           </div>
+
         </div>
       </main>
 
@@ -343,10 +431,13 @@ export default function LoginPage() {
         </span>
         <div className="flex gap-6">
           {["Legal", "Support"].map((l) => (
-            <a key={l} href="#"
+            <a
+              key={l}
+              href="#"
               className="font-mono text-[10px] uppercase tracking-wider text-neutral-600 transition-colors"
               onMouseEnter={(e) => (e.currentTarget.style.color = "#D4FF00")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "")}>
+              onMouseLeave={(e) => (e.currentTarget.style.color = "")}
+            >
               {l}
             </a>
           ))}
