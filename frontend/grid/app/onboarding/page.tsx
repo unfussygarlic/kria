@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { initializeSubscription } from "@/lib/api/subscriptions";
-
-type Step = "name" | "location";
+import { INDIAN_STATES, CITIES_BY_STATE } from "@/lib/locations";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -64,8 +64,8 @@ export default function OnboardingPage() {
       email: userEmail,
       phone: phone,
       default_role: "host",
-      city: skip ? null : city.trim() || null,
-      state: skip ? null : state.trim() || null,
+      city: skip ? null : city || null,
+      state: skip ? null : state || null,
     });
 
     setLoading(false);
@@ -206,33 +206,57 @@ export default function OnboardingPage() {
               </div>
 
               <form onSubmit={handleLocationSubmit} className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">City</label>
-                  <input
-                    type="text"
-                    placeholder="Mumbai"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full text-white px-4 py-4 rounded-xl text-sm transition-all focus:outline-none"
-                    style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(212,255,0,0.50)")}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
-                    autoFocus
-                  />
-                </div>
-
+                {/* State — pick first so city list populates */}
                 <div className="space-y-2">
                   <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">State</label>
-                  <input
-                    type="text"
-                    placeholder="Maharashtra"
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                    className="w-full text-white px-4 py-4 rounded-xl text-sm transition-all focus:outline-none"
-                    style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(212,255,0,0.50)")}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
-                  />
+                  <div className="relative">
+                    <select
+                      value={state}
+                      onChange={(e) => { setState(e.target.value); setCity(""); }}
+                      className="w-full text-white px-4 py-4 pr-10 rounded-xl text-sm transition-all focus:outline-none appearance-none cursor-pointer"
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        color: state ? "white" : "rgba(255,255,255,0.35)",
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(212,255,0,0.50)")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
+                    >
+                      <option value="" disabled style={{ backgroundColor: "#1a1919", color: "#777" }}>Select state</option>
+                      {INDIAN_STATES.map((s) => (
+                        <option key={s} value={s} style={{ backgroundColor: "#1a1919", color: "white" }}>{s}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={15} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "rgba(255,255,255,0.35)" }} />
+                  </div>
+                </div>
+
+                {/* City — populated once a state is chosen */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">City</label>
+                  <div className="relative">
+                    <select
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      disabled={!state}
+                      className="w-full text-white px-4 py-4 pr-10 rounded-xl text-sm transition-all focus:outline-none appearance-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        color: city ? "white" : "rgba(255,255,255,0.35)",
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(212,255,0,0.50)")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
+                    >
+                      <option value="" disabled style={{ backgroundColor: "#1a1919", color: "#777" }}>
+                        {state ? "Select city" : "Select a state first"}
+                      </option>
+                      {(CITIES_BY_STATE[state] ?? []).map((c) => (
+                        <option key={c} value={c} style={{ backgroundColor: "#1a1919", color: "white" }}>{c}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={15} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "rgba(255,255,255,0.35)" }} />
+                  </div>
                 </div>
 
                 {error && <p className="text-sm" style={{ color: "#ff7351" }}>{error}</p>}

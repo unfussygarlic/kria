@@ -3,26 +3,19 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { PageLoader } from "@/components/ui/Spinner";
-import { ShieldCheck, Star, Briefcase, User, MapPin, FileText } from "lucide-react";
+import { ShieldCheck, Star, Briefcase, User, MapPin, FileText, ChevronDown } from "lucide-react";
 import type { Profile } from "@/types";
+import { INDIAN_STATES, CITIES_BY_STATE } from "@/lib/locations";
 
 const inputCls =
   "w-full bg-[#201f1f] border border-white/10 rounded-lg px-4 py-3 text-text text-sm focus:outline-none focus:border-primary transition-colors placeholder:text-text-muted";
+const selectCls =
+  "w-full bg-[#201f1f] border border-white/10 rounded-lg px-4 py-3 text-text text-sm focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer";
 const labelCls =
   "block text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1.5";
 const sectionCls = "bg-surface-1 border border-white/10 rounded-xl p-6 space-y-5";
 const sectionHeadCls =
   "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-text-muted pb-1";
-
-const INDIAN_STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
-  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
-  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
-  "Andaman and Nicobar Islands", "Chandigarh", "Delhi",
-  "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
-];
 
 const ID_TYPES = [
   { key: "aadhaar",          label: "Aadhaar",           format: "12-digit number",                placeholder: "XXXX XXXX XXXX" },
@@ -282,26 +275,37 @@ export default function ProfilePage() {
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>City</label>
-                <input
-                  className={inputCls}
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="Mumbai"
-                />
+                <label className={labelCls}>State</label>
+                <div className="relative">
+                  <select
+                    className={selectCls}
+                    value={stateVal}
+                    onChange={(e) => { setStateVal(e.target.value); setCity(""); }}
+                  >
+                    <option value="">Select state</option>
+                    {INDIAN_STATES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted" />
+                </div>
               </div>
               <div>
-                <label className={labelCls}>State</label>
-                <select
-                  className={inputCls}
-                  value={stateVal}
-                  onChange={(e) => setStateVal(e.target.value)}
-                >
-                  <option value="">Select state</option>
-                  {INDIAN_STATES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                <label className={labelCls}>City</label>
+                <div className="relative">
+                  <select
+                    className={`${selectCls} ${!stateVal ? "opacity-50 cursor-not-allowed" : ""}`}
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    disabled={!stateVal}
+                  >
+                    <option value="">{stateVal ? "Select city" : "Select state first"}</option>
+                    {(CITIES_BY_STATE[stateVal] ?? []).map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted" />
+                </div>
               </div>
             </div>
           </div>
