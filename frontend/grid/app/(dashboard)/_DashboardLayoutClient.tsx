@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { getSubscription, initializeSubscription, type SubscriptionStatus } from "@/lib/api/subscriptions";
+import { initializeSubscription, type SubscriptionStatus } from "@/lib/api/subscriptions";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { TrialBanner } from "@/components/layout/TrialBanner";
@@ -26,29 +26,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return;
       }
 
-      const [profileResult, subResult] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", session.user.id).single(),
-        getSubscription(),
-      ]);
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
 
       if (!mounted) return;
 
-      if (!profileResult.data) {
+      if (!profileData) {
         router.replace("/onboarding");
         return;
       }
 
-      setProfile(profileResult.data as Profile);
+      setProfile(profileData as Profile);
 
-      // trial_ends_at === null means no subscription row exists yet (e.g. existing users
-      // who pre-date the subscription feature, or onboarding was skipped).
-      // Initialize it now so the countdown starts immediately.
-      if (subResult.data && subResult.data.trial_ends_at === null) {
-        const { data: initialized } = await initializeSubscription();
-        if (mounted && initialized) setSubscription(initialized);
-      } else if (subResult.data) {
-        setSubscription(subResult.data);
-      }
+      // /initialize is idempotent — returns the existing row if already present,
+      // creates one otherwise. Calling it here covers existing users who never
+      // went through the updated onboarding flow.
+      const { data: sub } = await initializeSubscription();
+      if (mounted && sub) setSubscription(sub);
       setChecking(false);
     };
 

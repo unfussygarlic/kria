@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSubscription, type SubscriptionStatus } from "@/lib/api/subscriptions";
+import { initializeSubscription, type SubscriptionStatus } from "@/lib/api/subscriptions";
 import { Spinner } from "@/components/ui/Spinner";
 
 const PLAN_FEATURES = [
@@ -72,7 +72,7 @@ export default function SubscriptionPage() {
   const [countdown, setCountdown] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
 
   useEffect(() => {
-    getSubscription().then(({ data }) => {
+    initializeSubscription().then(({ data }) => {
       setSub(data);
       setLoading(false);
     });
