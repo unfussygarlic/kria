@@ -10,9 +10,9 @@ export interface SubscriptionStatus {
 }
 
 export async function getSubscription() {
-  return apiGet<SubscriptionStatus>("/api/v1/subscriptions/me");
+  return apiGet<SubscriptionStatus>("/subscriptions/me");
 }
 
 export async function initializeSubscription() {
-  return apiPost<SubscriptionStatus>("/api/v1/subscriptions/initialize", {});
+  return apiPost<SubscriptionStatus>("/subscriptions/initialize", {});
 }
