@@ -18,7 +18,7 @@ depends_on = None
 
 def upgrade() -> None:
     op.execute("""
-CREATE TABLE public.subscriptions (
+CREATE TABLE IF NOT EXISTS public.subscriptions (
   id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id             UUID        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   plan                TEXT        NOT NULL DEFAULT 'trial'
@@ -30,8 +30,8 @@ CREATE TABLE public.subscriptions (
   UNIQUE (user_id)
 );
 
-CREATE INDEX idx_subscriptions_user_id      ON public.subscriptions (user_id);
-CREATE INDEX idx_subscriptions_trial_ends   ON public.subscriptions (trial_ends_at)
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id      ON public.subscriptions (user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_trial_ends   ON public.subscriptions (trial_ends_at)
   WHERE trial_ends_at IS NOT NULL;
     """)
 
