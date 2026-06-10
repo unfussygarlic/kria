@@ -220,8 +220,9 @@ async def get_my_events(
             SELECT
                 e.id, e.title, e.venue_name, e.city, e.event_date,
                 e.status, e.created_at,
-                COUNT(DISTINCT g.id)          AS job_count,
-                COALESCE(SUM(g.slots_total), 0) AS total_slots,
+                COUNT(DISTINCT g.id)           AS job_count,
+                COALESCE(SUM(g.slots_total), 0)  AS total_slots,
+                COALESCE(SUM(g.slots_filled), 0) AS slots_filled,
                 COUNT(ga.id) FILTER (WHERE ga.status = 'pending') AS total_applicants
             FROM events e
             LEFT JOIN gigs g ON g.event_id = e.id
@@ -242,6 +243,7 @@ async def get_my_events(
             status=r["status"],
             job_count=int(r["job_count"] or 0),
             total_slots=int(r["total_slots"] or 0),
+            slots_filled=int(r["slots_filled"] or 0),
             total_applicants=int(r["total_applicants"] or 0),
             created_at=r["created_at"],
         )

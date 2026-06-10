@@ -88,5 +88,6 @@ class MyEventSummary(BaseModel):
     status: str
     job_count: int
     total_slots: int
+    slots_filled: int
     total_applicants: int
     created_at: datetime

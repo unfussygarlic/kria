@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Plus, Trash2, MapPin, Loader2, AlertCircle } from "lucide-react";
 import { createEvent } from "@/lib/api/events";
+import { geocodeVenue, updateGigLocation } from "@/lib/api/recommendations";
 import type { GigCategory, PayType, JobInEventCreate } from "@/types";
 
 const CATEGORIES: { value: GigCategory; label: string }[] = [
@@ -65,11 +66,40 @@ export default function NewEventPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Geo-tagging state
+  const [venueLat, setVenueLat] = useState<number | null>(null);
+  const [venueLng, setVenueLng] = useState<number | null>(null);
+  const [geocodedAddress, setGeocodedAddress] = useState("");
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeError, setGeocodeError] = useState("");
+
   const patchForm = (p: Partial<EventForm>) => setForm((f) => ({ ...f, ...p }));
   const patchJob = (i: number, p: Partial<JobInEventCreate>) =>
     setJobs((js) => js.map((j, idx) => idx === i ? { ...j, ...p } : j));
   const addJob = () => setJobs((js) => [...js, { ...BLANK_JOB }]);
   const removeJob = (i: number) => setJobs((js) => js.filter((_, idx) => idx !== i));
+
+  const resetGeocode = () => {
+    setVenueLat(null);
+    setVenueLng(null);
+    setGeocodedAddress("");
+    setGeocodeError("");
+  };
+
+  const handleFetchLocation = async () => {
+    if (!form.venue_name || !form.city) return;
+    setGeocoding(true);
+    resetGeocode();
+    const result = await geocodeVenue(form.venue_name, form.city);
+    setGeocoding(false);
+    if (result.error || !result.data) {
+      setGeocodeError(result.error ?? "Could not resolve venue. You can still create the event without a pin.");
+      return;
+    }
+    setVenueLat(result.data.latitude);
+    setVenueLng(result.data.longitude);
+    setGeocodedAddress(result.data.formatted_address);
+  };
 
   const handleSubmit = async () => {
     setError("");
@@ -84,8 +114,18 @@ export default function NewEventPage() {
       description: form.description || undefined,
       jobs,
     });
+    if (res.error) { setError(res.error); setSubmitting(false); return; }
+
+    // Apply geocoordinates to all jobs — they all share the event venue
+    if (venueLat !== null && venueLng !== null && res.data) {
+      await Promise.all(
+        res.data.jobs.map((job) =>
+          updateGigLocation(job.id, venueLat, venueLng, geocodedAddress)
+        )
+      );
+    }
+
     setSubmitting(false);
-    if (res.error) { setError(res.error); return; }
     router.replace(`/events/${res.data!.id}`);
   };
 
@@ -134,15 +174,61 @@ export default function NewEventPage() {
             </div>
             <div>
               <label className={labelCls}>Venue *</label>
-              <input className={inputCls} placeholder="e.g. KTPO Convention Center" value={form.venue_name} onChange={(e) => patchForm({ venue_name: e.target.value })} />
+              <input
+                className={inputCls}
+                placeholder="e.g. KTPO Convention Center"
+                value={form.venue_name}
+                onChange={(e) => { patchForm({ venue_name: e.target.value }); resetGeocode(); }}
+              />
             </div>
             <div>
               <label className={labelCls}>City *</label>
-              <select className={inputCls} value={form.city} onChange={(e) => patchForm({ city: e.target.value })}>
+              <select
+                className={inputCls}
+                value={form.city}
+                onChange={(e) => { patchForm({ city: e.target.value }); resetGeocode(); }}
+              >
                 <option value="">Select city</option>
                 {INDIAN_CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
+
+            {/* Location fetch — shown once venue + city are filled */}
+            {form.venue_name && form.city && (
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={handleFetchLocation}
+                  disabled={geocoding}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 bg-surface-2 text-xs font-bold uppercase tracking-wider text-text-muted hover:border-primary/50 hover:text-text transition-all disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {geocoding
+                    ? <><Loader2 size={13} className="animate-spin" /> Locating…</>
+                    : <><MapPin size={13} className="text-primary" /> Fetch Location</>
+                  }
+                </button>
+
+                {!geocoding && venueLat !== null && (
+                  <div className="flex items-start gap-3 p-4 bg-surface-2 border border-primary/20 rounded-lg">
+                    <MapPin size={14} className="text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-semibold text-text">{geocodedAddress}</p>
+                      <p className="text-[10px] text-text-muted mt-0.5">
+                        {venueLat.toFixed(5)}, {venueLng!.toFixed(5)} · will be applied to all roles
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!geocoding && geocodeError && (
+                  <div className="flex items-start gap-3 p-4 bg-surface-2 border border-error/20 rounded-lg">
+                    <AlertCircle size={14} className="text-error flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-text-muted">{geocodeError}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               <label className={labelCls}>Event Date *</label>
               <input className={inputCls} type="date" value={form.event_date} onChange={(e) => patchForm({ event_date: e.target.value })} min={new Date().toISOString().split("T")[0]} />

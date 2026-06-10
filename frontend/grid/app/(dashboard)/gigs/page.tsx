@@ -189,17 +189,13 @@ export default function GigsPage() {
                       <button
                         onClick={(e) => handleTogglePause(e, gig)}
                         disabled={pauseLoading === gig.id}
-                        title={gig.is_paused ? "Unpause gig" : "Pause gig"}
-                        className={`p-2 rounded-lg border transition-all disabled:opacity-50 ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 whitespace-nowrap ${
                           gig.is_paused
-                            ? "border-primary/30 text-primary hover:bg-primary/10"
-                            : "border-white/10 text-text-muted hover:border-amber/40 hover:text-amber"
+                            ? "border-primary/40 text-primary bg-primary/5 hover:bg-primary/10"
+                            : "border-amber/40 text-amber bg-amber/5 hover:bg-amber/10"
                         }`}
                       >
-                        {gig.is_paused
-                          ? <Play size={13} />
-                          : <Pause size={13} />
-                        }
+                        {gig.is_paused ? <><Play size={11} /> Resume</> : <><Pause size={11} /> Pause</>}
                       </button>
                     )}
                   </td>
