@@ -11,8 +11,8 @@ git pull origin main
 echo "==> Rebuilding and restarting containers"
 $COMPOSE up -d --build --remove-orphans
 
-echo "==> Skipping automatic migrations (EC2 has no IPv6 route to Supabase direct DB)"
-echo "    Run migrations manually via Supabase SQL editor when needed."
+echo "==> Running database migrations"
+$COMPOSE exec kria-api alembic upgrade head
 
 echo "==> Cleaning up unused Docker resources"
 docker image prune -f

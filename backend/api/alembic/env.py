@@ -10,9 +10,9 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # ── Resolve database URL ──────────────────────────────────────────────────────
-# DATABASE_URL in the app uses the asyncpg driver (postgresql+asyncpg://...).
-# Alembic uses psycopg2 for synchronous migrations — swap the driver prefix.
-_raw_url = os.environ["DATABASE_URL"]
+# Prefer MIGRATION_DATABASE_URL (Supabase session-mode pooler, IPv4, psycopg2)
+# when set. Falls back to DATABASE_URL with the asyncpg driver swapped out.
+_raw_url = os.environ.get("MIGRATION_DATABASE_URL") or os.environ["DATABASE_URL"]
 _sync_url = _raw_url.replace("postgresql+asyncpg://", "postgresql://")
 config.set_main_option("sqlalchemy.url", _sync_url)
 
