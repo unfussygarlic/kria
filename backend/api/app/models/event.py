@@ -55,6 +55,7 @@ class EventJobSummary(BaseModel):
     slots_total: int
     slots_filled: int
     status: str
+    is_paused: bool
     application_count: int
     shift_start_time: str
     shift_end_time: str

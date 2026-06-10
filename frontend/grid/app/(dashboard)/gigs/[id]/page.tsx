@@ -4,11 +4,12 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, MapPin, Calendar, Clock, Users, Key,
-  CheckCircle, XCircle, AlertTriangle,
+  CheckCircle, XCircle, AlertTriangle, Pause, Play,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { listApplicants, acceptApplicant, rejectApplicant, markNoShow } from "@/lib/api/applicants";
-import { GigStatusBadge, AppStatusBadge, AsgnStatusBadge } from "@/components/ui/Badge";
+import { pauseGig, unpauseGig } from "@/lib/api/gigs";
+import { GigStatusBadge, AppStatusBadge, AsgnStatusBadge, PausedBadge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { MomentumChip } from "@/components/ui/MomentumChip";
 import { ApplicantProfileModal } from "@/components/applicants/ApplicantProfileModal";
@@ -32,6 +33,16 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pauseLoading, setPauseLoading] = useState(false);
+
+  const handleTogglePause = async () => {
+    if (!gig) return;
+    setPauseLoading(true);
+    const fn = gig.is_paused ? unpauseGig : pauseGig;
+    const res = await fn(gig.id);
+    if (res.data) setGig((prev) => prev ? { ...prev, is_paused: res.data!.is_paused } : prev);
+    setPauseLoading(false);
+  };
   const [activeTab, setActiveTab] = useState<"pending" | "accepted" | "all">("pending");
   const [selectedApplicant, setSelectedApplicant] = useState<ApplicantListItem | null>(null);
 
@@ -105,12 +116,27 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
       <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1 flex-wrap">
-            <h1 className="text-3xl font-bold text-text tracking-tight">{gig.title}</h1>
+            <h1 className="pg-title">{gig.title}</h1>
             <GigStatusBadge status={gig.status} />
+            {gig.is_paused && <PausedBadge />}
           </div>
           {gig.company_name && <p className="text-sm text-text-muted">{gig.company_name}</p>}
         </div>
-        <div className="text-right">
+        <div className="flex items-start gap-3">
+          {(gig.status === "open" || gig.status === "in_progress") && (
+            <button
+              onClick={handleTogglePause}
+              disabled={pauseLoading}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 ${
+                gig.is_paused
+                  ? "border-primary/40 text-primary hover:bg-primary/10"
+                  : "border-amber/30 text-amber hover:bg-amber/10"
+              }`}
+            >
+              {gig.is_paused ? <><Play size={12} /> Resume</> : <><Pause size={12} /> Pause</>}
+            </button>
+          )}
+          <div className="text-right">
           <p className="text-xs text-text-muted uppercase tracking-wider font-bold">Slots</p>
           <p className="text-2xl font-bold text-text">{gig.slots_filled}/{gig.slots_total}</p>
           <div className="w-full h-1 bg-surface-3 rounded-full overflow-hidden mt-1.5">
@@ -119,6 +145,7 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
               style={{ width: gig.slots_total ? `${(gig.slots_filled / gig.slots_total) * 100}%` : "0%" }}
             />
           </div>
+        </div>
         </div>
       </div>
 

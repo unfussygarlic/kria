@@ -38,3 +38,12 @@ export function AsgnStatusBadge({ status }: { status: AssignmentStatus }) {
   const { label, classes } = ASGN_STATUS[status] ?? ASGN_STATUS.assigned;
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold ${classes}`}>{label}</span>;
 }
+
+export function PausedBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-amber/15 text-amber">
+      <span className="w-1.5 h-1.5 rounded-full bg-amber" />
+      Paused
+    </span>
+  );
+}

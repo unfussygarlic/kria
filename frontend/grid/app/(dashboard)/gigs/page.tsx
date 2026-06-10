@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, TrendingUp, CheckCircle, Zap } from "lucide-react";
+import { Plus, Search, TrendingUp, CheckCircle, Zap, Pause, Play } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { GigStatusBadge } from "@/components/ui/Badge";
+import { pauseGig, unpauseGig } from "@/lib/api/gigs";
+import { GigStatusBadge, PausedBadge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import type { Gig, GigStatus } from "@/types";
 
@@ -33,6 +34,18 @@ export default function GigsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<GigStatus | "all">("all");
   const [search, setSearch] = useState("");
+  const [pauseLoading, setPauseLoading] = useState<string | null>(null);
+
+  const handleTogglePause = async (e: React.MouseEvent, gig: Gig) => {
+    e.stopPropagation();
+    setPauseLoading(gig.id);
+    const fn = gig.is_paused ? unpauseGig : pauseGig;
+    const res = await fn(gig.id);
+    if (res.data) {
+      setGigs((prev) => prev.map((g) => g.id === gig.id ? { ...g, is_paused: res.data!.is_paused } : g));
+    }
+    setPauseLoading(null);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -132,6 +145,7 @@ export default function GigsPage() {
                 <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-text-muted hidden lg:table-cell">Pay</th>
                 <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-text-muted">Slots</th>
                 <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-text-muted">Status</th>
+                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-text-muted"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -139,7 +153,7 @@ export default function GigsPage() {
                 <tr
                   key={gig.id}
                   onClick={() => router.push(`/gigs/${gig.id}`)}
-                  className="cursor-pointer hover:bg-white/[0.02] transition-colors"
+                  className={`cursor-pointer hover:bg-white/[0.02] transition-all ${gig.is_paused ? "opacity-60" : ""}`}
                 >
                   <td className="px-6 py-5">
                     <p className="text-sm font-semibold text-text">{gig.title}</p>
@@ -165,7 +179,29 @@ export default function GigsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-5">
-                    <GigStatusBadge status={gig.status} />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <GigStatusBadge status={gig.status} />
+                      {gig.is_paused && <PausedBadge />}
+                    </div>
+                  </td>
+                  <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
+                    {(gig.status === "open" || gig.status === "in_progress") && (
+                      <button
+                        onClick={(e) => handleTogglePause(e, gig)}
+                        disabled={pauseLoading === gig.id}
+                        title={gig.is_paused ? "Unpause gig" : "Pause gig"}
+                        className={`p-2 rounded-lg border transition-all disabled:opacity-50 ${
+                          gig.is_paused
+                            ? "border-primary/30 text-primary hover:bg-primary/10"
+                            : "border-white/10 text-text-muted hover:border-amber/40 hover:text-amber"
+                        }`}
+                      >
+                        {gig.is_paused
+                          ? <Play size={13} />
+                          : <Pause size={13} />
+                        }
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

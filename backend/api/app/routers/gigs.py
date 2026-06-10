@@ -23,6 +23,7 @@ class PostedGigSummary(BaseModel):
     city: str
     event_date: str
     status: str
+    is_paused: bool
     slots_total: int
     slots_filled: int
     pending_count: int
@@ -87,6 +88,7 @@ async def get_my_posted_gigs(
                 g.city,
                 g.event_date::TEXT,
                 g.status,
+                g.is_paused,
                 g.slots_total,
                 g.slots_filled,
                 COUNT(ga.id) FILTER (WHERE ga.status = 'pending') AS pending_count
@@ -106,6 +108,7 @@ async def get_my_posted_gigs(
             city=row["city"],
             event_date=str(row["event_date"]),
             status=row["status"],
+            is_paused=bool(row["is_paused"]),
             slots_total=row["slots_total"],
             slots_filled=row["slots_filled"],
             pending_count=int(row["pending_count"] or 0),
@@ -237,6 +240,61 @@ async def update_gig_location(
         },
     )
     await db.commit()
+
+
+class PauseResponse(BaseModel):
+    id: str
+    is_paused: bool
+    status: str
+
+
+async def _assert_gig_owner(gig_id: str, user_id: str, db: AsyncSession) -> dict:
+    row = await db.execute(
+        text("SELECT id, poster_id, status, is_paused FROM gigs WHERE id = :id"),
+        {"id": gig_id},
+    )
+    gig = row.mappings().first()
+    if not gig:
+        raise HTTPException(status_code=404, detail="Gig not found.")
+    if str(gig["poster_id"]) != user_id:
+        raise HTTPException(status_code=403, detail="Not your gig.")
+    return dict(gig)
+
+
+@router.post("/{gig_id}/pause", response_model=PauseResponse)
+async def pause_gig(
+    gig_id: str,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> PauseResponse:
+    """Pause a gig — runners won't see it in the feed. Caller must be the poster."""
+    gig = await _assert_gig_owner(gig_id, current_user.user_id, db)
+    if gig["status"] not in ("open", "in_progress"):
+        raise HTTPException(status_code=400, detail="Only open or in-progress gigs can be paused.")
+    result = await db.execute(
+        text("UPDATE gigs SET is_paused = TRUE WHERE id = :id RETURNING id, is_paused, status::text"),
+        {"id": gig_id},
+    )
+    await db.commit()
+    row = result.mappings().first()
+    return PauseResponse(id=str(row["id"]), is_paused=bool(row["is_paused"]), status=str(row["status"]))
+
+
+@router.post("/{gig_id}/unpause", response_model=PauseResponse)
+async def unpause_gig(
+    gig_id: str,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> PauseResponse:
+    """Unpause a gig — runners can see it again."""
+    gig = await _assert_gig_owner(gig_id, current_user.user_id, db)
+    result = await db.execute(
+        text("UPDATE gigs SET is_paused = FALSE WHERE id = :id RETURNING id, is_paused, status::text"),
+        {"id": gig_id},
+    )
+    await db.commit()
+    row = result.mappings().first()
+    return PauseResponse(id=str(row["id"]), is_paused=bool(row["is_paused"]), status=str(row["status"]))
 
 
 @router.post("/match", response_model=GigMatchResponse)

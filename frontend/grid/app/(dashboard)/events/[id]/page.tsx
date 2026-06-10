@@ -2,10 +2,11 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MapPin, Calendar, ChevronRight, Users, Briefcase, TrendingUp } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, ChevronRight, Users, Briefcase, TrendingUp, Pause, Play } from "lucide-react";
 import { getEvent } from "@/lib/api/events";
+import { pauseGig, unpauseGig } from "@/lib/api/gigs";
 import { PageLoader } from "@/components/ui/Spinner";
-import { GigStatusBadge } from "@/components/ui/Badge";
+import { GigStatusBadge, PausedBadge } from "@/components/ui/Badge";
 import type { EventResponse, EventJobSummary } from "@/types";
 
 function formatDate(d: string) {
@@ -17,25 +18,52 @@ function formatPay(amount: number, type: string) {
   return type === "hourly" ? `${f}/hr` : type === "per_day" ? `${f}/day` : f;
 }
 
-function JobCard({ job, onClick }: { job: EventJobSummary; onClick: () => void }) {
+function JobCard({
+  job,
+  onClick,
+  onTogglePause,
+  pauseLoading,
+}: {
+  job: EventJobSummary;
+  onClick: () => void;
+  onTogglePause: (e: React.MouseEvent) => void;
+  pauseLoading: boolean;
+}) {
   const spotsLeft = job.slots_total - job.slots_filled;
   const fillPct = job.slots_total > 0 ? (job.slots_filled / job.slots_total) * 100 : 0;
   return (
     <div
       onClick={onClick}
-      className="bg-surface-2 border border-white/10 rounded-xl p-4 cursor-pointer hover:border-white/20 transition-all group"
+      className={`bg-surface-2 border border-white/10 rounded-xl p-4 cursor-pointer hover:border-white/20 transition-all group ${job.is_paused ? "opacity-60" : ""}`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             <p className="text-sm font-bold text-text group-hover:text-primary transition-colors">{job.title}</p>
             <GigStatusBadge status={job.status} />
+            {job.is_paused && <PausedBadge />}
           </div>
           <p className="text-[10px] font-bold uppercase tracking-wide text-text-muted">
             {job.category.replace(/_/g, " ")}
           </p>
         </div>
-        <ChevronRight size={16} className="text-text-muted group-hover:text-primary transition-colors flex-shrink-0" />
+        <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          {(job.status === "open" || job.status === "in_progress") && (
+            <button
+              onClick={onTogglePause}
+              disabled={pauseLoading}
+              title={job.is_paused ? "Resume gig" : "Pause gig"}
+              className={`p-1.5 rounded-lg border transition-all disabled:opacity-50 ${
+                job.is_paused
+                  ? "border-primary/30 text-primary hover:bg-primary/10"
+                  : "border-white/10 text-text-muted hover:border-amber/40 hover:text-amber"
+              }`}
+            >
+              {job.is_paused ? <Play size={12} /> : <Pause size={12} />}
+            </button>
+          )}
+          <ChevronRight size={16} className="text-text-muted group-hover:text-primary transition-colors" onClick={onClick} />
+        </div>
       </div>
 
       <div className="flex items-center gap-3 text-xs text-text-sub mb-3 flex-wrap">
@@ -67,6 +95,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const router = useRouter();
   const [event, setEvent] = useState<EventResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pauseLoading, setPauseLoading] = useState<string | null>(null);
 
   useEffect(() => {
     getEvent(id).then((res) => {
@@ -74,6 +103,20 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       setLoading(false);
     });
   }, [id]);
+
+  const handleTogglePause = async (e: React.MouseEvent, job: EventJobSummary) => {
+    e.stopPropagation();
+    setPauseLoading(job.id);
+    const fn = job.is_paused ? unpauseGig : pauseGig;
+    const res = await fn(job.id);
+    if (res.data && event) {
+      setEvent({
+        ...event,
+        jobs: event.jobs.map((j) => j.id === job.id ? { ...j, is_paused: res.data!.is_paused } : j),
+      });
+    }
+    setPauseLoading(null);
+  };
 
   if (loading || !event) return <PageLoader />;
 
@@ -166,6 +209,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               key={job.id}
               job={job}
               onClick={() => router.push(`/gigs/${job.id}`)}
+              onTogglePause={(e) => handleTogglePause(e, job)}
+              pauseLoading={pauseLoading === job.id}
             />
           ))}
         </div>

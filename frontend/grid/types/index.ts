@@ -134,6 +134,7 @@ export interface Gig {
   experience_required: boolean;
   requirements_note: string | null;
   status: GigStatus;
+  is_paused: boolean;
   momentum_boost: number;
   created_at: string;
   updated_at: string;
@@ -216,6 +217,7 @@ export interface EventJobSummary {
   slots_filled: number;
   application_count: number;
   status: GigStatus;
+  is_paused: boolean;
 }
 
 export interface EventResponse {

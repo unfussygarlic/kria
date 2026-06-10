@@ -126,6 +126,7 @@ async def _fetch_open_gigs(db: AsyncSession, excluded_ids: set) -> list[GigRow]:
                    created_at, event_date
             FROM gigs
             WHERE status = 'open'
+              AND NOT is_paused
               AND event_date >= CURRENT_DATE
               {excl_filter}
             LIMIT 500

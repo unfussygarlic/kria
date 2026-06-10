@@ -109,7 +109,7 @@ async def _fetch_event_with_jobs(event_id: str, db: AsyncSession) -> EventRespon
         text("""
             SELECT
                 g.id, g.title, g.category, g.pay_amount, g.pay_type,
-                g.slots_total, g.slots_filled, g.status,
+                g.slots_total, g.slots_filled, g.status, g.is_paused,
                 g.shift_start_time, g.shift_end_time,
                 COUNT(ga.id) FILTER (WHERE ga.status = 'pending') AS application_count
             FROM gigs g
@@ -130,6 +130,7 @@ async def _fetch_event_with_jobs(event_id: str, db: AsyncSession) -> EventRespon
             slots_total=r["slots_total"],
             slots_filled=r["slots_filled"],
             status=r["status"],
+            is_paused=bool(r["is_paused"]),
             application_count=int(r["application_count"] or 0),
             shift_start_time=str(r["shift_start_time"]),
             shift_end_time=str(r["shift_end_time"]),
