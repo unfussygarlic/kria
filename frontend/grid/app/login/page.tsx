@@ -2,21 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Users, BarChart3, Network } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type Step = "email" | "otp";
 
-const FEATURES = [
-  { icon: Users,     label: "Post Gigs in Seconds" },
-  { icon: BarChart3, label: "Real-time Performance Metrics" },
-  { icon: Network,   label: "Automated Staffing Solutions" },
+const HOW_IT_WORKS = [
+  { n: "01", title: "Post",    sub: "Role, time, pay, location — four steps." },
+  { n: "02", title: "Pick",    sub: "Browse applicants ranked by Momentum Score." },
+  { n: "03", title: "Confirm", sub: "OTP check-in. Know exactly who showed up." },
 ];
 
 const STATS = [
-  { label: "Partners",        value: "500+" },
-  { label: "Qualified Hosts", value: "12.5k" },
-  { label: "Placements / Mo", value: "4.8k" },
+  { label: "Median apply→accept", value: "8 min" },
+  { label: "OTP-confirmed show-up rate", value: "94.2%" },
+  { label: "Paid out, last 30 days", value: "₹2.8 Cr" },
 ];
 
 const RESEND_COOLDOWN = 60;
@@ -125,47 +124,61 @@ export default function LoginPage() {
         <div className="w-full max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 min-h-screen items-center px-8">
 
           {/* ── Left: Marketing ── */}
-          <div className="lg:col-span-7 hidden lg:flex flex-col justify-center py-16">
-            <span
-              className="text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-3 mb-4"
-              style={{ color: "#D4FF00" }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#D4FF00", boxShadow: "0 0 6px #D4FF00" }} />
-              Source Top Talent
-            </span>
+          <div className="lg:col-span-7 hidden lg:flex flex-col justify-center py-16 pr-16">
+            {/* Kicker */}
+            <div className="flex items-center gap-3 mb-8">
+              <span
+                className="font-mono text-[10px] uppercase tracking-[0.12em]"
+                style={{ color: "#D4FF00" }}
+              >
+                kria · Grid
+              </span>
+              <span className="font-mono text-[10px] text-neutral-600 tracking-[0.06em]">
+                for Hosts
+              </span>
+            </div>
 
-            <h1 className="text-[56px] xl:text-[72px] font-bold leading-[1.05] text-white tracking-tight max-w-2xl">
-              The Professional<br />
-              <span style={{ color: "#D4FF00" }}>Host Network</span>
+            {/* Headline */}
+            <h1
+              className="font-bold leading-[0.96] tracking-tight mb-6"
+              style={{ fontSize: "clamp(48px, 5.5vw, 80px)" }}
+            >
+              <span className="block text-white">Fill your roster</span>
+              <span className="block" style={{ color: "#D4FF00" }}>
+                before chai.
+              </span>
             </h1>
 
-            <p className="text-lg text-neutral-400 max-w-lg mt-6 leading-relaxed">
-              Connect with elite hospitality professionals through our streamlined workforce management ecosystem.
+            {/* Lead */}
+            <p className="text-[17px] leading-relaxed text-neutral-400 max-w-md mb-12">
+              Post a gig in four steps. Browse applicants ranked by Momentum Score — a verified track record built from real shifts, not a CV.
             </p>
 
-            <ul className="mt-10 space-y-6">
-              {FEATURES.map(({ icon: Icon, label }) => (
-                <li key={label} className="flex items-center gap-4">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}
-                  >
-                    <Icon size={18} style={{ color: "#D4FF00" }} />
+            {/* How it works — numbered list */}
+            <div className="flex flex-col divide-y" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+              {HOW_IT_WORKS.map(({ n, title, sub }) => (
+                <div key={n} className="flex gap-5 items-start py-5">
+                  <span className="font-mono text-[11px] text-neutral-600 tracking-wider pt-0.5 w-6 flex-shrink-0">{n}</span>
+                  <div>
+                    <span className="font-mono text-[12px] font-bold tracking-wider" style={{ color: "#D4FF00" }}>
+                      · {title}
+                    </span>
+                    <p className="text-[15px] text-neutral-400 mt-1">{sub}</p>
                   </div>
-                  <span className="text-lg text-neutral-300 font-medium">{label}</span>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
 
-            <div className="mt-16 flex gap-12 items-center" style={{ opacity: 0.6 }}>
+            {/* Stats */}
+            <div className="mt-10 grid grid-cols-3 gap-0" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
               {STATS.map((s, i) => (
                 <div
                   key={s.label}
-                  className={`flex flex-col ${i > 0 ? "pl-12" : ""}`}
-                  style={i > 0 ? { borderLeft: "1px solid rgba(255,255,255,0.10)" } : undefined}
+                  className="pt-6"
+                  style={i > 0 ? { paddingLeft: 24, borderLeft: "1px solid rgba(255,255,255,0.06)" } : {}}
                 >
-                  <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-500 mb-1">{s.label}</span>
-                  <span className="text-2xl font-bold text-white">{s.value}</span>
+                  <span className="block text-[26px] font-bold text-white leading-none">{s.value}</span>
+                  <span className="block font-mono text-[10px] text-neutral-600 mt-2 leading-snug uppercase tracking-wider">{s.label}</span>
                 </div>
               ))}
             </div>
@@ -318,29 +331,25 @@ export default function LoginPage() {
       </main>
 
       <footer
-        className="fixed bottom-0 left-0 w-full z-20 flex flex-col md:flex-row justify-between items-center px-10 py-5"
+        className="fixed bottom-0 left-0 w-full z-20 flex justify-between items-center px-10 py-4"
         style={{
           backgroundColor: "rgba(12,13,10,0.40)",
           backdropFilter: "blur(12px)",
           borderTop: "1px solid rgba(255,255,255,0.05)",
         }}
       >
-        <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600 mb-2 md:mb-0">
-          © 2025 Kria Network. Elevating Hospitality Standards.
+        <span className="font-mono text-[10px] text-neutral-700 tracking-wider">
+          © 2026 kria
         </span>
-        <div className="hidden md:flex gap-8">
-          {["Legal", "Cookies", "Support", "Enterprise"].map((l) => (
+        <div className="flex gap-6">
+          {["Legal", "Support"].map((l) => (
             <a key={l} href="#"
-              className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 transition-colors"
+              className="font-mono text-[10px] uppercase tracking-wider text-neutral-600 transition-colors"
               onMouseEnter={(e) => (e.currentTarget.style.color = "#D4FF00")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "")}>
               {l}
             </a>
           ))}
-        </div>
-        <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-2 mt-2 md:mt-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-          Operational Status
         </div>
       </footer>
     </div>

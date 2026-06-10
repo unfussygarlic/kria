@@ -19,7 +19,7 @@ router = APIRouter(prefix="/profiles", tags=["profiles"])
 _ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB
 
-VALID_ID_TYPES = {"aadhaar", "pan", "driving_licence", "passport", "voter_id"}
+VALID_ID_TYPES = {"aadhaar", "pan", "driving_licence", "passport", "voter_id", "gstin"}
 
 
 async def _validate_image(file: UploadFile, field: str) -> bytes:
