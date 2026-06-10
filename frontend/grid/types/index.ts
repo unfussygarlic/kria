@@ -67,6 +67,7 @@ export type GenderPreference = "any" | "male" | "female";
 export interface Profile {
   id: string;
   phone: string | null;
+  phone_verified: boolean;
   email: string | null;
   default_role: "runner" | "host" | null;
   display_name: string;
@@ -74,22 +75,36 @@ export interface Profile {
   last_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  location_label: string | null;
   city: string | null;
   state: string | null;
   gender: string | null;
   date_of_birth: string | null;
+  is_student: boolean;
+  college_name: string | null;
+  college_year: number | null;
+  course: string | null;
+  college_id_verified: boolean;
+  languages: string[];
+  skills: string[];
   worker_reputation: number;
   poster_reputation: number;
   total_gigs_completed: number;
   total_gigs_posted: number;
   reliability_score: number;
+  no_show_count: number;
+  streak_count: number;
+  longest_streak: number;
+  last_active_date: string | null;
   is_verified: boolean;
   id_verified: boolean;
   id_type: string | null;
   id_value: string | null;
   id_verified_at: string | null;
-  languages: string[];
-  skills: string[];
+  verified_id_types: string[];
+  experience_summary: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Gig {

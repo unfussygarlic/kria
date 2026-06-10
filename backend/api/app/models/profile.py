@@ -12,6 +12,7 @@ class IDType(str, Enum):
     DRIVING_LICENCE = "driving_licence"
     VOTER_ID = "voter_id"
     PASSPORT = "passport"
+    GSTIN = "gstin"
 
 
 # Human-readable format hints surfaced to the frontend
@@ -21,6 +22,7 @@ ID_FORMAT_HINTS: dict[IDType, str] = {
     IDType.DRIVING_LICENCE: "State code + number, min 10 characters",
     IDType.VOTER_ID: "3 letters + 7 digits (e.g. ABC1234567)",
     IDType.PASSPORT: "1 letter + 7 digits (e.g. A1234567)",
+    IDType.GSTIN: "15-character GST Identification Number",
 }
 
 
@@ -59,6 +61,12 @@ class IdentityVerificationRequest(BaseModel):
             if not re.match(r"^[A-Z][0-9]{7}$", value):
                 raise ValueError(
                     "Passport number must be 1 letter followed by 7 digits (e.g. A1234567)"
+                )
+
+        elif self.id_type == IDType.GSTIN:
+            if not re.match(r"^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$", value):
+                raise ValueError(
+                    "GSTIN must be 15 characters (e.g. 22AAAAA0000A1Z5)"
                 )
 
         self.id_value = value
