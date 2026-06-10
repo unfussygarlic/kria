@@ -1,6 +1,8 @@
 import asyncio
 from contextlib import asynccontextmanager
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,17 +10,25 @@ from app.config import settings
 from app.db.session import engine
 from app.momentum import router as momentum
 from app.recommendations import router as recommendations
-from app.routers import account, applicants, badges, chat, events, gigs, health, profiles, ratings, search, subscriptions
+from app.routers import account, applicants, badges, chat, email as email_router, events, gigs, health, profiles, ratings, search, subscriptions
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Start async verification worker — single consumer serialises Inspector calls
+    # Verification worker
     from app.services.verification_queue import worker
     task = asyncio.create_task(worker())
+
+    # Daily profile-reminder scheduler (runs at 09:00 UTC)
+    from app.email.notifications import send_profile_reminders
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(send_profile_reminders, CronTrigger(hour=9, minute=0))
+    scheduler.start()
+
     try:
         yield
     finally:
+        scheduler.shutdown(wait=False)
         task.cancel()
         try:
             await task
@@ -74,3 +84,4 @@ app.include_router(search.router,          prefix=f"/api/{settings.api_version}"
 app.include_router(recommendations.router, prefix=f"/api/{settings.api_version}")
 app.include_router(account.router,         prefix=f"/api/{settings.api_version}")
 app.include_router(subscriptions.router,   prefix=f"/api/{settings.api_version}")
+app.include_router(email_router.router,    prefix=f"/api/{settings.api_version}")

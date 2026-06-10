@@ -23,5 +23,10 @@ class Settings(BaseSettings):
     # Existing users keep whatever trial_duration_days is stored in their subscriptions row.
     default_trial_days: int = 90
 
+    # Email
+    resend_api_key: str = ""
+    email_webhook_secret: str = ""  # Shared secret for Supabase → FastAPI webhooks
+    app_base_url: str = "https://grid.trykria.com"
+
 
 settings = Settings()
