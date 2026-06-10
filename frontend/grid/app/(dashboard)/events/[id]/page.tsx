@@ -52,11 +52,11 @@ function JobCard({
             <button
               onClick={onTogglePause}
               disabled={pauseLoading}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 whitespace-nowrap ${
-                job.is_paused
-                  ? "border-primary/40 text-primary bg-primary/5 hover:bg-primary/10"
-                  : "border-amber/40 text-amber bg-amber/5 hover:bg-amber/10"
-              }`}
+              style={job.is_paused
+                ? { border: "1px solid rgba(212,255,0,0.4)", color: "#D4FF00", backgroundColor: "rgba(212,255,0,0.06)" }
+                : { border: "1px solid rgba(255,199,61,0.5)", color: "#FFC83D", backgroundColor: "rgba(255,199,61,0.08)" }
+              }
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 whitespace-nowrap"
             >
               {job.is_paused ? <><Play size={10} /> Resume</> : <><Pause size={10} /> Pause</>}
             </button>

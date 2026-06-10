@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { initializeSubscription } from "@/lib/api/subscriptions";
 import { INDIAN_STATES, CITIES_BY_STATE } from "@/lib/locations";
 
+type Step = "name" | "location";
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("name");

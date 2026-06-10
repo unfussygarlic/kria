@@ -193,41 +193,43 @@ export default function NewEventPage() {
               </select>
             </div>
 
-            {/* Location fetch — shown once venue + city are filled */}
-            {form.venue_name && form.city && (
-              <div className="space-y-3">
+            {/* Location fetch */}
+            <div className="space-y-3">
+              <div>
+                <label className={labelCls}>Location Pin</label>
                 <button
                   type="button"
                   onClick={handleFetchLocation}
-                  disabled={geocoding}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 bg-surface-2 text-xs font-bold uppercase tracking-wider text-text-muted hover:border-primary/50 hover:text-text transition-all disabled:opacity-50 disabled:pointer-events-none"
+                  disabled={geocoding || !form.venue_name || !form.city}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 bg-surface-2 text-xs font-bold uppercase tracking-wider text-text-muted hover:border-primary/50 hover:text-text transition-all disabled:opacity-40 disabled:pointer-events-none"
                 >
                   {geocoding
                     ? <><Loader2 size={13} className="animate-spin" /> Locating…</>
                     : <><MapPin size={13} className="text-primary" /> Fetch Location</>
                   }
                 </button>
-
-                {!geocoding && venueLat !== null && (
-                  <div className="flex items-start gap-3 p-4 bg-surface-2 border border-primary/20 rounded-lg">
-                    <MapPin size={14} className="text-primary flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-semibold text-text">{geocodedAddress}</p>
-                      <p className="text-[10px] text-text-muted mt-0.5">
-                        {venueLat.toFixed(5)}, {venueLng!.toFixed(5)} · will be applied to all roles
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {!geocoding && geocodeError && (
-                  <div className="flex items-start gap-3 p-4 bg-surface-2 border border-error/20 rounded-lg">
-                    <AlertCircle size={14} className="text-error flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-text-muted">{geocodeError}</p>
-                  </div>
-                )}
+                <p className="text-[10px] text-text-muted mt-1.5">Fill venue and city first, then pin the location for better recommendations.</p>
               </div>
-            )}
+
+              {!geocoding && venueLat !== null && (
+                <div className="flex items-start gap-3 p-4 bg-surface-2 border border-primary/20 rounded-lg">
+                  <MapPin size={14} className="text-primary flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-semibold text-text">{geocodedAddress}</p>
+                    <p className="text-[10px] text-text-muted mt-0.5">
+                      {venueLat.toFixed(5)}, {venueLng!.toFixed(5)} · applied to all roles in this event
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!geocoding && geocodeError && (
+                <div className="flex items-start gap-3 p-4 bg-surface-2 border border-error/20 rounded-lg">
+                  <AlertCircle size={14} className="text-error flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-text-muted">{geocodeError}</p>
+                </div>
+              )}
+            </div>
 
             <div>
               <label className={labelCls}>Event Date *</label>
