@@ -24,6 +24,21 @@
     @keyframes kglow { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
     @keyframes kline { 0% { transform: scaleY(0); transform-origin: top; } 45% { transform: scaleY(1); transform-origin: top; } 55% { transform: scaleY(1); transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
     input, select, button { font-family: inherit; }
+    @media (max-width: 859px) {
+      /* Compact copy blocks so they don't collide with the phone widget */
+      [data-screen-label^="0"] > div { gap: 10px !important; }
+      [data-screen-label^="0"] > div > h1 { font-size: clamp(20px, 6vw, 32px) !important; }
+      [data-screen-label^="0"] > div > h2 { font-size: clamp(17px, 5vw, 26px) !important; line-height: 1.1 !important; }
+      [data-screen-label^="0"] > div > p  {
+        font-size: 13px !important; line-height: 1.45 !important;
+        display: -webkit-box !important; -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important; overflow: hidden !important;
+      }
+      /* Waitlist form: stack vertically on mobile */
+      .kria-waitlist-row { flex-direction: column !important; align-items: stretch !important; }
+      .kria-waitlist-row select,
+      .kria-waitlist-row input { min-width: unset !important; width: 100% !important; }
+    }
   </style>
 </helmet>
 
@@ -492,7 +507,7 @@
     <p style="margin:0; font-size:17px; line-height:1.6; color:rgba(244,239,227,0.6); max-width:440px">Tell us where you are. We&rsquo;ll let you know the moment kria lands there.</p>
 
     <sc-if value="{{ d.notSent }}" hint-placeholder-val="{{ true }}">
-      <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:10px; width:100%; max-width:620px">
+      <div class="kria-waitlist-row" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:10px; width:100%; max-width:620px">
         <select value="{{ d.city }}" onChange="{{ d.onCity }}" style="padding:15px 18px; border-radius:13px; background:#111510; border:1px solid rgba(244,239,227,0.14); color:#F4EFE3; font-size:14px; outline:none; min-width:160px">
           <option value="Delhi NCR">Delhi NCR</option>
           <option value="Kolkata">Kolkata</option>
@@ -699,7 +714,7 @@ class Component extends DCLogic {
     });
 
     // ---- phone placement ----
-    const mTop = Math.max(vh * 0.46, 380);
+    const mTop = M ? Math.max(vh * 0.54, 430) : Math.max(vh * 0.46, 380);
     const s = M
       ? Math.min((vw * 0.72) / 322, (vh - mTop - 12) / 700)
       : Math.min(1, (vh * 0.84) / 700, (contentW * 0.32) / 322);
