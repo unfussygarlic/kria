@@ -54,6 +54,26 @@ Posted by a Host.
   - `venue_formatted_address` TEXT nullable — Google Maps resolved address string
   - Set together via `PATCH /api/v1/gigs/{id}/location` after geocoding in Grid wizard
 
+### `gigs` — additional columns (migration 0027, 0028)
+- `is_paused BOOLEAN NOT NULL DEFAULT FALSE` — orthogonal to status; only pauseable when status is `open` or `in_progress`; paused gigs excluded from runner recommendations feed
+- `first_application_notified BOOLEAN NOT NULL DEFAULT FALSE` — prevents duplicate first-application emails
+- `last_burst_email_at TIMESTAMPTZ` — cooldown tracker for burst emails
+
+### `email_unsubscribes`
+Per-user, per-category unsubscribe registry (migration 0028).
+- `id` UUID PK
+- `user_id` UUID FK → profiles (CASCADE DELETE)
+- `email` TEXT
+- `category` TEXT DEFAULT 'reminders'
+- `unsubscribed_at` TIMESTAMPTZ
+- UNIQUE `(user_id, category)`
+
+### `profile_reminder_log`
+Tracks profile-incomplete reminder sends to prevent spam (migration 0028).
+- `user_id` UUID PK FK → profiles (CASCADE DELETE)
+- `last_sent_at` TIMESTAMPTZ
+- `send_count` INT DEFAULT 1
+
 ### `events`
 Container for multiple gigs.
 - `id`, `poster_id` (FK → profiles)

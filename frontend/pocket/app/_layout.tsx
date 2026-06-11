@@ -1,8 +1,9 @@
 import "../global.css";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
+import * as Notifications from "expo-notifications";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   useFonts,
@@ -13,6 +14,7 @@ import {
 } from "@expo-google-fonts/space-grotesk";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
+import { registerForPushNotifications } from "@/lib/notifications";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -20,6 +22,8 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const notificationListener = useRef<Notifications.EventSubscription>();
+  const responseListener = useRef<Notifications.EventSubscription>();
 
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,
@@ -36,6 +40,31 @@ export default function RootLayout() {
 
   useEffect(() => {
     initialize();
+  }, []);
+
+  useEffect(() => {
+    // Register for push notifications after app mounts
+    registerForPushNotifications();
+
+    // Log foreground notifications (add deep-link navigation here later)
+    notificationListener.current = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        // Notification received while app is foregrounded — handled by setNotificationHandler
+        void notification;
+      }
+    );
+
+    // Handle tap on notification
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(
+      (_response) => {
+        // TODO: navigate based on _response.notification.request.content.data.type
+      }
+    );
+
+    return () => {
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
+    };
   }, []);
 
   if (isLoading || !fontsLoaded) {

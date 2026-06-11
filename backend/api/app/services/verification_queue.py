@@ -23,6 +23,7 @@ import httpx
 from sqlalchemy import text
 
 from app.db.session import AsyncSessionLocal
+from app.notifications.push import notify_verification_approved, notify_verification_failed
 from app.services.badge_service import check_id_badges
 
 logger = logging.getLogger(__name__)
@@ -99,6 +100,7 @@ async def _process(job: VerificationJob) -> None:
 
     if error_code:
         await _set_job(job.job_id, "failed", error_code)
+        await notify_verification_failed(job.user_id, job.id_type, error_code)
         logger.warning("Job %s failed: %s", job.job_id, error_code)
         return
 
@@ -129,6 +131,7 @@ async def _mark_verified(job: VerificationJob) -> None:
         )
         await check_id_badges(db, str(job.user_id), job.id_type)
         await db.commit()
+    await notify_verification_approved(job.user_id, job.id_type)
     logger.info("Job %s: verified %s for user %s", job.job_id, job.id_type, job.user_id)
 
 

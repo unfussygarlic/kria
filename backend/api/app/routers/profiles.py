@@ -4,6 +4,7 @@ import logging
 import uuid
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -153,3 +154,21 @@ async def get_profile_completion(
     )
     row = result.mappings().one()
     return calculate_completion(dict(row))
+
+
+class PushTokenRequest(BaseModel):
+    token: str
+
+
+@router.put("/me/push-token", status_code=204)
+async def update_push_token(
+    payload: PushTokenRequest,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Register or update the device's Expo push token."""
+    await db.execute(
+        text("UPDATE profiles SET push_token = :token WHERE id = :uid"),
+        {"token": payload.token, "uid": current_user.user_id},
+    )
+    await db.commit()

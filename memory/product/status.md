@@ -6,7 +6,7 @@ type: project
 
 # Kria — Current Product Status
 
-Last updated: 2026-05-12
+Last updated: 2026-06-10
 
 ## Mobile App (Runners)
 
@@ -70,14 +70,34 @@ Last updated: 2026-05-12
 - DB: `verified_id_types jsonb[]` accumulates all verified IDs (migration 0014 applied)
 - Anti-spoof: disabled in dev (`ANTISPOOF_MODEL_ENABLED=False`); enable in prod
 
+## Gig Pause (Complete)
+
+- `is_paused` column on gigs (migration 0027)
+- `POST /gigs/{id}/pause` + `POST /gigs/{id}/unpause` endpoints
+- Pause/Resume buttons in Grid: gigs list, gig detail, event detail job cards
+- Paused gigs excluded from runner recommendations feed
+- Paused badge shown inline with status badge
+
+## Email Notifications (Backend complete — webhook pending setup)
+
+- **Provider:** Resend (`noreply@trykria.com`), domain `trykria.com` verified
+- **3 email types:** first application (once per gig), burst (5+ in 30 min, 6h cooldown), profile reminders (14-day interval, max 4)
+- **Trigger:** Supabase DB webhook on `gig_applications INSERT` → `POST /api/v1/email/internal/application-created`
+- **⚠️ Supabase webhook NOT yet configured** — must be set up in Supabase dashboard before emails fire
+- Profile reminders run daily at 09:00 UTC via APScheduler
+- Unsubscribe: HMAC-signed links → `GET /api/v1/email/unsubscribe` → styled confirmation page
+- Migration 0028 applied (via SQL editor + manual stamp)
+
 ## Open / Pending Items
 
 | Item | Priority | Notes |
 |------|----------|-------|
+| **Set up Supabase webhook** | High | Table: `gig_applications`, INSERT → `https://<api-domain>/api/v1/email/internal/application-created`, header `X-Webhook-Secret` |
 | Show badges on applicant cards (Grid) | Medium | Display `BadgeList` in `ApplicantProfileModal` and applicant list rows using `verified_id_types` |
 | Enable anti-spoof in prod | Medium | Set `ANTISPOOF_MODEL_ENABLED=True` in Inspector docker env once on controlled hardware/lighting |
 | Grid: Host rating UI (sub-scores) | Medium | Post-gig: collect punctuality/communication/professionalism sub-scores when rating runner |
 | Host onboarding flow in Grid | Medium | Currently assumes profile exists — new Hosts with no mobile profile will have `profile = null` |
+| Pocket notification system | Medium | Discussed but not started — "first let's focus on Grid" |
 | SVG logo integration (mobile) | Low | See `dev/todo.md` for details |
 | Receiver real-time chat bug | Low | See `features/chat.md` |
 | Host role in mobile | Future | Set `SHOW_HOST_ROLE = true` in 5 files to re-enable |

@@ -19,10 +19,12 @@ async def lifespan(app: FastAPI):
     from app.services.verification_queue import worker
     task = asyncio.create_task(worker())
 
-    # Daily profile-reminder scheduler (runs at 09:00 UTC)
+    # Scheduled jobs
     from app.email.notifications import send_profile_reminders
+    from app.notifications.push import send_shift_reminders
     scheduler = AsyncIOScheduler()
     scheduler.add_job(send_profile_reminders, CronTrigger(hour=9, minute=0))
+    scheduler.add_job(send_shift_reminders, "interval", minutes=5)
     scheduler.start()
 
     try:

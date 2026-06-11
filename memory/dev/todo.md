@@ -6,7 +6,7 @@ type: project
 
 # Todo & Open Issues
 
-Last updated: 2026-05-30
+Last updated: 2026-06-10
 
 ## Backend Optimisation Backlog
 
@@ -46,6 +46,7 @@ Audited 2026-05-30. Fix in priority order.
 
 | Issue | Location | Notes |
 |-------|----------|-------|
+| **Set up Supabase webhook for email triggers** | Supabase dashboard → Database → Webhooks | Table: `gig_applications`, event: `INSERT`, URL: `https://<api-domain>/api/v1/email/internal/application-created`, Header: `X-Webhook-Secret: <EMAIL_WEBHOOK_SECRET>`. Without this, no application emails fire. |
 | Grid Applications: left column not independently scrollable | `grid/app/(dashboard)/applications/page.tsx` | User wants applicant list to scroll while profile card stays in place. Fix: `overflow: hidden` on `main` in layout so inner columns own scroll, or `position: sticky` on profile column. `useLayoutEffect` approach tried and reverted. |
 | Pocket EAS build + app store submission | `frontend/pocket/` | See `infra/DEPLOY.md` Section 5. Twilio must be configured in Supabase first (phone OTP for mobile). Grid uses email OTP so doesn't need Twilio. |
 | Configure Twilio for mobile phone OTP | Supabase Cloud → Authentication → Sign In / Providers → Phone | Required before Pocket goes to App Store. Grid is unaffected (uses email OTP). |

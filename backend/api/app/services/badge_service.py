@@ -9,6 +9,8 @@ from datetime import date, timedelta
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.notifications.push import notify_badge_earned
+
 logger = logging.getLogger(__name__)
 
 _GIG_MILESTONES = [
@@ -45,6 +47,7 @@ async def award(db: AsyncSession, user_id: str, badge_code: str) -> bool:
     await db.commit()
     if awarded:
         logger.info("Awarded badge %r to user %s", badge_code, user_id)
+        await notify_badge_earned(user_id, badge_code, db)
     return awarded
 
 

@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.middleware import CurrentUser
 from app.db.session import get_db
+from app.notifications.push import notify_application_accepted, notify_application_rejected
 from app.services.badge_service import check_gig_badges
 from app.models.applicant import (
     ApplicantListItem,
@@ -385,6 +386,14 @@ async def accept_applicant(
 
     await db.commit()
 
+    # Fetch gig title for notification (after commit so we have a clean read)
+    gig_row = await db.execute(
+        text("SELECT title FROM gigs WHERE id = :gig_id"),
+        {"gig_id": str(app["gig_id"])},
+    )
+    gig_title = (gig_row.mappings().first() or {}).get("title", "a gig")
+    await notify_application_accepted(str(app["applicant_id"]), gig_title, db)
+
     return ApplicationActionResponse(
         ok=True,
         application_id=application_id,
@@ -435,6 +444,13 @@ async def reject_applicant(
         {"now": now, "app_id": application_id},
     )
     await db.commit()
+
+    gig_row = await db.execute(
+        text("SELECT title FROM gigs WHERE id = :gig_id"),
+        {"gig_id": str(app["gig_id"])},
+    )
+    gig_title = (gig_row.mappings().first() or {}).get("title", "a gig")
+    await notify_application_rejected(str(app["applicant_id"]), gig_title, db)
 
     return ApplicationActionResponse(
         ok=True,

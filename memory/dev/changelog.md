@@ -6,6 +6,83 @@ type: project
 
 # Changelog
 
+## 2026-06-10 — Gig Pause + Email Notification System + Bug Fixes
+
+### Grid: Gig Pause / Resume (full-stack)
+
+**Migration `0027_gig_pause.py`:**
+- `ALTER TABLE gigs ADD COLUMN IF NOT EXISTS is_paused BOOLEAN NOT NULL DEFAULT FALSE`
+- Partial index: `CREATE INDEX IF NOT EXISTS idx_gigs_not_paused ON gigs (poster_id) WHERE NOT is_paused`
+
+**Backend (`routers/gigs.py`):**
+- `PostedGigSummary` + `Gig` type extended with `is_paused: bool`
+- `PauseResponse` model: `{ id, is_paused, status }`
+- `_assert_gig_owner()` helper — 404/403 guard reused by both endpoints
+- `POST /gigs/{id}/pause` — only allowed when status is `open` or `in_progress`
+- `POST /gigs/{id}/unpause` — always allowed for owner
+- Recommendations engine: `AND NOT is_paused` added to runner feed query
+
+**Frontend (`frontend/grid/`):**
+- `lib/api/gigs.ts`: `pauseGig()`, `unpauseGig()` added
+- `components/ui/Badge.tsx`: `PausedBadge` component added
+- `app/(dashboard)/gigs/page.tsx`: Pause/Resume button per row (inline style with `#FFC83D` — avoids pale `--color-amber: #ffeb9c` CSS var)
+- `app/(dashboard)/gigs/[id]/page.tsx`: Pause/Resume button in header
+- `app/(dashboard)/events/[id]/page.tsx`: Pause/Resume per job card with optimistic state update
+
+### Grid: Event Geo-tagging
+
+**`app/(dashboard)/events/new/page.tsx`** rewritten to add geo-tagging:
+- "Fetch Location" button always visible (disabled when venue/city empty — was previously hidden entirely behind conditional)
+- Geocodes venue once after event creation, then calls `updateGigLocation()` for every job in the event
+- `venueLat`, `venueLng`, `geocodedAddress` state; error display; "Locating…" spinner
+
+### Bug Fixes
+
+- **Events page NaN in Slots Filled:** `MyEventSummary` backend model was missing `slots_filled` field. Added `COALESCE(SUM(g.slots_filled), 0) AS slots_filled` to SQL + `slots_filled: int` to Pydantic model.
+- **TypeScript error in onboarding:** Missing `type Step = "name" | "location"` declaration — added before component.
+- **`--color-amber` too pale:** Grid theme defines `--color-amber: #ffeb9c` (light cream). All pause/amber UI uses inline `style={{ color: "#FFC83D" }}` instead of Tailwind amber classes.
+
+### Email Notification System (full-stack)
+
+**Migration `0028_email_tracking.py`:**
+- `gigs.first_application_notified BOOLEAN NOT NULL DEFAULT FALSE`
+- `gigs.last_burst_email_at TIMESTAMPTZ`
+- `email_unsubscribes` table: per-user, per-category unsubscribe log with `UNIQUE(user_id, category)`
+- `profile_reminder_log` table: tracks `last_sent_at` + `send_count` per host
+
+**`backend/api/app/email/` module (new):**
+- `client.py` — `send_email(to, subject, html) -> bool` wrapping Resend SDK; skips silently if `RESEND_API_KEY` not set
+- `unsubscribe.py` — HMAC-SHA256 tokens; `make_token()`, `verify_token()`, `unsubscribe_url()`
+- `templates.py` — on-brand HTML templates: `first_application_email()`, `burst_application_email()`, `profile_reminder_email()`, `unsubscribe_confirmation_html()`
+- `notifications.py` — `notify_first_application()`, `check_and_notify_burst()`, `send_profile_reminders()`
+  - Burst threshold: 5+ apps in 30 min, 6-hour cooldown per gig
+  - Profile reminders: 14-day interval, max 4 sends, respects unsubscribes
+
+**`backend/api/app/routers/email.py` (new):**
+- `POST /api/v1/email/internal/application-created` — Supabase DB webhook target; secured by `X-Webhook-Secret` header
+- `GET /api/v1/email/unsubscribe` — HMAC-verified one-click unsubscribe; returns styled HTML confirmation page
+
+**`main.py` updates:**
+- APScheduler (`AsyncIOScheduler`) starts in lifespan; runs `send_profile_reminders()` daily at 09:00 UTC
+- Email router registered at `/api/v1/email/...`
+
+**`requirements.txt`:** Added `resend==2.10.0`, `apscheduler==3.10.4`
+
+**Config:** Added `resend_api_key`, `email_webhook_secret`, `app_base_url` to `Settings`
+
+**Application creation architecture:** Confirmed Pocket mobile creates `gig_applications` directly via Supabase (no FastAPI endpoint). Email triggers hooked via Supabase Database Webhook → internal FastAPI endpoint.
+
+### Infrastructure: Migration Connectivity Fix
+
+EC2 has no IPv6 route to Supabase direct DB (`db.*.supabase.co:5432`). Fixed by:
+- Added `MIGRATION_DATABASE_URL` env var using Supabase Session Pooler URL (`aws-0-[region].pooler.supabase.com:5432`) — resolves over IPv4
+- `alembic/env.py` updated to prefer `MIGRATION_DATABASE_URL` over `DATABASE_URL` when set
+- Migration 0028 applied manually via Supabase SQL editor; stamped with `INSERT INTO alembic_version`
+
+**Prod env vars added:** `RESEND_API_KEY`, `APP_BASE_URL`, `EMAIL_WEBHOOK_SECRET`, `MIGRATION_DATABASE_URL`
+
+---
+
 ## 2026-05-28 — Grid Auth/Onboarding Overhaul + Home Marquee Manual Scroll
 
 ### Grid: Login page rewritten

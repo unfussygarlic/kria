@@ -6,7 +6,7 @@
 
 ## Architecture
 - [Stack](architecture/stack.md) — Expo, FastAPI, Supabase, Next.js, Inspector, ports, Docker networking
-- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (latest: 0019, next: 0020)
+- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (latest: 0028)
 - [Data Access](architecture/data_access.md) — Supabase direct vs FastAPI, auth patterns, key utils
 
 ## Apps
@@ -26,6 +26,7 @@
 - [Recommendations](features/recommendations.md) — matching engine, geocoding, GPS, scoring weights, Maps deep link
 - [Events](features/events.md) — events table, creation wizard, host/runner split
 - [Chat](features/chat.md) — hidden feature, tables, real-time bug, do-not-install list
+- [Email Notifications](features/email.md) — Resend, 3 email types, webhook architecture, unsubscribe, env vars, pending Supabase webhook setup
 
 ## Project
 - [Demo Seed](project/demo_seed.md) — Priya Mehta demo account, 15 gigs, 15 runners, all UUIDs
@@ -118,7 +119,15 @@ score, items, profile_items = compute_worker_breakdown(
 - **DB column:** `verified_id_types jsonb[]` — use `jsonb_build_array(:id_type)` NOT `':id_type'::jsonb` (asyncpg binding bug)
 - **Badges:** `BadgeList earnedKeys={profile.verified_id_types}` — auto-shows `photo_verified` meta-badge
 
-### Next Migration: `0020_...py`
+### Next Migration: `0029_...py`
+
+### Email Notifications Quick Ref
+- **Trigger:** Supabase DB webhook → `POST /api/v1/email/internal/application-created` (header: `X-Webhook-Secret`)
+- **⚠️ Webhook not yet set up in Supabase dashboard** — emails won't fire until it is
+- **Profile reminders:** APScheduler cron daily 09:00 UTC → `send_profile_reminders()`
+- **Unsubscribe:** HMAC token in email link → `GET /api/v1/email/unsubscribe`
+- **`--color-amber` is `#ffeb9c`** (pale cream) — always use inline `style={{ color: "#FFC83D" }}` for amber UI, never Tailwind `text-amber`
+- **Migrations 0027+0028:** Applied manually via Supabase SQL editor; EC2 can't reach direct DB (IPv6). Use `MIGRATION_DATABASE_URL` (Session Pooler) for future Alembic runs
 
 ### Badges Quick Ref
 - **Backend:** `backend/api/app/services/badge_service.py` — all badge logic; `award()` uses `ON CONFLICT DO NOTHING` + explicit `db.commit()`

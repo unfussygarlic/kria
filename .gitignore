@@ -74,5 +74,8 @@ tmp/
 temp/
 .cache/
 
+# Google Service Keys
+*google*.json*
+
 # Memory folder - DO commit this
 # /memory/  <- intentionally NOT ignored
