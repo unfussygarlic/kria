@@ -609,9 +609,9 @@ class Component extends DCLogic {
     const hexA = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, "0");
 
     // ---- mobile phone geometry (pre-computed so copy() places itself below the phone) ----
-    const mPhoneTop = 56;
-    const mPhoneScale = M ? Math.min((vw * 0.72) / 322, (vh * 0.52) / 700) : 0;
-    const mCopyTop = M ? Math.round(mPhoneTop + 700 * mPhoneScale + 16) : 0;
+    const mPhoneTop = 76;
+    const mPhoneScale = M ? Math.min((vw * 0.76) / 322, (vh * 0.57) / 700) : 0;
+    const mCopyTop = M ? Math.round(mPhoneTop + 700 * mPhoneScale + 28) : 0;
 
     // ---- chapter copy blocks ----
     const copy = (i) => {
