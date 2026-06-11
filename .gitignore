@@ -74,8 +74,14 @@ tmp/
 temp/
 .cache/
 
-# Google Service Keys
-*google*.json*
+# Google Service Keys — service account keys are secret, keep ignored
+*google*key*.json*
+*google*service-account*.json*
+*kria-pocket-firebase-*.json*
+google-services-key.json
+
+# google-services.json is a public config file (safe to commit for EAS builds)
+# It is NOT ignored — EAS cloud builds need it from git
 
 # Memory folder - DO commit this
 # /memory/  <- intentionally NOT ignored

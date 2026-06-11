@@ -35,6 +35,22 @@ if [[ -z "$EAS_USER" ]]; then
 fi
 echo "  ✓ Logged in as $EAS_USER"
 
+# ── Check required files ─────────────────────────────────────────────────────
+echo "▸ Checking required files..."
+
+if [[ ! -f "$POCKET_DIR/google-services.json" ]]; then
+  echo "  ✗ google-services.json not found at $POCKET_DIR/google-services.json"
+  echo "    Download it from Firebase Console → Project Settings → General → Your apps → Android"
+  exit 1
+fi
+echo "  ✓ google-services.json present"
+
+if [[ "$SUBMIT" == true ]] && [[ ! -f "$POCKET_DIR/google-services-key.json" ]]; then
+  echo "  ✗ google-services-key.json not found (required for --submit)"
+  echo "    Download it from Google Cloud → IAM → Service Accounts"
+  exit 1
+fi
+
 # ── Navigate to pocket app ───────────────────────────────────────────────────
 cd "$POCKET_DIR"
 
@@ -58,14 +74,6 @@ echo "└───────────────────────�
 if [[ "$SUBMIT" == true ]]; then
   echo ""
   echo "▸ Submitting to Play Store (internal track)..."
-
-  KEY_PATH="$POCKET_DIR/google-services-key.json"
-  if [[ ! -f "$KEY_PATH" ]]; then
-    echo "  ✗ google-services-key.json not found at $KEY_PATH"
-    echo "    Download it from Google Cloud → IAM → Service Accounts"
-    echo "    and save it as frontend/pocket/google-services-key.json"
-    exit 1
-  fi
 
   eas submit \
     --platform android \

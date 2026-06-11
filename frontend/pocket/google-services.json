@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "874351576835",
+    "project_id": "kria-pocket",
+    "storage_bucket": "kria-pocket.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:874351576835:android:404f9ca08acb04893fcb36",
+        "android_client_info": {
+          "package_name": "com.kria.pocket"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBq1d4UR0QWl7js2DyFNgYR-eEhQJ9AQUI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
