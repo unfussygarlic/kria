@@ -8,6 +8,7 @@
 <body>
 <x-dc>
 <helmet>
+  <link rel="icon" type="image/svg+xml" href="/logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Comfortaa:wght@700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
@@ -25,15 +26,18 @@
     @keyframes kline { 0% { transform: scaleY(0); transform-origin: top; } 45% { transform: scaleY(1); transform-origin: top; } 55% { transform: scaleY(1); transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
     input, select, button { font-family: inherit; }
     @media (max-width: 859px) {
-      /* Compact copy blocks so they don't collide with the phone widget */
+      /* Copy blocks sit below the phone — compact text to fit in the lower portion */
       [data-screen-label^="0"] > div { gap: 10px !important; }
-      [data-screen-label^="0"] > div > h1 { font-size: clamp(20px, 6vw, 32px) !important; }
-      [data-screen-label^="0"] > div > h2 { font-size: clamp(17px, 5vw, 26px) !important; line-height: 1.1 !important; }
+      [data-screen-label^="0"] > div > h1 { font-size: clamp(19px, 5.5vw, 28px) !important; line-height: 1.1 !important; }
+      [data-screen-label^="0"] > div > h2 { font-size: clamp(16px, 5vw, 24px) !important; line-height: 1.1 !important; }
       [data-screen-label^="0"] > div > p  {
-        font-size: 13px !important; line-height: 1.45 !important;
-        display: -webkit-box !important; -webkit-line-clamp: 2 !important;
+        font-size: 12px !important; line-height: 1.45 !important;
+        display: -webkit-box !important; -webkit-line-clamp: 3 !important;
         -webkit-box-orient: vertical !important; overflow: hidden !important;
       }
+      /* Hide secondary hero items on mobile to save vertical space */
+      [data-screen-label="01 Hero"] > div > span:last-child { display: none !important; }
+      [data-screen-label="01 Hero"] > div > div:nth-last-child(2) > span { display: none !important; }
       /* Waitlist form: stack vertically on mobile */
       .kria-waitlist-row { flex-direction: column !important; align-items: stretch !important; }
       .kria-waitlist-row select,
@@ -604,17 +608,22 @@ class Component extends DCLogic {
     const margin = Math.max(0, (vw - contentW) / 2);
     const hexA = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, "0");
 
+    // ---- mobile phone geometry (pre-computed so copy() places itself below the phone) ----
+    const mPhoneTop = 56;
+    const mPhoneScale = M ? Math.min((vw * 0.72) / 322, (vh * 0.52) / 700) : 0;
+    const mCopyTop = M ? Math.round(mPhoneTop + 700 * mPhoneScale + 16) : 0;
+
     // ---- chapter copy blocks ----
     const copy = (i) => {
       const tin = i === 0 ? 1 : eo(seg(i - 0.2, i + 0.08));
       const tout = i === 5 ? 0 : eo(seg(i + 0.72, i + 1.04));
       const o = tin * (1 - tout);
-      const y = (1 - tin) * 30 - tout * 26;
+      const y = M ? (1 - tin) * 16 - tout * 12 : (1 - tin) * 30 - tout * 26;
       return {
         position: "absolute",
         left: M ? 22 : margin + 56,
         right: M ? 22 : "auto",
-        top: M ? 64 : "50%",
+        top: M ? mCopyTop : "50%",
         transform: M ? `translateY(${y}px)` : `translateY(calc(-50% + ${y}px))`,
         maxWidth: M ? 560 : Math.min(500, vw * 0.38),
         opacity: o,
@@ -714,10 +723,8 @@ class Component extends DCLogic {
     });
 
     // ---- phone placement ----
-    const mTop = M ? Math.max(vh * 0.54, 430) : Math.max(vh * 0.46, 380);
-    const s = M
-      ? Math.min((vw * 0.72) / 322, (vh - mTop - 12) / 700)
-      : Math.min(1, (vh * 0.84) / 700, (contentW * 0.32) / 322);
+    const mTop = M ? mPhoneTop : Math.max(vh * 0.46, 380);
+    const s = M ? mPhoneScale : Math.min(1, (vh * 0.84) / 700, (contentW * 0.32) / 322);
     const phoneWrap = M
       ? { position: "absolute", top: mTop, left: "50%", transform: `translateX(-50%) scale(${s.toFixed(3)})`, transformOrigin: "top center", zIndex: 5, perspective: 1200 }
       : { position: "absolute", top: "50%", right: margin + 64, transform: `translateY(-50%) scale(${s.toFixed(3)})`, transformOrigin: "center", zIndex: 5, perspective: 1200 };
