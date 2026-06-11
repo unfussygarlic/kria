@@ -38,6 +38,8 @@
       /* Hide secondary hero items on mobile to save vertical space */
       [data-screen-label="01 Hero"] > div > span:last-child { display: none !important; }
       [data-screen-label="01 Hero"] > div > div:nth-last-child(2) > span { display: none !important; }
+      /* Center the Grid CTA button on mobile */
+      .hero-btn-row { justify-content: center !important; }
       /* Waitlist form: stack vertically on mobile */
       .kria-waitlist-row { flex-direction: column !important; align-items: stretch !important; }
       .kria-waitlist-row select,
@@ -92,7 +94,7 @@
           </div>
           <h1 style="margin:0; font-size:clamp(30px, 4.6vw, 72px); font-weight:900; letter-spacing:-0.035em; line-height:1.0; color:#F4EFE3; text-wrap:balance">Your next gig is one <em style="font-style:normal; color:#D4FF00; text-shadow:0 0 44px rgba(212,255,0,0.45)">swipe</em> away.</h1>
           <p style="margin:0; font-size:17px; line-height:1.6; color:rgba(244,239,227,0.66); max-width:420px">Browse live opportunities near you. Apply instantly. Get paid.</p>
-          <div style="display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-top:6px">
+          <div class="hero-btn-row" style="display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-top:6px">
             <a href="https://grid.trykria.com" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:14px 26px; border-radius:12px; background:#D4FF00; color:#0B0F0A; font-size:15px; font-weight:800; text-decoration:none; box-shadow:0 0 36px rgba(212,255,0,0.35)" style-hover="transform:translateY(-2px); box-shadow:0 0 56px rgba(212,255,0,0.55)">Post a gig on Grid →</a>
             <span style="display:inline-block; padding:13px 22px; border-radius:12px; border:1px solid rgba(244,239,227,0.18); color:rgba(244,239,227,0.6); font-size:14px; font-weight:600">Pocket — coming soon</span>
           </div>
@@ -757,7 +759,7 @@ class Component extends DCLogic {
         phoneWrap, phoneTilt, sheen,
         scrollHint: {
           position: "absolute", left: "50%", bottom: 26, transform: "translateX(-50%)",
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+          display: M ? "none" : "flex", flexDirection: "column", alignItems: "center", gap: 10,
           opacity: 1 - seg(0.04, 0.3), zIndex: 7, pointerEvents: "none",
         },
         scrFeed: scr(null, null, 1.75, 2.05),
