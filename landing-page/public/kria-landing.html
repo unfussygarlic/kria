@@ -1,23 +1,817 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>kria</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Comfortaa:wght@400;500;600;700&display=swap" />
-  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-  <link rel="stylesheet" href="/landing.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
 </head>
 <body>
-  <div id="root"></div>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Comfortaa:wght@700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #0B0F0A; color: #F4EFE3; font-family: Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    body { overflow-x: hidden; }
+    ::selection { background: #D4FF00; color: #0B0F0A; }
+    body::after { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: 256px 256px; opacity: 0.028; pointer-events: none; z-index: 9999; }
+    @keyframes kmarq { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    @keyframes kflick { 0%, 100% { opacity: 1; } 42% { opacity: 0.35; } 50% { opacity: 0.9; } 64% { opacity: 0.5; } 72% { opacity: 1; } }
+    @keyframes kbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    @keyframes kticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    @keyframes krise { 0% { transform: translateY(6vh); opacity: 0; } 12% { opacity: 0.7; } 80% { opacity: 0.4; } 100% { transform: translateY(-94vh); opacity: 0; } }
+    @keyframes kglow { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
+    @keyframes kline { 0% { transform: scaleY(0); transform-origin: top; } 45% { transform: scaleY(1); transform-origin: top; } 55% { transform: scaleY(1); transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+    input, select, button { font-family: inherit; }
+  </style>
+</helmet>
 
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<div style="background:#0B0F0A; color:#F4EFE3; font-family:Inter,system-ui,sans-serif; position:relative">
 
-  <script type="text/babel" src="/landing-components.js"></script>
-  <script type="text/babel" src="/landing-app.js"></script>
+  <!-- ======================= NAV ======================= -->
+  <nav data-screen-label="Nav" style="position:fixed; top:0; left:0; right:0; z-index:50; display:flex; align-items:center; justify-content:space-between; padding:14px max(24px,4vw); background:rgba(11,15,10,0.55); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(244,239,227,0.07)">
+    <span style="font-family:Comfortaa,cursive; font-weight:700; font-size:22px; color:#D4FF00; letter-spacing:-0.01em; text-shadow:0 0 36px rgba(212,255,0,0.4)">kria</span>
+    <div style="display:flex; align-items:center; gap:14px">
+      <span style="{{ d.navPocket }}">Pocket — coming soon</span>
+      <a href="https://grid.trykria.com" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:9px 18px; border-radius:10px; background:#D4FF00; color:#0B0F0A; font-size:13px; font-weight:700; text-decoration:none; box-shadow:0 0 24px rgba(212,255,0,0.3)" style-hover="transform:translateY(-1px); box-shadow:0 0 36px rgba(212,255,0,0.5)">Post a gig on Grid →</a>
+    </div>
+  </nav>
+
+  <!-- ======================= SCROLL STORY ======================= -->
+  <div id="kria-story" style="height:700vh; position:relative">
+    <div style="position:sticky; top:0; height:100vh; overflow:hidden">
+
+      <!-- city grid backdrop -->
+      <div style="position:absolute; inset:0; z-index:1; background-image:linear-gradient(rgba(244,239,227,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(244,239,227,0.045) 1px, transparent 1px); background-size:54px 54px"></div>
+      <div style="position:absolute; inset:0; z-index:1; background:radial-gradient(ellipse 90% 75% at 55% 45%, transparent 40%, #0B0F0A 92%)"></div>
+
+      <!-- chapter-reactive glows -->
+      <div style="{{ d.glowA }}"></div>
+      <div style="{{ d.glowB }}"></div>
+
+      <!-- ambient particles -->
+      <div style="position:absolute; inset:0; z-index:2; pointer-events:none">
+        <span style="position:absolute; left:12%; top:78%; width:3px; height:3px; border-radius:99px; background:rgba(212,255,0,0.55); animation:krise 16s linear -2s infinite"></span>
+        <span style="position:absolute; left:26%; top:88%; width:2px; height:2px; border-radius:99px; background:rgba(244,239,227,0.4); animation:krise 21s linear -9s infinite"></span>
+        <span style="position:absolute; left:44%; top:82%; width:4px; height:4px; border-radius:99px; background:rgba(212,255,0,0.35); animation:krise 18s linear -5s infinite"></span>
+        <span style="position:absolute; left:58%; top:92%; width:2px; height:2px; border-radius:99px; background:rgba(255,200,61,0.45); animation:krise 23s linear -13s infinite"></span>
+        <span style="position:absolute; left:70%; top:80%; width:3px; height:3px; border-radius:99px; background:rgba(212,255,0,0.5); animation:krise 15s linear -7s infinite"></span>
+        <span style="position:absolute; left:84%; top:86%; width:2px; height:2px; border-radius:99px; background:rgba(244,239,227,0.35); animation:krise 20s linear -11s infinite"></span>
+        <span style="position:absolute; left:92%; top:90%; width:3px; height:3px; border-radius:99px; background:rgba(128,151,255,0.4); animation:krise 24s linear -4s infinite"></span>
+        <span style="position:absolute; left:6%; top:94%; width:2px; height:2px; border-radius:99px; background:rgba(212,255,0,0.4); animation:krise 19s linear -15s infinite"></span>
+      </div>
+
+      <!-- ============ CHAPTER COPY ============ -->
+
+      <!-- 0 · HERO -->
+      <div data-screen-label="01 Hero" style="{{ d.copy0 }}">
+        <div style="display:flex; flex-direction:column; gap:22px">
+          <div style="display:flex; align-items:center; gap:10px; font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:0.06em; color:rgba(244,239,227,0.55)">
+            <span style="width:7px; height:7px; border-radius:99px; background:#D4FF00; box-shadow:0 0 10px rgba(212,255,0,0.8); animation:kflick 3.4s ease-in-out infinite"></span>
+            <span>LIVE — BENGALURU · MUMBAI · HYDERABAD · CHENNAI · PUNE</span>
+          </div>
+          <h1 style="margin:0; font-size:clamp(30px, 4.6vw, 72px); font-weight:900; letter-spacing:-0.035em; line-height:1.0; color:#F4EFE3; text-wrap:balance">Your next gig is one <em style="font-style:normal; color:#D4FF00; text-shadow:0 0 44px rgba(212,255,0,0.45)">swipe</em> away.</h1>
+          <p style="margin:0; font-size:17px; line-height:1.6; color:rgba(244,239,227,0.66); max-width:420px">Browse live opportunities near you. Apply instantly. Get paid.</p>
+          <div style="display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-top:6px">
+            <a href="https://grid.trykria.com" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:14px 26px; border-radius:12px; background:#D4FF00; color:#0B0F0A; font-size:15px; font-weight:800; text-decoration:none; box-shadow:0 0 36px rgba(212,255,0,0.35)" style-hover="transform:translateY(-2px); box-shadow:0 0 56px rgba(212,255,0,0.55)">Post a gig on Grid →</a>
+            <span style="display:inline-block; padding:13px 22px; border-radius:12px; border:1px solid rgba(244,239,227,0.18); color:rgba(244,239,227,0.6); font-size:14px; font-weight:600">Pocket — coming soon</span>
+          </div>
+          <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.4)">No résumés. No middlemen. Just gigs.</span>
+        </div>
+      </div>
+
+      <!-- 1 · NEARBY -->
+      <div data-screen-label="02 Nearby" style="{{ d.copy1 }}">
+        <div style="display:flex; flex-direction:column; gap:18px">
+          <h2 style="margin:0; font-size:clamp(25px, 3.4vw, 52px); font-weight:900; letter-spacing:-0.03em; line-height:1.05; color:#F4EFE3; text-wrap:balance">See what&rsquo;s happening around you. Right now.</h2>
+          <p style="margin:0; font-size:16px; line-height:1.65; color:rgba(244,239,227,0.62); max-width:400px">Concerts, weddings, pop-ups, launches. Live gigs with the pay, the distance and the timing up front — nothing buried.</p>
+          <span style="align-self:flex-start; padding:7px 14px; border-radius:99px; background:rgba(212,255,0,0.1); border:1px solid rgba(212,255,0,0.3); color:#D4FF00; font-size:13px; font-weight:700">Weekend sorted.</span>
+        </div>
+      </div>
+
+      <!-- 2 · APPLY -->
+      <div data-screen-label="03 Swipe to apply" style="{{ d.copy2 }}">
+        <div style="display:flex; flex-direction:column; gap:18px">
+          <h2 style="margin:0; font-size:clamp(25px, 3.4vw, 52px); font-weight:900; letter-spacing:-0.03em; line-height:1.05; color:#F4EFE3">One gesture. You&rsquo;re in.</h2>
+          <p style="margin:0; font-size:16px; line-height:1.65; color:rgba(244,239,227,0.62); max-width:400px">Swipe up on a gig you like. No résumés, no cover letters, no waiting rooms. The venue sees you, confirms you, done.</p>
+          <span style="font-size:15px; line-height:1.5; color:rgba(244,239,227,0.45); border-left:2px solid rgba(212,255,0,0.4); padding-left:14px; font-style:italic; max-width:340px">Need money before Friday? This is how.</span>
+        </div>
+      </div>
+
+      <!-- 3 · GET PAID -->
+      <div data-screen-label="04 Show up and earn" style="{{ d.copy3 }}">
+        <div style="display:flex; flex-direction:column; gap:18px">
+          <h2 style="margin:0; font-size:clamp(25px, 3.4vw, 52px); font-weight:900; letter-spacing:-0.03em; line-height:1.05; color:#F4EFE3">Show up, scan in, get paid.</h2>
+          <p style="margin:0; font-size:16px; line-height:1.65; color:rgba(244,239,227,0.62); max-width:400px">An OTP at the door proves you came. Your money lands over UPI — before the afterparty winds down, not at the end of the month.</p>
+        </div>
+      </div>
+
+      <!-- 4 · MOMENTUM -->
+      <div data-screen-label="05 Momentum" style="{{ d.copy4 }}">
+        <div style="display:flex; flex-direction:column; gap:18px">
+          <h2 style="margin:0; font-size:clamp(25px, 3.4vw, 52px); font-weight:900; letter-spacing:-0.03em; line-height:1.05; color:#F4EFE3; text-wrap:balance">Every gig builds your reputation.</h2>
+          <p style="margin:0; font-size:16px; line-height:1.65; color:rgba(244,239,227,0.62); max-width:400px">Show up on time, work well, and your Momentum climbs — from Newcomer all the way to Legend. The more reliable you are, the more opportunities find you.</p>
+          <span style="font-size:15px; color:rgba(244,239,227,0.45); font-style:italic">People remember reliable runners.</span>
+        </div>
+      </div>
+
+      <!-- 5 · FOR HOSTS -->
+      <div data-screen-label="06 For hosts" style="{{ d.copy5 }}">
+        <div style="display:flex; flex-direction:column; gap:18px">
+          <span style="font-size:14px; font-weight:700; color:#FFC83D">For hosts</span>
+          <h2 style="margin:0; font-size:clamp(25px, 3.4vw, 52px); font-weight:900; letter-spacing:-0.03em; line-height:1.05; color:#F4EFE3; text-wrap:balance">Need 10 people this Saturday? Done.</h2>
+          <p style="margin:0; font-size:16px; line-height:1.65; color:rgba(244,239,227,0.62); max-width:400px">Post roles on Grid and watch verified runners fill them in real time — Momentum scores up front, OTP check-ins at the door, every role covered.</p>
+          <a href="https://grid.trykria.com" target="_blank" rel="noopener noreferrer" style="align-self:flex-start; display:inline-block; padding:14px 26px; border-radius:12px; background:#D4FF00; color:#0B0F0A; font-size:15px; font-weight:800; text-decoration:none; box-shadow:0 0 36px rgba(212,255,0,0.35)" style-hover="transform:translateY(-2px); box-shadow:0 0 56px rgba(212,255,0,0.55)">Start posting gigs →</a>
+        </div>
+      </div>
+
+      <!-- ============ THE PHONE ============ -->
+      <div data-screen-label="Phone demo" style="{{ d.phoneWrap }}">
+        <div style="{{ d.phoneTilt }}">
+          <div style="position:absolute; left:10%; right:10%; bottom:-46px; height:44px; background:radial-gradient(ellipse closest-side, rgba(0,0,0,0.75), transparent); filter:blur(6px)"></div>
+          <div style="position:absolute; inset:-70px; background:radial-gradient(closest-side, rgba(212,255,0,0.13), transparent 72%); animation:kglow 5s ease-in-out infinite; pointer-events:none"></div>
+
+          <!-- bezel -->
+          <div style="position:relative; width:322px; border-radius:54px; padding:11px; background:linear-gradient(165deg, #2b3026, #0f130d 55%, #1a1f15); border:1px solid rgba(255,255,255,0.14); box-shadow:0 50px 110px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1)">
+            <div style="position:absolute; left:-2.5px; top:130px; width:3px; height:30px; border-radius:2px; background:#222720"></div>
+            <div style="position:absolute; left:-2.5px; top:172px; width:3px; height:44px; border-radius:2px; background:#222720"></div>
+            <div style="position:absolute; right:-2.5px; top:150px; width:3px; height:62px; border-radius:2px; background:#222720"></div>
+
+            <!-- screen — real Pocket palette -->
+            <div style="position:relative; width:300px; height:640px; border-radius:44px; background:#0e0e0e; overflow:hidden">
+
+              <!-- status bar + island -->
+              <div style="position:absolute; top:0; left:0; right:0; height:38px; z-index:30; display:flex; align-items:center; justify-content:space-between; padding:0 22px; pointer-events:none">
+                <span style="font-size:12px; font-weight:700; color:rgba(255,255,255,0.85)">9:41</span>
+                <div style="display:flex; gap:4px; align-items:flex-end">
+                  <span style="width:3px; height:5px; border-radius:1px; background:rgba(255,255,255,0.8)"></span>
+                  <span style="width:3px; height:8px; border-radius:1px; background:rgba(255,255,255,0.8)"></span>
+                  <span style="width:3px; height:11px; border-radius:1px; background:rgba(255,255,255,0.8)"></span>
+                  <span style="width:18px; height:9px; border-radius:3px; border:1px solid rgba(255,255,255,0.5); margin-left:4px; background:linear-gradient(90deg, #D4FF00 70%, transparent 70%)"></span>
+                </div>
+              </div>
+              <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:86px; height:25px; border-radius:99px; background:#000; z-index:31"></div>
+
+              <!-- ░░ SCREEN 1 · POCKET HOME ░░ -->
+              <div style="{{ d.scrFeed }}">
+                <div style="position:absolute; inset:0; display:flex; flex-direction:column; padding-top:46px">
+
+                  <div style="display:flex; align-items:flex-start; justify-content:space-between; padding:6px 18px 14px">
+                    <div>
+                      <div style="font-size:10px; font-weight:600; letter-spacing:0.12em; color:#777575; text-transform:uppercase">Good Evening</div>
+                      <div style="font-family:'Space Grotesk',Inter,sans-serif; font-size:20px; font-weight:700; color:#ffffff; margin-top:1px">Arjun</div>
+                    </div>
+                    <span style="width:34px; height:34px; border-radius:99px; background:rgba(212,255,0,0.1); border:1.5px solid rgba(212,255,0,0.25); display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#D4FF00">A</span>
+                  </div>
+
+                  <!-- Band hero card -->
+                  <div style="margin:0 16px 18px; position:relative; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:18px; padding:15px; overflow:hidden">
+                    <span style="position:absolute; top:-36px; right:-36px; width:130px; height:130px; border-radius:99px; background:#D4FF00; opacity:0.12"></span>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:11px">
+                      <div>
+                        <div style="font-size:9px; font-weight:600; letter-spacing:0.15em; color:#777575; margin-bottom:2px">MOMENTUM</div>
+                        <div style="font-family:'Space Grotesk',Inter,sans-serif; font-size:38px; font-weight:700; line-height:1; color:#D4FF00">712</div>
+                      </div>
+                      <span style="display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; background:rgba(212,255,0,0.13); border:1px solid rgba(212,255,0,0.25); margin-top:5px">
+                        <span style="width:6px; height:6px; border-radius:3px; background:#D4FF00"></span>
+                        <span style="font-size:11px; font-weight:700; color:#D4FF00">Elite</span>
+                      </span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:5px; margin-bottom:12px">
+                      <span style="height:3px; border-radius:2px; background:rgba(255,255,255,0.1); overflow:hidden; display:block"><span style="display:block; height:100%; width:6%; border-radius:2px; background:#D4FF00"></span></span>
+                      <span style="font-size:10px; font-weight:500; color:#777575">188 pts to <span style="color:#ffffff">Legend</span></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:11px; padding-top:11px; border-top:1px solid rgba(255,255,255,0.1)">
+                      <span style="font-size:11px; color:#777575"><span style="font-weight:700; color:#ffffff">38</span> gigs</span>
+                      <span style="width:1px; height:11px; background:rgba(255,255,255,0.1)"></span>
+                      <span style="font-size:11px; color:#777575"><span style="font-weight:700; color:#ffffff">6</span> day streak</span>
+                      <span style="width:1px; height:11px; background:rgba(255,255,255,0.1)"></span>
+                      <span style="font-size:10px; color:#777575">Full breakdown →</span>
+                    </div>
+                  </div>
+
+                  <!-- Hot near you -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding:0 18px; margin-bottom:9px">
+                    <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:13px; font-weight:700; color:#ffffff">Hot near you</span>
+                    <span style="font-size:11px; font-weight:600; color:#D4FF00">See all →</span>
+                  </div>
+                  <div style="overflow:hidden; margin-bottom:18px">
+                    <div style="display:flex; gap:9px; width:max-content; padding-left:16px; animation:kmarq 22s linear infinite">
+                      <span style="width:138px; display:flex; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden"><span style="width:3px; background:#fb923c; flex-shrink:0"></span><span style="flex:1; padding:10px; display:flex; flex-direction:column; gap:7px; background:linear-gradient(135deg, rgba(251,146,60,0.16), transparent 60%)"><span style="font-size:11.5px; font-weight:700; color:#ffffff; line-height:1.3">Event Bartender</span><span style="display:flex; flex-direction:column; gap:2px"><span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:11.5px; font-weight:700; color:#D4FF00">₹850/hr</span><span style="font-size:9px; color:#777575">1.2 km</span></span></span></span>
+                      <span style="width:138px; display:flex; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden"><span style="width:3px; background:#ffeb9c; flex-shrink:0"></span><span style="flex:1; padding:10px; display:flex; flex-direction:column; gap:7px; background:linear-gradient(135deg, rgba(255,235,156,0.13), transparent 60%)"><span style="font-size:11.5px; font-weight:700; color:#ffffff; line-height:1.3">Brand Ambassador</span><span style="display:flex; flex-direction:column; gap:2px"><span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:11.5px; font-weight:700; color:#D4FF00">₹650/hr</span><span style="font-size:9px; color:#777575">3.4 km</span></span></span></span>
+                      <span style="width:138px; display:flex; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden"><span style="width:3px; background:#c4ec00; flex-shrink:0"></span><span style="flex:1; padding:10px; display:flex; flex-direction:column; gap:7px; background:linear-gradient(135deg, rgba(196,236,0,0.13), transparent 60%)"><span style="font-size:11.5px; font-weight:700; color:#ffffff; line-height:1.3">Concert Usher</span><span style="display:flex; flex-direction:column; gap:2px"><span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:11.5px; font-weight:700; color:#D4FF00">₹700/hr</span><span style="font-size:9px; color:#777575">4.8 km</span></span></span></span>
+                      <span style="width:138px; display:flex; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden"><span style="width:3px; background:#ff7351; flex-shrink:0"></span><span style="flex:1; padding:10px; display:flex; flex-direction:column; gap:7px; background:linear-gradient(135deg, rgba(255,115,81,0.14), transparent 60%)"><span style="font-size:11.5px; font-weight:700; color:#ffffff; line-height:1.3">Event Photographer</span><span style="display:flex; flex-direction:column; gap:2px"><span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:11.5px; font-weight:700; color:#D4FF00">₹1,500</span><span style="font-size:9px; color:#777575">2.6 km</span></span></span></span>
+                      <span style="width:138px; display:flex; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden"><span style="width:3px; background:#a8f060; flex-shrink:0"></span><span style="flex:1; padding:10px; display:flex; flex-direction:column; gap:7px; background:linear-gradient(135deg, rgba(168,240,96,0.13), transparent 60%)"><span style="font-size:11.5px; font-weight:700; color:#ffffff; line-height:1.3">Pop-up Booth Staff</span><span style="display:flex; flex-direction:column; gap:2px"><span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:11.5px; font-weight:700; color:#D4FF00">₹600/hr</span><span style="font-size:9px; color:#777575">0.8 km</span></span></span></span>
+                      <span style="width:138px; display:flex; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden"><span style="width:3px; background:#fb923c; flex-shrink:0"></span><span style="flex:1; padding:10px; display:flex; flex-direction:column; gap:7px; background:linear-gradient(135deg, rgba(251,146,60,0.16), transparent 60%)"><span style="font-size:11.5px; font-weight:700; color:#ffffff; line-height:1.3">Event Bartender</span><span style="display:flex; flex-direction:column; gap:2px"><span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:11.5px; font-weight:700; color:#D4FF00">₹850/hr</span><span style="font-size:9px; color:#777575">1.2 km</span></span></span></span>
+                      <span style="width:138px; display:flex; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden"><span style="width:3px; background:#ffeb9c; flex-shrink:0"></span><span style="flex:1; padding:10px; display:flex; flex-direction:column; gap:7px; background:linear-gradient(135deg, rgba(255,235,156,0.13), transparent 60%)"><span style="font-size:11.5px; font-weight:700; color:#ffffff; line-height:1.3">Brand Ambassador</span><span style="display:flex; flex-direction:column; gap:2px"><span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:11.5px; font-weight:700; color:#D4FF00">₹650/hr</span><span style="font-size:9px; color:#777575">3.4 km</span></span></span></span>
+                      <span style="width:138px; display:flex; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden"><span style="width:3px; background:#c4ec00; flex-shrink:0"></span><span style="flex:1; padding:10px; display:flex; flex-direction:column; gap:7px; background:linear-gradient(135deg, rgba(196,236,0,0.13), transparent 60%)"><span style="font-size:11.5px; font-weight:700; color:#ffffff; line-height:1.3">Concert Usher</span><span style="display:flex; flex-direction:column; gap:2px"><span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:11.5px; font-weight:700; color:#D4FF00">₹700/hr</span><span style="font-size:9px; color:#777575">4.8 km</span></span></span></span>
+                      <span style="width:138px; display:flex; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden"><span style="width:3px; background:#ff7351; flex-shrink:0"></span><span style="flex:1; padding:10px; display:flex; flex-direction:column; gap:7px; background:linear-gradient(135deg, rgba(255,115,81,0.14), transparent 60%)"><span style="font-size:11.5px; font-weight:700; color:#ffffff; line-height:1.3">Event Photographer</span><span style="display:flex; flex-direction:column; gap:2px"><span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:11.5px; font-weight:700; color:#D4FF00">₹1,500</span><span style="font-size:9px; color:#777575">2.6 km</span></span></span></span>
+                      <span style="width:138px; display:flex; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; overflow:hidden"><span style="width:3px; background:#a8f060; flex-shrink:0"></span><span style="flex:1; padding:10px; display:flex; flex-direction:column; gap:7px; background:linear-gradient(135deg, rgba(168,240,96,0.13), transparent 60%)"><span style="font-size:11.5px; font-weight:700; color:#ffffff; line-height:1.3">Pop-up Booth Staff</span><span style="display:flex; flex-direction:column; gap:2px"><span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:11.5px; font-weight:700; color:#D4FF00">₹600/hr</span><span style="font-size:9px; color:#777575">0.8 km</span></span></span></span>
+                    </div>
+                  </div>
+
+                  <!-- Recent gigs -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding:0 18px; margin-bottom:9px">
+                    <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:13px; font-weight:700; color:#ffffff">Recent gigs</span>
+                    <span style="font-size:11px; font-weight:600; color:#D4FF00">See all →</span>
+                  </div>
+                  <div style="display:flex; gap:9px; padding:0 16px; overflow:hidden">
+                    <div style="width:158px; flex-shrink:0; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:15px; padding:12px; display:flex; flex-direction:column; gap:8px">
+                      <div style="display:flex; justify-content:space-between; align-items:center; gap:5px">
+                        <span style="display:inline-flex; align-items:center; gap:4px; padding:3px 7px; border-radius:20px; background:rgba(196,236,0,0.1)"><span style="width:5px; height:5px; border-radius:3px; background:#c4ec00"></span><span style="font-size:8px; font-weight:700; letter-spacing:0.03em; color:#c4ec00; text-transform:uppercase">Usher</span></span>
+                        <span style="padding:3px 7px; border-radius:20px; background:rgba(212,255,0,0.1); font-size:8px; font-weight:700; color:#D4FF00">Accepted</span>
+                      </div>
+                      <span style="font-size:12px; font-weight:700; color:#ffffff; line-height:1.35">Concert Usher</span>
+                      <div style="display:flex; justify-content:space-between; align-items:center">
+                        <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:12px; font-weight:700; color:#D4FF00">₹700/hr</span>
+                        <span style="font-size:9px; color:#777575">14 Jun</span>
+                      </div>
+                    </div>
+                    <div style="width:158px; flex-shrink:0; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:15px; padding:12px; display:flex; flex-direction:column; gap:8px">
+                      <div style="display:flex; justify-content:space-between; align-items:center; gap:5px">
+                        <span style="display:inline-flex; align-items:center; gap:4px; padding:3px 7px; border-radius:20px; background:rgba(255,235,156,0.1)"><span style="width:5px; height:5px; border-radius:3px; background:#ffeb9c"></span><span style="font-size:8px; font-weight:700; letter-spacing:0.03em; color:#ffeb9c; text-transform:uppercase">Promoter</span></span>
+                        <span style="padding:3px 7px; border-radius:20px; background:rgba(255,200,61,0.12); font-size:8px; font-weight:700; color:#FFC83D">Applied</span>
+                      </div>
+                      <span style="font-size:12px; font-weight:700; color:#ffffff; line-height:1.35">Brand Ambassador</span>
+                      <div style="display:flex; justify-content:space-between; align-items:center">
+                        <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:12px; font-weight:700; color:#D4FF00">₹650/hr</span>
+                        <span style="font-size:9px; color:#777575">15 Jun</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- floating pill tab bar -->
+                  <div style="position:absolute; left:12px; right:12px; bottom:12px; height:56px; border-radius:22px; background:rgba(19,19,19,0.97); border:1px solid rgba(255,255,255,0.1); box-shadow:0 8px 20px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:space-around; padding:0 6px">
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 11 12 4 20 11"></polyline><rect x="7" y="11" width="10" height="9"></rect></svg><span style="font-size:8px; font-weight:600; color:#D4FF00">Home</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polygon points="15 9 13 13 9 15 11 11"></polygon></svg><span style="font-size:8px; font-weight:600; color:#777575">Explore</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="2"></rect><path d="M9 8V6h6v2"></path></svg><span style="font-size:8px; font-weight:600; color:#777575">Jobs</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 3 21 8 12 13 3 8"></polygon><polyline points="3 13 12 18 21 13"></polyline></svg><span style="font-size:8px; font-weight:600; color:#777575">Space</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 6 13 11 13 9 22 18 10 13 10"></polygon></svg><span style="font-size:8px; font-weight:600; color:#777575">Arena</span></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ░░ SCREEN 2 · EXPLORE SWIPE DECK ░░ -->
+              <div style="{{ d.scrSwipe }}">
+                <div style="position:absolute; inset:0; display:flex; flex-direction:column; padding:46px 14px 14px">
+                  <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 6px 10px">
+                    <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:16px; font-weight:700; color:#ffffff">Explore</span>
+                    <span style="font-size:9.5px; font-weight:600; color:#777575">3 of 14 nearby</span>
+                  </div>
+                  <div style="position:relative; flex:1">
+                    <div style="{{ d.swipeTop }}">
+                      <div style="position:absolute; inset:0; border-radius:24px; background:#1a1919; border:1px solid rgba(255,255,255,0.1); box-shadow:0 8px 24px rgba(0,0,0,0.35); overflow:hidden; display:flex; flex-direction:column">
+                        <div style="position:relative; height:54px; flex-shrink:0; background:linear-gradient(135deg, rgba(196,236,0,0.6), rgba(196,236,0,0.2)); display:flex; align-items:flex-end; justify-content:center; padding:9px">
+                          <span style="display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; background:rgba(19,19,19,0.7); border:1px solid rgba(196,236,0,0.4)"><span style="width:7px; height:7px; border-radius:4px; background:#c4ec00"></span><span style="font-size:10.5px; font-weight:600; color:#ffffff; letter-spacing:0.02em">Usher</span></span>
+                        </div>
+                        <div style="flex:1; padding:16px 18px 14px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px">
+                          <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:19px; font-weight:700; color:#ffffff; line-height:1.25">Concert Usher</span>
+                          <span style="font-size:11px; color:#777575">Sunburn Arena</span>
+                          <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:25px; font-weight:700; color:#D4FF00; margin-top:2px">₹700/hr</span>
+                          <div style="display:flex; flex-direction:column; gap:7px; margin-top:6px">
+                            <span style="display:inline-flex; align-items:center; justify-content:center; gap:7px; font-size:11.5px; font-weight:600; color:#ffffff"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><line x1="8" y1="3" x2="8" y2="7"></line><line x1="16" y1="3" x2="16" y2="7"></line></svg>Sat, 14 Jun</span>
+                            <span style="display:inline-flex; align-items:center; justify-content:center; gap:7px; font-size:11.5px; font-weight:600; color:#ffffff"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>4:00 PM – 11:00 PM</span>
+                            <span style="display:inline-flex; align-items:center; justify-content:center; gap:7px; font-size:11.5px; font-weight:600; color:#ffffff"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="10" r="3"></circle><path d="M12 21c4-4.5 7-7.8 7-11a7 7 0 1 0-14 0c0 3.2 3 6.5 7 11z"></path></svg>Whitefield, Bengaluru</span>
+                          </div>
+                          <div style="display:flex; align-items:center; justify-content:center; gap:7px; margin-top:8px; padding-top:11px; border-top:1px solid rgba(255,255,255,0.1); width:100%">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"></path><circle cx="17" cy="9" r="2.5"></circle></svg>
+                            <span style="font-size:12.5px; font-weight:700; color:#ffffff">3 spots left</span>
+                          </div>
+                          <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:5px; margin-top:4px">
+                            <span style="padding:3px 9px; border-radius:20px; background:rgba(212,255,0,0.1); border:1px solid rgba(212,255,0,0.18); font-size:10px; font-weight:500; color:#D4FF00">Hindi</span>
+                            <span style="padding:3px 9px; border-radius:20px; background:rgba(212,255,0,0.1); border:1px solid rgba(212,255,0,0.18); font-size:10px; font-weight:500; color:#D4FF00">English</span>
+                            <span style="padding:3px 9px; border-radius:20px; background:#201f1f; border:1px solid rgba(255,255,255,0.1); font-size:10px; font-weight:500; color:#adaaaa">Black tee</span>
+                          </div>
+                          <div style="{{ d.appliedChip }}">
+                            <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; background:rgba(255,200,61,0.13); border:1px solid rgba(255,200,61,0.35); font-size:11px; font-weight:700; color:#FFC83D">✓ Applied</span>
+                          </div>
+                        </div>
+                        <!-- lime apply overlay (real app behavior) -->
+                        <div style="{{ d.applyOverlay }}">
+                          <span style="width:52px; height:52px; border-radius:99px; border:3px solid #000; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:900; color:#000">✓</span>
+                          <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:24px; font-weight:700; color:#000; letter-spacing:0.02em">Apply</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="{{ d.swipeHint }}">
+                      <span style="display:inline-flex; align-items:center; gap:6px; font-size:11px; color:rgba(212,255,0,0.6); font-weight:600"><span style="display:inline-block; animation:kbob 1.6s ease-in-out infinite">↑</span> swipe up to apply</span>
+                    </div>
+                  </div>
+                  <!-- tab bar -->
+                  <div style="height:56px; margin-top:10px; border-radius:22px; background:rgba(19,19,19,0.97); border:1px solid rgba(255,255,255,0.1); box-shadow:0 8px 20px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:space-around; padding:0 6px; flex-shrink:0">
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 11 12 4 20 11"></polyline><rect x="7" y="11" width="10" height="9"></rect></svg><span style="font-size:8px; font-weight:600; color:#777575">Home</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polygon points="15 9 13 13 9 15 11 11"></polygon></svg><span style="font-size:8px; font-weight:600; color:#D4FF00">Explore</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="2"></rect><path d="M9 8V6h6v2"></path></svg><span style="font-size:8px; font-weight:600; color:#777575">Jobs</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 3 21 8 12 13 3 8"></polygon><polyline points="3 13 12 18 21 13"></polyline></svg><span style="font-size:8px; font-weight:600; color:#777575">Space</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 6 13 11 13 9 22 18 10 13 10"></polygon></svg><span style="font-size:8px; font-weight:600; color:#777575">Arena</span></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ░░ SCREEN 3 · CHECK-IN + PAY ░░ -->
+              <div style="{{ d.scrPay }}">
+                <div style="position:absolute; inset:0; display:flex; flex-direction:column; padding:50px 18px 18px; gap:14px">
+                  <div style="display:flex; flex-direction:column; gap:3px">
+                    <span style="font-size:9px; font-weight:600; letter-spacing:0.14em; color:#D4FF00">TONIGHT · REPORT 3:30 PM</span>
+                    <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:15px; font-weight:700; color:#ffffff">Concert Usher — Sunburn Arena</span>
+                  </div>
+                  <div style="background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:18px; padding:17px; display:flex; flex-direction:column; align-items:center; gap:12px">
+                    <span style="font-size:10.5px; color:#adaaaa">Show this code at the gate</span>
+                    <div style="display:flex; gap:9px">
+                      <span style="{{ d.otp0 }}">7</span>
+                      <span style="{{ d.otp1 }}">3</span>
+                      <span style="{{ d.otp2 }}">4</span>
+                      <span style="{{ d.otp3 }}">1</span>
+                    </div>
+                    <div style="{{ d.checkPop }}">
+                      <span style="display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:#D4FF00"><span style="width:22px; height:22px; border-radius:99px; border:2px solid #D4FF00; display:inline-flex; align-items:center; justify-content:center; font-size:12px">✓</span>Checked in · 4:02 PM</span>
+                    </div>
+                  </div>
+                  <div style="{{ d.payCard }}">
+                    <div style="background:linear-gradient(155deg, rgba(212,255,0,0.13), rgba(212,255,0,0.04)); border:1px solid rgba(212,255,0,0.3); border-radius:18px; padding:17px; display:flex; flex-direction:column; gap:5px; box-shadow:0 12px 40px rgba(0,0,0,0.4)">
+                      <span style="font-size:9px; font-weight:600; letter-spacing:0.14em; color:#adaaaa">PAYOUT · UPI</span>
+                      <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:31px; font-weight:700; color:#D4FF00; letter-spacing:-0.02em; text-shadow:0 0 30px rgba(212,255,0,0.4)">₹{{ d.earnPay }}</span>
+                      <span style="font-size:10.5px; color:#adaaaa">credited · minutes after checkout</span>
+                    </div>
+                  </div>
+                  <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:center; padding:13px 15px; background:#131313; border:1px solid rgba(255,255,255,0.1); border-radius:14px">
+                    <span style="font-size:11px; color:#777575">This week</span>
+                    <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:15px; font-weight:700; color:#ffffff">₹{{ d.earnWeek }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ░░ SCREEN 4 · ARENA / MOMENTUM ░░ -->
+              <div style="{{ d.scrMom }}">
+                <div style="position:absolute; inset:0; display:flex; flex-direction:column; padding:46px 16px 14px; gap:11px">
+                  <div style="display:flex; align-items:center; gap:7px; padding:2px 4px">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round"><rect x="4" y="8" width="16" height="11" rx="2"></rect><path d="M9 8V6h6v2"></path></svg>
+                    <span style="font-size:11px; font-weight:500; color:#777575">Runner · Momentum</span>
+                  </div>
+                  <div style="background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:18px; padding:18px; display:flex; flex-direction:column; align-items:center; gap:10px">
+                    <div style="position:relative; width:148px; height:148px; display:flex; align-items:center; justify-content:center">
+                      <div style="{{ d.gauge }}"></div>
+                      <div style="position:absolute; inset:11px; border-radius:99px; background:#1a1919"></div>
+                      <div style="position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; z-index:2">
+                        <span style="{{ d.momScoreStyle }}">{{ d.momScore }}</span>
+                        <span style="{{ d.momBandPill }}"><span style="{{ d.momBandDot }}"></span>{{ d.momBand }}</span>
+                      </div>
+                    </div>
+                    <span style="font-size:10px; color:#777575">Tap for full breakdown</span>
+                  </div>
+                  <div style="display:flex; gap:9px">
+                    <div style="flex:1; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:13px; display:flex; flex-direction:column; align-items:center; gap:4px">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" stroke-width="2" stroke-linecap="round"><rect x="4" y="8" width="16" height="11" rx="2"></rect><path d="M9 8V6h6v2"></path></svg>
+                      <span style="font-size:17px; font-weight:700; color:#ffffff">38</span>
+                      <span style="font-size:9.5px; color:#777575">Gigs done</span>
+                    </div>
+                    <div style="flex:1; background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:13px; display:flex; flex-direction:column; align-items:center; gap:4px">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="9" r="5"></circle><polyline points="9 13 8 21 12 18.5 16 21 15 13"></polyline></svg>
+                      <span style="{{ d.momBandVal }}">{{ d.momBand }}</span>
+                      <span style="font-size:9.5px; color:#777575">Score band</span>
+                    </div>
+                  </div>
+                  <div style="background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:15px; display:flex; flex-direction:column; gap:9px">
+                    <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:12px; font-weight:700; color:#ffffff">How Momentum works</span>
+                    <span style="display:flex; align-items:flex-start; gap:8px"><span style="width:5px; height:5px; border-radius:3px; background:#D4FF00; margin-top:5px; flex-shrink:0"></span><span style="font-size:11px; line-height:1.5; color:#adaaaa">Good gigs build it slowly.</span></span>
+                    <span style="display:flex; align-items:flex-start; gap:8px"><span style="width:5px; height:5px; border-radius:3px; background:#D4FF00; margin-top:5px; flex-shrink:0"></span><span style="font-size:11px; line-height:1.5; color:#adaaaa">No-shows and disputes drop it fast.</span></span>
+                    <span style="display:flex; align-items:flex-start; gap:8px"><span style="width:5px; height:5px; border-radius:3px; background:#D4FF00; margin-top:5px; flex-shrink:0"></span><span style="font-size:11px; line-height:1.5; color:#adaaaa">Recovery only through good behaviour — no passive reset.</span></span>
+                  </div>
+                  <!-- tab bar -->
+                  <div style="height:56px; margin-top:auto; border-radius:22px; background:rgba(19,19,19,0.97); border:1px solid rgba(255,255,255,0.1); box-shadow:0 8px 20px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:space-around; padding:0 6px; flex-shrink:0">
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 11 12 4 20 11"></polyline><rect x="7" y="11" width="10" height="9"></rect></svg><span style="font-size:8px; font-weight:600; color:#777575">Home</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polygon points="15 9 13 13 9 15 11 11"></polygon></svg><span style="font-size:8px; font-weight:600; color:#777575">Explore</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="2"></rect><path d="M9 8V6h6v2"></path></svg><span style="font-size:8px; font-weight:600; color:#777575">Jobs</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 3 21 8 12 13 3 8"></polygon><polyline points="3 13 12 18 21 13"></polyline></svg><span style="font-size:8px; font-weight:600; color:#777575">Space</span></span>
+                    <span style="display:flex; flex-direction:column; align-items:center; gap:3px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 6 13 11 13 9 22 18 10 13 10"></polygon></svg><span style="font-size:8px; font-weight:600; color:#D4FF00">Arena</span></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ░░ SCREEN 5 · GRID (BROWSER) ░░ -->
+              <div style="{{ d.scrHost }}">
+                <div style="position:absolute; inset:0; display:flex; flex-direction:column; padding:46px 16px 16px; gap:11px">
+                  <div style="display:flex; justify-content:center">
+                    <span style="display:inline-flex; align-items:center; gap:7px; padding:6px 14px; border-radius:20px; background:#1a1919; border:1px solid rgba(255,255,255,0.1)"><span style="width:7px; height:7px; border-radius:4px; background:#D4FF00"></span><span style="font-family:ui-monospace,Menlo,monospace; font-size:9.5px; color:#adaaaa; letter-spacing:0.04em">grid.trykria.com</span></span>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:3px; padding:0 2px">
+                    <span style="font-size:9px; font-weight:600; letter-spacing:0.14em; color:#FFC83D">GRID · HOST DASHBOARD</span>
+                    <span style="font-family:'Space Grotesk',Inter,sans-serif; font-size:15px; font-weight:700; color:#ffffff">Sat · Wedding at ITC Gardenia</span>
+                    <span style="font-size:10px; color:#777575">9 roles · OTP check-in live</span>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:8px">
+                    <div style="background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:13px; padding:11px 13px; display:flex; flex-direction:column; gap:7px">
+                      <div style="display:flex; justify-content:space-between; font-size:11.5px"><span style="font-weight:700; color:#ffffff">Ushers</span><span style="font-family:'Space Grotesk',Inter,sans-serif; font-weight:700; color:#D4FF00">{{ d.roleAC }}</span></div>
+                      <span style="height:4px; border-radius:99px; background:rgba(255,255,255,0.1); overflow:hidden; display:block"><span style="{{ d.roleA }}"></span></span>
+                    </div>
+                    <div style="background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:13px; padding:11px 13px; display:flex; flex-direction:column; gap:7px">
+                      <div style="display:flex; justify-content:space-between; font-size:11.5px"><span style="font-weight:700; color:#ffffff">Bartenders</span><span style="font-family:'Space Grotesk',Inter,sans-serif; font-weight:700; color:#D4FF00">{{ d.roleBC }}</span></div>
+                      <span style="height:4px; border-radius:99px; background:rgba(255,255,255,0.1); overflow:hidden; display:block"><span style="{{ d.roleB }}"></span></span>
+                    </div>
+                    <div style="background:#1a1919; border:1px solid rgba(255,255,255,0.1); border-radius:13px; padding:11px 13px; display:flex; flex-direction:column; gap:7px">
+                      <div style="display:flex; justify-content:space-between; font-size:11.5px"><span style="font-weight:700; color:#ffffff">Guest desk</span><span style="font-family:'Space Grotesk',Inter,sans-serif; font-weight:700; color:#D4FF00">{{ d.roleCC }}</span></div>
+                      <span style="height:4px; border-radius:99px; background:rgba(255,255,255,0.1); overflow:hidden; display:block"><span style="{{ d.roleC }}"></span></span>
+                    </div>
+                  </div>
+                  <span style="font-size:9px; font-weight:600; letter-spacing:0.12em; color:#777575; margin-top:2px">JOINING NOW</span>
+                  <div style="display:flex; flex-direction:column; gap:7px">
+                    <div style="{{ d.hostRow0 }}">
+                      <span style="width:28px; height:28px; border-radius:99px; background:#D4FF00; color:#000; font-size:10px; font-weight:900; display:inline-flex; align-items:center; justify-content:center">PK</span>
+                      <span style="flex:1; font-size:12px; font-weight:600; color:#ffffff">Priya K.</span>
+                      <span style="font-size:8.5px; font-weight:800; letter-spacing:0.05em; padding:3px 7px; border-radius:99px; background:rgba(255,200,61,0.15); color:#FFC83D">TRUSTED</span>
+                      <span style="font-size:10px; font-weight:700; color:#D4FF00">✓ in</span>
+                    </div>
+                    <div style="{{ d.hostRow1 }}">
+                      <span style="width:28px; height:28px; border-radius:99px; background:#D4FF00; color:#000; font-size:10px; font-weight:900; display:inline-flex; align-items:center; justify-content:center">AM</span>
+                      <span style="flex:1; font-size:12px; font-weight:600; color:#ffffff">Arjun M.</span>
+                      <span style="font-size:8.5px; font-weight:800; letter-spacing:0.05em; padding:3px 7px; border-radius:99px; background:rgba(212,255,0,0.15); color:#D4FF00">ELITE</span>
+                      <span style="font-size:10px; font-weight:700; color:#D4FF00">✓ in</span>
+                    </div>
+                    <div style="{{ d.hostRow2 }}">
+                      <span style="width:28px; height:28px; border-radius:99px; background:#D4FF00; color:#000; font-size:10px; font-weight:900; display:inline-flex; align-items:center; justify-content:center">SR</span>
+                      <span style="flex:1; font-size:12px; font-weight:600; color:#ffffff">Sana R.</span>
+                      <span style="font-size:8.5px; font-weight:800; letter-spacing:0.05em; padding:3px 7px; border-radius:99px; background:rgba(128,151,255,0.15); color:#8097ff">RELIABLE</span>
+                      <span style="font-size:10px; font-weight:700; color:#D4FF00">✓ in</span>
+                    </div>
+                    <div style="{{ d.hostRow3 }}">
+                      <span style="width:28px; height:28px; border-radius:99px; background:#D4FF00; color:#000; font-size:10px; font-weight:900; display:inline-flex; align-items:center; justify-content:center">KV</span>
+                      <span style="flex:1; font-size:12px; font-weight:600; color:#ffffff">Karthik V.</span>
+                      <span style="font-size:8.5px; font-weight:800; letter-spacing:0.05em; padding:3px 7px; border-radius:99px; background:rgba(255,115,81,0.15); color:#ff7351">BUILDING</span>
+                      <span style="font-size:10px; font-weight:700; color:#777575">on the way</span>
+                    </div>
+                  </div>
+                  <span style="margin-top:auto; display:block; text-align:center; padding:13px; border-radius:13px; background:#D4FF00; color:#000; font-size:13px; font-weight:800; box-shadow:0 0 30px rgba(212,255,0,0.3)">Post a gig →</span>
+                </div>
+              </div>
+
+              <!-- glass sheen -->
+              <div style="{{ d.sheen }}"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- scroll hint -->
+      <div style="{{ d.scrollHint }}">
+        <span style="font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:0.18em; color:rgba(244,239,227,0.45)">SCROLL TO EXPERIENCE THE APP</span>
+        <span style="width:1px; height:34px; background:linear-gradient(rgba(212,255,0,0.8), transparent); display:block; animation:kline 2s ease-in-out infinite"></span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================= CITY TICKER ======================= -->
+  <section data-screen-label="Live city strip" style="border-top:1px solid rgba(244,239,227,0.08); border-bottom:1px solid rgba(244,239,227,0.08); background:#0E120D; padding:26px 0; overflow:hidden; position:relative">
+    <div style="display:flex; width:max-content; animation:kticker 30s linear infinite">
+      <div style="display:flex; align-items:center; gap:28px; padding-right:28px">
+        <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:0.14em; color:rgba(244,239,227,0.45)">NOW LIVE IN</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Bengaluru</span><span style="color:#D4FF00; font-size:18px">✦</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Mumbai</span><span style="color:#D4FF00; font-size:18px">✦</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Hyderabad</span><span style="color:#D4FF00; font-size:18px">✦</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Chennai</span><span style="color:#D4FF00; font-size:18px">✦</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Pune</span><span style="color:#D4FF00; font-size:18px">✦</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#D4FF00; text-shadow:0 0 30px rgba(212,255,0,0.4)">your city next →</span><span style="color:#D4FF00; font-size:18px">✦</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:28px; padding-right:28px">
+        <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:0.14em; color:rgba(244,239,227,0.45)">NOW LIVE IN</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Bengaluru</span><span style="color:#D4FF00; font-size:18px">✦</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Mumbai</span><span style="color:#D4FF00; font-size:18px">✦</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Hyderabad</span><span style="color:#D4FF00; font-size:18px">✦</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Chennai</span><span style="color:#D4FF00; font-size:18px">✦</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Pune</span><span style="color:#D4FF00; font-size:18px">✦</span>
+        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#D4FF00; text-shadow:0 0 30px rgba(212,255,0,0.4)">your city next →</span><span style="color:#D4FF00; font-size:18px">✦</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= WAITLIST ======================= -->
+  <section data-screen-label="Waitlist" style="position:relative; padding:140px 24px 150px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:22px; overflow:hidden">
+    <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:900px; height:600px; background:radial-gradient(closest-side, rgba(255,200,61,0.07), transparent 70%); pointer-events:none"></div>
+    <h2 style="margin:0; font-size:clamp(34px, 6vw, 76px); font-weight:900; letter-spacing:-0.035em; color:#F4EFE3">Your city next?</h2>
+    <p style="margin:0; font-size:17px; line-height:1.6; color:rgba(244,239,227,0.6); max-width:440px">Tell us where you are. We&rsquo;ll let you know the moment kria lands there.</p>
+
+    <sc-if value="{{ d.notSent }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:10px; width:100%; max-width:620px">
+        <select value="{{ d.city }}" onChange="{{ d.onCity }}" style="padding:15px 18px; border-radius:13px; background:#111510; border:1px solid rgba(244,239,227,0.14); color:#F4EFE3; font-size:14px; outline:none; min-width:160px">
+          <option value="Delhi NCR">Delhi NCR</option>
+          <option value="Kolkata">Kolkata</option>
+          <option value="Ahmedabad">Ahmedabad</option>
+          <option value="Jaipur">Jaipur</option>
+          <option value="Kochi">Kochi</option>
+          <option value="Indore">Indore</option>
+          <option value="Somewhere else">Somewhere else</option>
+        </select>
+        <input type="email" placeholder="your@email.com" value="{{ d.email }}" onChange="{{ d.onEmail }}" style="flex:1; min-width:220px; padding:15px 18px; border-radius:13px; background:#111510; border:1px solid rgba(244,239,227,0.14); color:#F4EFE3; font-size:14px; outline:none" style-focus="border:1px solid rgba(212,255,0,0.5)">
+        <button onClick="{{ d.onSubmit }}" style="padding:15px 28px; border-radius:13px; border:none; background:#D4FF00; color:#0B0F0A; font-size:14px; font-weight:800; cursor:pointer; box-shadow:0 0 30px rgba(212,255,0,0.3)" style-hover="transform:translateY(-2px); box-shadow:0 0 48px rgba(212,255,0,0.5)">Notify me</button>
+      </div>
+      <sc-if value="{{ d.err }}" hint-placeholder-val="{{ false }}">
+        <span style="font-size:12px; color:#ff7351">Enter a valid email address.</span>
+      </sc-if>
+    </sc-if>
+    <sc-if value="{{ d.sent }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-top:10px">
+        <span style="width:54px; height:54px; border-radius:99px; background:#D4FF00; color:#0B0F0A; font-size:24px; font-weight:900; display:flex; align-items:center; justify-content:center; box-shadow:0 0 50px rgba(212,255,0,0.5)">✓</span>
+        <span style="font-size:20px; font-weight:800; color:#F4EFE3">You&rsquo;re on the list.</span>
+        <span style="font-size:13px; color:rgba(244,239,227,0.55)">We&rsquo;ll come find you, {{ d.city }}.</span>
+      </div>
+    </sc-if>
+
+    <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.4); margin-top:8px">runners across India are already waiting</span>
+  </section>
+
+  <!-- ======================= FOOTER ======================= -->
+  <footer data-screen-label="Footer" style="position:relative; padding:90px 24px 36px; overflow:hidden; border-top:1px solid rgba(244,239,227,0.07)">
+    <div style="position:absolute; left:50%; bottom:-35%; transform:translateX(-50%); width:1100px; height:700px; background:radial-gradient(closest-side, rgba(212,255,0,0.09), transparent 70%); pointer-events:none"></div>
+    <div style="position:relative; display:flex; flex-direction:column; align-items:center; gap:18px; text-align:center">
+      <span style="font-family:Comfortaa,cursive; font-weight:700; font-size:clamp(90px, 20vw, 260px); line-height:0.9; color:#D4FF00; letter-spacing:-0.02em; text-shadow:0 0 90px rgba(212,255,0,0.35)">kria</span>
+      <span style="font-size:15px; font-weight:600; letter-spacing:0.28em; color:rgba(244,239,227,0.6)">WORK · EARN · GROW</span>
+      <div style="display:flex; align-items:center; gap:26px; margin-top:18px; flex-wrap:wrap; justify-content:center">
+        <a href="#" style="color:rgba(244,239,227,0.55); font-size:13px; text-decoration:none" style-hover="color:#D4FF00">About</a>
+        <a href="#" style="color:rgba(244,239,227,0.55); font-size:13px; text-decoration:none" style-hover="color:#D4FF00">Privacy</a>
+        <a href="#" style="color:rgba(244,239,227,0.55); font-size:13px; text-decoration:none" style-hover="color:#D4FF00">Contact</a>
+        <a href="#" style="width:36px; height:36px; border-radius:99px; border:1px solid rgba(244,239,227,0.15); color:rgba(244,239,227,0.55); font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; font-family:ui-monospace,Menlo,monospace" style-hover="border-color:#D4FF00; color:#D4FF00">IG</a>
+        <a href="#" style="width:36px; height:36px; border-radius:99px; border:1px solid rgba(244,239,227,0.15); color:rgba(244,239,227,0.55); font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; font-family:ui-monospace,Menlo,monospace" style-hover="border-color:#D4FF00; color:#D4FF00">X</a>
+      </div>
+      <span style="font-family:ui-monospace,Menlo,monospace; font-size:10.5px; color:rgba(244,239,227,0.3); margin-top:26px">© 2026 kria · made with hustle in India</span>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { p: 0, mx: 0.5, my: 0.5, vw: 1280, vh: 800, email: "", city: "Delhi NCR", sent: false, err: false };
+
+  componentDidMount() {
+    this._tmx = 0.5; this._tmy = 0.5; this._raf = null;
+    this._tick = () => {
+      if (this._raf) return;
+      this._raf = requestAnimationFrame(() => { this._raf = null; this._update(); });
+    };
+    this._onMove = (e) => {
+      this._tmx = e.clientX / Math.max(1, window.innerWidth);
+      this._tmy = e.clientY / Math.max(1, window.innerHeight);
+      this._tick();
+    };
+    window.addEventListener("scroll", this._tick, { passive: true });
+    window.addEventListener("resize", this._tick);
+    window.addEventListener("mousemove", this._onMove, { passive: true });
+    this._update();
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("scroll", this._tick);
+    window.removeEventListener("resize", this._tick);
+    window.removeEventListener("mousemove", this._onMove);
+    if (this._raf) cancelAnimationFrame(this._raf);
+  }
+
+  _update() {
+    const vh = window.innerHeight, vw = window.innerWidth;
+    let p = 0;
+    const story = document.getElementById("kria-story");
+    if (story) {
+      const total = Math.max(1, story.offsetHeight - vh);
+      const y = Math.min(Math.max(-story.getBoundingClientRect().top, 0), total);
+      p = (y / total) * 6;
+    }
+    this.setState({ p, mx: this._tmx, my: this._tmy, vw, vh });
+  }
+
+  renderVals() {
+    const { p, mx, my, vw, vh, email, city, sent, err } = this.state;
+    const cl = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+    const seg = (a, b) => cl((p - a) / (b - a));
+    const eo = (t) => 1 - Math.pow(1 - t, 3);
+    const M = vw < 860;
+    const contentW = Math.min(vw, 1200);
+    const margin = Math.max(0, (vw - contentW) / 2);
+    const hexA = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, "0");
+
+    // ---- chapter copy blocks ----
+    const copy = (i) => {
+      const tin = i === 0 ? 1 : eo(seg(i - 0.2, i + 0.08));
+      const tout = i === 5 ? 0 : eo(seg(i + 0.72, i + 1.04));
+      const o = tin * (1 - tout);
+      const y = (1 - tin) * 30 - tout * 26;
+      return {
+        position: "absolute",
+        left: M ? 22 : margin + 56,
+        right: M ? 22 : "auto",
+        top: M ? 64 : "50%",
+        transform: M ? `translateY(${y}px)` : `translateY(calc(-50% + ${y}px))`,
+        maxWidth: M ? 560 : Math.min(500, vw * 0.38),
+        opacity: o,
+        pointerEvents: o > 0.35 ? "auto" : "none",
+        zIndex: 6,
+        visibility: o <= 0.005 ? "hidden" : "visible",
+      };
+    };
+
+    // ---- phone screens ----
+    const scr = (inA, inB, outA, outB) => {
+      const ti = inA === null ? 1 : eo(seg(inA, inB));
+      const to = outA === null ? 0 : eo(seg(outA, outB));
+      const o = ti * (1 - to);
+      const blur = (1 - ti + to) * 5;
+      return {
+        position: "absolute", inset: 0, zIndex: 2,
+        opacity: o,
+        transform: `translateY(${(1 - ti) * 36 - to * 30}px) scale(${0.97 + 0.03 * ti - 0.03 * to})`,
+        filter: o > 0.005 && o < 0.99 ? `blur(${blur.toFixed(1)}px)` : "none",
+        visibility: o <= 0.005 ? "hidden" : "visible",
+        pointerEvents: "none",
+      };
+    };
+
+    // ---- swipe chapter (real app: card rides up, lime overlay, springs back, Applied) ----
+    const upT = eo(seg(2.05, 2.35));
+    const backB = eo(seg(2.42, 2.62));
+    const cardY = -150 * upT * (1 - backB);
+    const overlayO = cl(upT * 2 - 0.15) * (1 - cl(backB * 1.8));
+    const applied = eo(seg(2.62, 2.84));
+
+    // ---- check-in / pay chapter ----
+    const oP = seg(3.05, 3.38);
+    const otp = (i) => {
+      const t = cl(oP * 4 - i);
+      return {
+        width: 44, height: 52, borderRadius: 12, display: "inline-flex",
+        alignItems: "center", justifyContent: "center",
+        fontSize: 22, fontWeight: 700, fontFamily: "'Space Grotesk', Inter, sans-serif",
+        color: t > 0.5 ? "#D4FF00" : "rgba(255,255,255,0.2)",
+        background: "rgba(212,255,0,0.06)",
+        border: t > 0.5 ? "1px solid rgba(212,255,0,0.45)" : "1px solid rgba(255,255,255,0.1)",
+        opacity: 0.3 + 0.7 * t,
+        transform: `scale(${0.85 + 0.15 * t})`,
+        transition: "border 0.2s, color 0.2s",
+      };
+    };
+    const ckT = eo(seg(3.4, 3.55));
+    const payT = eo(seg(3.55, 3.78));
+    const payAmt = Math.round(1700 * eo(seg(3.55, 3.85)));
+
+    // ---- momentum chapter ----
+    const mT = eo(seg(4.05, 4.78));
+    const score = Math.round(712 * mT);
+    const BANDS = [
+      { label: "Newcomer", min: 0, color: "#9a9a9a" },
+      { label: "Building", min: 100, color: "#ff7351" },
+      { label: "Reliable", min: 300, color: "#8097ff" },
+      { label: "Trusted", min: 500, color: "#FFC83D" },
+      { label: "Elite", min: 700, color: "#D4FF00" },
+      { label: "Legend", min: 900, color: "#ffffff" },
+    ];
+    const band = BANDS.slice().reverse().find((b) => score >= b.min) || BANDS[0];
+    const deg = 270 * (score / 1000);
+
+    // ---- host chapter ----
+    const hT = seg(5.05, 5.7);
+    const roleFill = (off) => cl(hT * 1.7 - off);
+    const fa = roleFill(0), fb = roleFill(0.3), fc = roleFill(0.55);
+    const roleBar = (f) => ({
+      display: "block", height: "100%", width: `${Math.round(f * 100)}%`,
+      borderRadius: 99, background: "#D4FF00", boxShadow: "0 0 8px rgba(212,255,0,0.4)",
+    });
+    const hostRow = (i) => {
+      const t = eo(cl(hT * 4.2 - i * 0.85));
+      return {
+        display: "flex", alignItems: "center", gap: 9,
+        padding: "8px 11px", borderRadius: 12,
+        background: "#1a1919", border: "1px solid rgba(255,255,255,0.1)",
+        opacity: t, transform: `translateX(${(1 - t) * 18}px)`,
+      };
+    };
+
+    // ---- glows ----
+    const gc = ["#D4FF00", "#8ae2ff", "#D4FF00", "#FFC83D", "#D4FF00", "#e08bf0"];
+    const ci = Math.min(5, Math.floor(p));
+    const cf = p - ci;
+    const glow = (color, op) => ({
+      position: "absolute",
+      top: "6%",
+      right: M ? "-35%" : "-4%",
+      width: M ? "130vw" : "58vw",
+      height: "88vh",
+      background: `radial-gradient(closest-side, ${hexA(color, 0.15)}, transparent 72%)`,
+      opacity: op, zIndex: 1, pointerEvents: "none",
+    });
+
+    // ---- phone placement ----
+    const mTop = Math.max(vh * 0.46, 380);
+    const s = M
+      ? Math.min((vw * 0.72) / 322, (vh - mTop - 12) / 700)
+      : Math.min(1, (vh * 0.84) / 700, (contentW * 0.32) / 322);
+    const phoneWrap = M
+      ? { position: "absolute", top: mTop, left: "50%", transform: `translateX(-50%) scale(${s.toFixed(3)})`, transformOrigin: "top center", zIndex: 5, perspective: 1200 }
+      : { position: "absolute", top: "50%", right: margin + 64, transform: `translateY(-50%) scale(${s.toFixed(3)})`, transformOrigin: "center", zIndex: 5, perspective: 1200 };
+    const phoneTilt = {
+      position: "relative",
+      transform: M
+        ? `rotate(${(Math.sin(p * 0.85) * 1.1).toFixed(2)}deg)`
+        : `rotateY(${((mx - 0.5) * 7).toFixed(2)}deg) rotateX(${((0.5 - my) * 4).toFixed(2)}deg) rotate(${(Math.sin(p * 0.85) * 1.3).toFixed(2)}deg)`,
+      transformStyle: "preserve-3d",
+      transition: "transform 0.25s ease-out",
+    };
+    const sheen = {
+      position: "absolute", inset: 0, borderRadius: 44, zIndex: 40, pointerEvents: "none",
+      background: "linear-gradient(115deg, transparent 32%, rgba(255,255,255,0.07) 45%, rgba(255,255,255,0.02) 52%, transparent 62%)",
+      transform: `translateX(${((mx - 0.5) * 70).toFixed(1)}px)`,
+    };
+
+    const fmt = (n) => n.toLocaleString("en-IN");
+
+    return {
+      d: {
+        navPocket: {
+          display: M ? "none" : "inline-block",
+          fontFamily: "ui-monospace, Menlo, monospace",
+          fontSize: 11, color: "rgba(244,239,227,0.4)", letterSpacing: "0.04em",
+        },
+        glowA: glow(gc[ci], (1 - cf)),
+        glowB: glow(gc[Math.min(5, ci + 1)], cf),
+        copy0: copy(0), copy1: copy(1), copy2: copy(2), copy3: copy(3), copy4: copy(4), copy5: copy(5),
+        phoneWrap, phoneTilt, sheen,
+        scrollHint: {
+          position: "absolute", left: "50%", bottom: 26, transform: "translateX(-50%)",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+          opacity: 1 - seg(0.04, 0.3), zIndex: 7, pointerEvents: "none",
+        },
+        scrFeed: scr(null, null, 1.75, 2.05),
+        scrSwipe: scr(1.75, 2.05, 2.75, 3.05),
+        scrPay: scr(2.75, 3.05, 3.75, 4.05),
+        scrMom: scr(3.75, 4.05, 4.75, 5.05),
+        scrHost: scr(4.75, 5.05, null, null),
+        // swipe (explore deck)
+        swipeTop: {
+          position: "absolute", inset: 0, zIndex: 3,
+          transform: `translateY(${cardY.toFixed(0)}px)`,
+        },
+        applyOverlay: {
+          position: "absolute", inset: 0, borderRadius: 24, zIndex: 5,
+          background: "rgba(212,255,0,0.92)",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
+          opacity: overlayO,
+          visibility: overlayO <= 0.005 ? "hidden" : "visible",
+        },
+        appliedChip: {
+          marginTop: 6,
+          opacity: applied,
+          transform: `scale(${0.7 + 0.3 * applied})`,
+          visibility: applied <= 0.005 ? "hidden" : "visible",
+        },
+        swipeHint: {
+          position: "absolute", left: 0, right: 0, bottom: 10,
+          display: "flex", justifyContent: "center",
+          opacity: 1 - cl(upT * 3), zIndex: 6, pointerEvents: "none",
+        },
+        // check-in / pay
+        otp0: otp(0), otp1: otp(1), otp2: otp(2), otp3: otp(3),
+        checkPop: { opacity: ckT, transform: `scale(${0.6 + 0.4 * ckT})` },
+        payCard: { opacity: payT, transform: `translateY(${((1 - payT) * 42).toFixed(0)}px)` },
+        earnPay: fmt(payAmt),
+        earnWeek: fmt(2550 + payAmt),
+        // arena / momentum
+        momScore: String(score),
+        momBand: band.label,
+        momScoreStyle: {
+          fontFamily: "'Space Grotesk', Inter, sans-serif",
+          fontSize: 36, fontWeight: 700, lineHeight: 1,
+          letterSpacing: "-0.02em", color: band.color,
+        },
+        momBandPill: {
+          display: "inline-flex", alignItems: "center", gap: 5,
+          padding: "3px 10px", borderRadius: 20,
+          background: hexA(band.color, 0.13), border: `1px solid ${hexA(band.color, 0.27)}`,
+          fontSize: 10, fontWeight: 700, color: band.color,
+          transition: "all 0.3s",
+        },
+        momBandDot: { width: 5, height: 5, borderRadius: 3, background: band.color },
+        momBandVal: { fontSize: 17, fontWeight: 700, color: band.color },
+        gauge: {
+          position: "absolute", inset: 0, borderRadius: 999,
+          background: `conic-gradient(from 225deg, ${band.color} 0deg ${deg.toFixed(1)}deg, rgba(255,255,255,0.08) ${deg.toFixed(1)}deg 270deg, transparent 270deg 360deg)`,
+          filter: `drop-shadow(0 0 16px ${hexA(band.color, 0.35)})`,
+        },
+        // host / grid
+        roleA: roleBar(fa), roleB: roleBar(fb), roleC: roleBar(fc),
+        roleAC: `${Math.round(4 * fa)}/4`,
+        roleBC: `${Math.round(3 * fb)}/3`,
+        roleCC: `${Math.round(2 * fc)}/2`,
+        hostRow0: hostRow(0), hostRow1: hostRow(1), hostRow2: hostRow(2), hostRow3: hostRow(3),
+        // waitlist
+        email, city, sent, err, notSent: !sent,
+        onEmail: (e) => this.setState({ email: e.target.value, err: false }),
+        onCity: (e) => this.setState({ city: e.target.value }),
+        onSubmit: () => {
+          if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(this.state.email)) this.setState({ sent: true, err: false });
+          else this.setState({ err: true });
+        },
+      },
+    };
+  }
+}
+</script>
 </body>
 </html>

@@ -79,6 +79,7 @@ temp/
 *google*service-account*.json*
 *kria-pocket-firebase-*.json*
 google-services-key.json
+*google-S-trykria.json*
 
 # google-services.json is a public config file (safe to commit for EAS builds)
 # It is NOT ignored — EAS cloud builds need it from git
