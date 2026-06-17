@@ -42,6 +42,7 @@ LABEL org.opencontainers.image.description="ID verification pipeline — open-so
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 libglib2.0-0 libgomp1 \
+    tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
 # Python packages from builder

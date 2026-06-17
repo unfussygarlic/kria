@@ -60,6 +60,27 @@ class VerifyResponse(BaseModel):
         description="MiniFASNetV1SE live probability for ID card face [0-1]. Lower = more likely a document.",
     )
 
+    id_type_detected: Optional[str] = Field(
+        None,
+        description="Detected document type: 'aadhaar' | 'pan' | 'passport' | 'driving_license' | 'voter_id' | null",
+    )
+    id_type_label: Optional[str] = Field(
+        None,
+        description="Human-readable label for the detected type e.g. 'Aadhaar', 'PAN Card'",
+    )
+    id_type_confidence: str = Field(
+        default="low",
+        description="OCR classification confidence: 'high' | 'medium' | 'low'",
+    )
+    id_type_match: Optional[bool] = Field(
+        None,
+        description=(
+            "True = detected type matches expected_id_type. "
+            "False = mismatch (wrong document submitted). "
+            "None = no expected_id_type was provided, or OCR could not classify the document."
+        ),
+    )
+
     error: Optional[str] = Field(
         None,
         description="Machine-readable error code if pipeline aborted early",

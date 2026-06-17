@@ -93,6 +93,22 @@
       </div>
     </div>
 
+    <!-- ── Expected document type ────────────────────────────────── -->
+    <div class="doc-type-row">
+      <label for="expected-id-type" class="doc-type-label">Expected Document Type</label>
+      <select id="expected-id-type" class="doc-type-select">
+        <option value="">Any (no enforcement)</option>
+        <option value="aadhaar">Aadhaar</option>
+        <option value="pan">PAN Card</option>
+        <option value="passport">Passport</option>
+        <option value="driving_license">Driving License</option>
+        <option value="voter_id">Voter ID</option>
+      </select>
+      <p class="doc-type-hint">
+        Require a specific document type — submissions that don't match will be rejected.
+      </p>
+    </div>
+
     <!-- ── Verify button ───────────────────────────────────────── -->
     <div class="verify-row">
       <button class="btn btn-verify" id="btn-verify" disabled>
@@ -154,6 +170,14 @@
         <div class="result-card">
           <div class="result-label">ID is Document</div>
           <div class="result-value" id="res-id-document">—</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">Document Type</div>
+          <div class="result-value" id="res-id-type">—</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">Type Match</div>
+          <div class="result-value" id="res-type-match">—</div>
         </div>
       </div>
 

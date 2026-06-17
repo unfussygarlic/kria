@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
 import { rf, rw, SCREEN } from "@/constants/responsive";
+import Logo from "@/assets/logo.svg";
 
 export default function LoginScreen() {
   const [phone, setPhone] = useState("");
@@ -56,7 +57,7 @@ export default function LoginScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
-          <Text style={styles.logo}>Kria</Text>
+          <Logo width={rw(64)} height={rw(64)} />
           <Text style={styles.tagline}>Event gigs for students</Text>
         </LinearGradient>
 
@@ -129,13 +130,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     paddingHorizontal: rw(28),
     paddingBottom: rw(36),
-  },
-  logo: {
-    fontSize: rf(52),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: "#000",
-    letterSpacing: -1,
   },
   tagline: {
     fontSize: rf(15),

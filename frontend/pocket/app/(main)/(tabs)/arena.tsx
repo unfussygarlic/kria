@@ -156,7 +156,7 @@ const statsStyles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: T.surface,
-    borderRadius: 14,
+    borderRadius: rw(14),
     borderWidth: 1,
     borderColor: T.border,
     padding: rw(16),
@@ -166,10 +166,12 @@ const statsStyles = StyleSheet.create({
   value: {
     fontSize: rf(20),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
   },
   label: {
     fontSize: rf(11),
+    fontFamily: "SpaceGrotesk_500Medium",
     color: T.textMuted,
     textAlign: "center",
   },
@@ -201,7 +203,7 @@ function HowItWorksCard() {
 const howStyles = StyleSheet.create({
   card: {
     backgroundColor: T.surface,
-    borderRadius: 16,
+    borderRadius: rw(16),
     borderWidth: 1,
     borderColor: T.border,
     padding: rw(20),
@@ -268,7 +270,7 @@ function ComingSoonCard() {
 
 const csStyles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: rw(16),
     borderWidth: 1,
     borderColor: T.primary + "30",
     overflow: "hidden",
@@ -377,7 +379,7 @@ const styles = StyleSheet.create({
   },
   gaugeCard: {
     backgroundColor: T.surface,
-    borderRadius: 20,
+    borderRadius: rw(20),
     borderWidth: 1,
     borderColor: T.border,
     alignItems: "center",

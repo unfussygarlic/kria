@@ -222,6 +222,46 @@ main {
 }
 .thumb-ok { background: var(--green); color: #000; }
 
+/* ── Document type selector ────────────────────────────────────── */
+.doc-type-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.doc-type-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.doc-type-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.2rem;
+}
+.doc-type-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.doc-type-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 /* ── Verify row ────────────────────────────────────────────────── */
 .verify-row {
   display: flex;

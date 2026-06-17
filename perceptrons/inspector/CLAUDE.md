@@ -8,13 +8,14 @@ Complete context for AI agents picking up this project. Read this before touchin
 
 Inspector is a **production-ready, fully open-source ID verification pipeline** with no paid API dependencies. Given a photo of an identity document and a selfie (image or short video), it:
 
+0. Classifies the ID document type using OCR (Tesseract) — detects Aadhaar, PAN, Passport, Driving License, Voter ID.
 1. Detects the face on the ID card and in the selfie using RetinaFace.
 2. Generates 512-dim ArcFace embeddings for both faces.
 3. Computes cosine similarity to decide if they're the same person.
 4. Runs passive liveness detection (blink + head movement) on selfie video.
 5. Runs anti-spoofing to reject fraud attempts (printed ID used as selfie, duplicate image submission).
 
-**Stack:** FastAPI backend · InsightFace (RetinaFace + ArcFace MobileFaceNet) · MediaPipe FaceMesh · MinivisionAI MiniFASNetV1SE (ONNX) · nginx frontend · Docker Compose.
+**Stack:** FastAPI backend · InsightFace (RetinaFace + ArcFace MobileFaceNet) · MediaPipe FaceMesh · MinivisionAI MiniFASNetV1SE (ONNX) · Tesseract OCR · nginx frontend · Docker Compose.
 
 **License constraint:** Every model/library is MIT or Apache 2.0 — safe for commercial use. MinivisionAI Silent-Face-Anti-Spoofing is MIT licensed.
 
@@ -33,6 +34,7 @@ Inspector/
 │   ├── liveness_checker.py # LivenessChecker singleton — MediaPipe blink+yaw
 │   ├── anti_spoof.py     # Orchestrates all anti-spoof checks
 │   ├── silent_face.py    # SilentFaceChecker singleton — MiniFASNetV1SE ONNX
+│   ├── id_classifier.py  # classify_id_document() — Tesseract OCR, Indian ID types
 │   └── pipeline.py       # run_verification() — top-level orchestrator
 ├── utils/
 │   ├── image_utils.py    # load, resize, enhance, blur estimation

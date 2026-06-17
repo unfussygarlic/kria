@@ -18,6 +18,7 @@ import { T } from "@/constants/colors";
 import { L } from "@/constants/labels";
 import { SwipeableJobCard } from "@/components/gig/SwipeableJobCard";
 import { Feather } from "@expo/vector-icons";
+import { rf, rw } from "@/constants/responsive";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const CARD_W = SCREEN_W * 0.93;
@@ -107,18 +108,14 @@ export default function ExploreScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {/* ── Slim header ── */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.flameBadge}>🔥</Text>
-          <Text style={styles.headerTitle}>Flames</Text>
-        </View>
-        {profile?.city && (
+      {profile?.city && (
+        <View style={styles.header}>
           <View style={styles.locationPill}>
-            <Feather name="map-pin" size={12} color={T.primary} />
+            <Feather name="map-pin" size={rw(12)} color={T.primary} />
             <Text style={styles.locationPillText}>{profile.city}</Text>
           </View>
-        )}
-      </View>
+        </View>
+      )}
 
       {/* ── Card deck ── */}
       {isLoading && availableGigs.length === 0 ? (
@@ -177,47 +174,32 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 40,
-    gap: 16,
+    padding: rw(40),
+    gap: rw(16),
   },
 
-  // Header
+  // Header — location pill only
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 10,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  flameBadge: {
-    fontSize: 18,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
+    paddingHorizontal: rw(20),
+    paddingTop: rw(12),
+    paddingBottom: rw(10),
   },
   locationPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    alignSelf: "flex-start",
+    gap: rw(5),
+    paddingHorizontal: rw(10),
+    paddingVertical: rw(5),
     backgroundColor: T.surface,
-    borderRadius: 20,
+    borderRadius: rw(20),
     borderWidth: 1,
     borderColor: T.border,
   },
   locationPillText: {
-    fontSize: 12,
+    fontSize: rf(12),
     fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.textSub,
   },
 
@@ -226,8 +208,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    gap: 16,
-    paddingBottom: 16,
+    gap: rw(16),
+    paddingBottom: rw(16),
   },
   deckCenter: {
     alignItems: "stretch",
@@ -243,39 +225,42 @@ const styles = StyleSheet.create({
   hintItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
+    gap: rw(3),
   },
   hintText: {
-    fontSize: 11,
-    color: T.textMuted,
+    fontSize: rf(11),
     fontWeight: "500",
+    fontFamily: "SpaceGrotesk_500Medium",
+    color: T.textMuted,
   },
   applyHint: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    gap: rw(5),
+    paddingHorizontal: rw(14),
+    paddingVertical: rw(6),
     backgroundColor: T.selBg,
-    borderRadius: 20,
+    borderRadius: rw(20),
   },
   applyHintText: {
-    fontSize: 12,
+    fontSize: rf(12),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.selText,
-    fontFamily: "SpaceGrotesk_600SemiBold",
   },
 
   // Empty state
   emptyTitle: {
-    fontSize: 20,
+    fontSize: rf(20),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
   },
   emptySubtitle: {
-    fontSize: 15,
+    fontSize: rf(15),
+    fontFamily: "SpaceGrotesk_400Regular",
     color: T.textSub,
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: rf(22),
   },
 });

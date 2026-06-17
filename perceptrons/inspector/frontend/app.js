@@ -327,6 +327,8 @@ btnVerify.addEventListener('click', async () => {
   form.append('id_image', state.idBlob, 'id_card.jpg');
   const selfieFilename = state.selfieIsVid ? 'selfie.webm' : 'selfie.jpg';
   form.append('selfie', state.selfieBlob, selfieFilename);
+  const expectedType = $('expected-id-type').value;
+  if (expectedType) form.append('expected_id_type', expectedType);
 
   try {
     const res  = await fetch('/verify', { method: 'POST', body: form });
@@ -409,6 +411,29 @@ function renderResults(d) {
   } else {
     docEl.textContent = '—';
     docEl.style.color = '';
+  }
+
+  // ID document type classification
+  const typeEl = $('res-id-type');
+  if (d.id_type_detected) {
+    const confColors = { high: 'var(--green)', medium: 'var(--yellow)', low: 'var(--red)' };
+    typeEl.textContent = `${d.id_type_label || d.id_type_detected} (${d.id_type_confidence})`;
+    typeEl.style.color = confColors[d.id_type_confidence] ?? '';
+  } else {
+    typeEl.textContent = 'Unknown';
+    typeEl.style.color = 'var(--text-muted)';
+  }
+
+  const typeMatchEl = $('res-type-match');
+  if (d.id_type_match === true) {
+    typeMatchEl.textContent = 'Match ✓';
+    typeMatchEl.style.color = 'var(--green)';
+  } else if (d.id_type_match === false) {
+    typeMatchEl.textContent = 'Mismatch ✗';
+    typeMatchEl.style.color = 'var(--red)';
+  } else {
+    typeMatchEl.textContent = 'N/A';
+    typeMatchEl.style.color = 'var(--text-muted)';
   }
 
   // Spoof banner

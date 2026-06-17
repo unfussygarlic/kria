@@ -1,6 +1,7 @@
 import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { T } from "@/constants/colors";
+import { rw } from "@/constants/responsive";
 
 interface StickyFooterProps {
   children: React.ReactNode;
@@ -31,7 +32,7 @@ const styles = StyleSheet.create({
     backgroundColor: T.surface,
     borderTopWidth: 1,
     borderTopColor: T.border,
-    paddingTop: 12,
-    paddingHorizontal: 16,
+    paddingTop: rw(12),
+    paddingHorizontal: rw(16),
   },
 });

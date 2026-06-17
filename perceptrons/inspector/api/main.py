@@ -14,11 +14,12 @@ from pathlib import Path
 from typing import Optional
 
 import aiofiles
-from fastapi import FastAPI, File, HTTPException, UploadFile, status
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.schemas import VerifyResponse
 from config import settings
+from services.id_classifier import KNOWN_ID_TYPES
 from services.pipeline import run_verification
 from utils.image_utils import load_image_bytes, load_image_path
 from utils.video_utils import extract_frames
@@ -79,16 +80,31 @@ async def verify(
         ...,
         description="Selfie — image (JPEG/PNG/WebP) or short video (MP4/WebM/MOV) for liveness",
     ),
+    expected_id_type: Optional[str] = Form(
+        None,
+        description=(
+            "Optional. Enforce that the uploaded ID is a specific document type. "
+            "Allowed values: aadhaar, pan, passport, driving_license, voter_id. "
+            "If the document doesn't match, verification fails with error='id_type_mismatch'."
+        ),
+    ),
 ) -> VerifyResponse:
     """
     **Inputs**
-    - `id_image` — photo of an ID card (Aadhaar, PAN, passport …)
-    - `selfie`   — user selfie (image or ≤30 s video for liveness check)
+    - `id_image`          — photo of an ID card (Aadhaar, PAN, passport …)
+    - `selfie`            — user selfie (image or ≤30 s video for liveness check)
+    - `expected_id_type`  — optional; enforce a specific document type
 
     **Returns** a JSON object with match score, decision, and optional liveness result.
     """
     _assert_content_type(id_image, _SUPPORTED_IMAGE_TYPES)
     _assert_content_type(selfie, _ALL_SUPPORTED)
+
+    if expected_id_type is not None and expected_id_type not in KNOWN_ID_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unknown id type '{expected_id_type}'. Allowed: {sorted(KNOWN_ID_TYPES)}",
+        )
 
     # Read ID image into memory directly (small file, no need to stream to disk)
     id_bytes = await id_image.read()
@@ -124,6 +140,7 @@ async def verify(
             id_image=id_image_np,
             selfie_image=selfie_image_np,
             selfie_frames=selfie_frames,
+            expected_id_type=expected_id_type,
         )
 
         return VerifyResponse(**result.to_dict())

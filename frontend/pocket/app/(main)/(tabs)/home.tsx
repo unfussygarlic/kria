@@ -645,8 +645,9 @@ const styles = StyleSheet.create({
   },
   topGreeting: {
     fontSize: rf(12),
-    color: T.textMuted,
     fontWeight: "500",
+    fontFamily: "SpaceGrotesk_500Medium",
+    color: T.textMuted,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
@@ -697,8 +698,9 @@ const styles = StyleSheet.create({
   },
   sectionLink: {
     fontSize: rf(13),
-    color: T.primary,
     fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: T.primary,
   },
 
   // ── Band hero card ──
@@ -728,6 +730,7 @@ const styles = StyleSheet.create({
   heroScoreLabel: {
     fontSize: rf(10),
     fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.textMuted,
     letterSpacing: 1.5,
     textTransform: "uppercase",
@@ -757,6 +760,7 @@ const styles = StyleSheet.create({
   heroBandLabel: {
     fontSize: rf(12),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
   },
   heroProgressSection: {
     gap: rw(6),
@@ -774,8 +778,9 @@ const styles = StyleSheet.create({
   },
   heroProgressLabel: {
     fontSize: rf(11),
-    color: T.textMuted,
     fontWeight: "500",
+    fontFamily: "SpaceGrotesk_500Medium",
+    color: T.textMuted,
   },
   heroStats: {
     flexDirection: "row",
@@ -793,10 +798,12 @@ const styles = StyleSheet.create({
   heroStatVal: {
     fontSize: rf(13),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
   },
   heroStatKey: {
     fontSize: rf(11),
+    fontFamily: "SpaceGrotesk_400Regular",
     color: T.textMuted,
   },
   heroStatDivider: {
@@ -834,12 +841,14 @@ const styles = StyleSheet.create({
   badgeName: {
     fontSize: rf(12),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
     lineHeight: rf(16),
   },
   badgeCat: {
     fontSize: rf(10),
     fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
     textTransform: "capitalize",
   },
 
@@ -881,6 +890,7 @@ const styles = StyleSheet.create({
   recentCatLabel: {
     fontSize: rf(9),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     textTransform: "uppercase",
     letterSpacing: 0.3,
     flexShrink: 1,
@@ -894,10 +904,12 @@ const styles = StyleSheet.create({
   recentStatusText: {
     fontSize: rf(9),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
   },
   recentGigTitle: {
     fontSize: rf(13),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
     lineHeight: rf(18),
     flex: 1,
@@ -919,6 +931,7 @@ const styles = StyleSheet.create({
   },
   recentGigMetaText: {
     fontSize: rf(10),
+    fontFamily: "SpaceGrotesk_400Regular",
     color: T.textMuted,
   },
 
@@ -951,6 +964,7 @@ const styles = StyleSheet.create({
   gigTitle: {
     fontSize: rf(13),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
     lineHeight: rf(17),
   },
@@ -969,6 +983,7 @@ const styles = StyleSheet.create({
   },
   gigDist: {
     fontSize: rf(10),
+    fontFamily: "SpaceGrotesk_400Regular",
     color: T.textMuted,
   },
 
@@ -991,6 +1006,7 @@ const styles = StyleSheet.create({
   },
   gigsEmptyText: {
     fontSize: rf(13),
+    fontFamily: "SpaceGrotesk_400Regular",
     color: T.textMuted,
   },
 });

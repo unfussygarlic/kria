@@ -22,6 +22,7 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const session = useAuthStore((s) => s.session);
   const notificationListener = useRef<Notifications.EventSubscription>();
   const responseListener = useRef<Notifications.EventSubscription>();
 
@@ -42,10 +43,14 @@ export default function RootLayout() {
     initialize();
   }, []);
 
+  // Register push token when user logs in (session.user.id as dep ensures
+  // re-registration on account switch, skips on every token refresh).
   useEffect(() => {
-    // Register for push notifications after app mounts
+    if (!session?.user.id) return;
     registerForPushNotifications();
+  }, [session?.user.id]);
 
+  useEffect(() => {
     // Log foreground notifications (add deep-link navigation here later)
     notificationListener.current = Notifications.addNotificationReceivedListener(
       (notification) => {

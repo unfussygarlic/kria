@@ -24,3 +24,6 @@ aiofiles>=23.2.0
 
 # Anti-spoofing — perceptual image hashing (duplicate detection)
 imagehash>=4.3.1
+
+# ID document classification — OCR wrapper (tesseract binary required in runtime image)
+pytesseract>=0.3.10
