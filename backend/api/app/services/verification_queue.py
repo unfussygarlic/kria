@@ -30,6 +30,18 @@ logger = logging.getLogger(__name__)
 
 INSPECTOR_URL = os.getenv("INSPECTOR_URL", "http://inspector:8000")
 
+# Map backend id_type values → Inspector's KNOWN_ID_TYPES.
+# Backend uses British spelling ("driving_licence"); Inspector uses American ("driving_license").
+# Types not in this map (e.g. "gstin") have no Inspector equivalent — send None to skip enforcement.
+_INSPECTOR_ID_TYPE: dict[str, str | None] = {
+    "aadhaar":         "aadhaar",
+    "pan":             "pan",
+    "passport":        "passport",
+    "driving_licence": "driving_license",
+    "voter_id":        "voter_id",
+    "gstin":           None,
+}
+
 
 @dataclass
 class VerificationJob:
@@ -74,7 +86,11 @@ async def _process(job: VerificationJob) -> None:
                     "id_image": ("id.jpg",     job.id_bytes,     job.id_content_type),
                     "selfie":   ("selfie.jpg",  job.selfie_bytes, job.selfie_content_type),
                 },
-                data={"expected_id_type": job.id_type},
+                data={
+                    k: v for k, v in {
+                        "expected_id_type": _INSPECTOR_ID_TYPE.get(job.id_type)
+                    }.items() if v is not None
+                },
             )
     except httpx.RequestError as exc:
         logger.error("Inspector unreachable for job %s: %r (type=%s)", job.job_id, exc, type(exc).__name__)
