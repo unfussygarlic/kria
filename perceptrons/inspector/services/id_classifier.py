@@ -49,11 +49,21 @@ class IDClassificationResult:
         }
 
 
+_OCR_MAX_SIDE = 1500  # cap before Tesseract — larger images are much slower with no accuracy gain
+_OCR_MIN_SIDE = 1000  # upscale very small images for better text recall
+
+
 def _preprocess(image: np.ndarray) -> np.ndarray:
-    """Upscale small images and apply adaptive threshold for better OCR accuracy."""
+    """Resize to OCR-friendly dimensions and apply adaptive threshold."""
     h, w = image.shape[:2]
-    if max(h, w) < 1000:
-        scale = 1000 / max(h, w)
+    long_side = max(h, w)
+    if long_side > _OCR_MAX_SIDE:
+        scale = _OCR_MAX_SIDE / long_side
+        image = cv2.resize(
+            image, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA
+        )
+    elif long_side < _OCR_MIN_SIDE:
+        scale = _OCR_MIN_SIDE / long_side
         image = cv2.resize(
             image, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_CUBIC
         )
@@ -131,12 +141,19 @@ def classify_id_document(image: np.ndarray) -> IDClassificationResult:
     try:
         # Two OCR passes: colour original + preprocessed (grayscale + threshold).
         # Combining both maximises text recall on varying ID card quality.
+        # Both passes use size-capped images — large images make Tesseract very slow
+        h, w = image.shape[:2]
+        long_side = max(h, w)
+        if long_side > _OCR_MAX_SIDE:
+            scale = _OCR_MAX_SIDE / long_side
+            image = cv2.resize(image, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+
         text_colour = pytesseract.image_to_string(
-            image, lang="eng", config="--psm 11 --oem 3"
+            image, lang="eng", config="--psm 11 --oem 3", timeout=20
         )
         processed = _preprocess(image)
         text_thresh = pytesseract.image_to_string(
-            processed, lang="eng", config="--psm 11 --oem 3"
+            processed, lang="eng", config="--psm 11 --oem 3", timeout=20
         )
         combined = text_colour + " " + text_thresh
 
