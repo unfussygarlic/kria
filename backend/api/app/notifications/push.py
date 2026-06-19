@@ -140,7 +140,7 @@ async def send_shift_reminders() -> None:
                 JOIN gigs g ON g.id = asgn.gig_id
                 JOIN profiles p ON p.id = asgn.worker_id
                 WHERE
-                    asgn.status = 'accepted'
+                    asgn.status = 'assigned'
                     AND p.push_token IS NOT NULL
                     AND (g.event_date + g.shift_start_time::time)
                         AT TIME ZONE 'Asia/Kolkata' AT TIME ZONE 'UTC'
