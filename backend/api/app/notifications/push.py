@@ -120,7 +120,9 @@ async def notify_verification_failed(user_id: str, id_type: str, error_code: str
 
 async def send_shift_reminders() -> None:
     """Scheduled job: notify runners 2 hours before their accepted shift starts."""
-    now = datetime.now(timezone.utc)
+    # Strip tzinfo: asyncpg infers `timestamp` (naive) from the AT TIME ZONE SQL
+    # expression and rejects timezone-aware datetimes for that type.
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     window_start = now + timedelta(hours=2)
     window_end = now + timedelta(hours=2, minutes=5)
 

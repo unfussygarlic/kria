@@ -36,15 +36,38 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Warm up models at startup so the first real request isn't slow.
-    logger.info("Warming up face detector models...")
-    try:
-        blank = np.zeros((100, 100, 3), dtype=np.uint8)
-        FaceDetector().detect_all(blank)
-        logger.info("Model warmup complete.")
-    except Exception:
-        logger.warning("Model warmup failed (non-fatal)", exc_info=True)
+    # Warm up all models at startup so the first real request isn't slow.
+    # FaceDetector, LivenessChecker, and Tesseract each take 30–60 s on first use.
+    import asyncio
+    await asyncio.get_event_loop().run_in_executor(None, _warmup_models)
     yield
+
+
+def _warmup_models() -> None:
+    import pytesseract
+    from services.liveness_checker import LivenessChecker
+
+    blank = np.zeros((100, 100, 3), dtype=np.uint8)
+
+    logger.info("Warmup: loading InsightFace...")
+    try:
+        FaceDetector().detect_all(blank)
+    except Exception:
+        logger.warning("InsightFace warmup failed (non-fatal)", exc_info=True)
+
+    logger.info("Warmup: loading MediaPipe FaceMesh...")
+    try:
+        LivenessChecker().check_frames([blank])
+    except Exception:
+        logger.warning("MediaPipe warmup failed (non-fatal)", exc_info=True)
+
+    logger.info("Warmup: loading Tesseract OCR...")
+    try:
+        pytesseract.image_to_string(blank)
+    except Exception:
+        logger.warning("Tesseract warmup failed (non-fatal)", exc_info=True)
+
+    logger.info("All models warmed up — ready to serve.")
 
 
 app = FastAPI(
