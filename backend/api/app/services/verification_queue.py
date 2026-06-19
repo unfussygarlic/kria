@@ -76,7 +76,7 @@ async def _process(job: VerificationJob) -> None:
                 },
             )
     except httpx.RequestError as exc:
-        logger.error("Inspector unreachable for job %s: %s", job.job_id, exc)
+        logger.error("Inspector unreachable for job %s: %r (type=%s)", job.job_id, exc, type(exc).__name__)
         await _set_job(job.job_id, "failed", "service_unavailable")
         return
 
