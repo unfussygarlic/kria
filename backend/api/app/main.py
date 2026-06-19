@@ -15,6 +15,18 @@ from app.routers import account, applicants, badges, chat, email as email_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Mark any pending/processing jobs as failed — they were in the in-memory queue
+    # when the server last restarted and will never be processed now.
+    from app.db.session import AsyncSessionLocal
+    from sqlalchemy import text as _text
+    async with AsyncSessionLocal() as db:
+        await db.execute(_text("""
+            UPDATE verification_jobs
+            SET status = 'failed', error_code = 'service_unavailable', updated_at = now()
+            WHERE status IN ('pending', 'processing')
+        """))
+        await db.commit()
+
     # Verification worker
     from app.services.verification_queue import worker
     task = asyncio.create_task(worker())

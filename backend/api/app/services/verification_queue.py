@@ -58,13 +58,19 @@ class VerificationJob:
 job_queue: asyncio.Queue[VerificationJob] = asyncio.Queue()
 
 
+_JOB_TIMEOUT_SECONDS = 300  # Inspector can be slow on CPU; 5 min is a hard ceiling
+
+
 async def worker() -> None:
     """Runs as a long-lived asyncio task (started in lifespan). Processes one job at a time."""
     logger.info("Verification worker started")
     while True:
         job: VerificationJob = await job_queue.get()
         try:
-            await _process(job)
+            await asyncio.wait_for(_process(job), timeout=_JOB_TIMEOUT_SECONDS)
+        except asyncio.TimeoutError:
+            logger.error("Job %s timed out after %ds", job.job_id, _JOB_TIMEOUT_SECONDS)
+            await _set_job(job.job_id, "failed", "service_unavailable")
         except Exception:
             logger.exception("Unhandled error in verification worker for job %s", job.job_id)
             await _set_job(job.job_id, "failed", "internal_error")

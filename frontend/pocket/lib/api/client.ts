@@ -56,16 +56,21 @@ export async function apiPost<T>(
 
 export async function apiPostFormData<T>(
   path: string,
-  formData: FormData
+  formData: FormData,
+  timeoutMs = 30_000,
 ): Promise<ApiResult<T>> {
   const auth = await getAuthHeader();
   if (!auth) return { data: null, error: "Not authenticated" };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(`${API_URL}${path}`, {
       method: "POST",
       headers: { Authorization: auth },
       body: formData,
+      signal: controller.signal,
     });
 
     if (!res.ok) {
@@ -74,8 +79,13 @@ export async function apiPostFormData<T>(
     }
 
     return { data: (await res.json()) as T, error: null };
-  } catch {
+  } catch (e: unknown) {
+    if (e instanceof Error && e.name === "AbortError") {
+      return { data: null, error: "Upload timed out — please try again" };
+    }
     return { data: null, error: "Network error" };
+  } finally {
+    clearTimeout(timer);
   }
 }
 

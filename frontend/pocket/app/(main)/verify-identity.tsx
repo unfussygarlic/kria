@@ -30,14 +30,16 @@ type Screen = "list" | "camera_id" | "camera_selfie" | "uploading";
 const POLL_INTERVAL_MS = 5000;
 
 const FAIL_LABELS: Record<string, string> = {
-  no_face_id:          "No face found on ID",
-  no_face_selfie:      "No face found in selfie",
-  low_confidence:      "Photos didn't match",
-  duplicate_submission:"Duplicate detected",
-  face_spoof_detected: "Spoof detected",
-  service_unavailable: "Service unavailable",
-  service_error:       "Service error",
-  internal_error:      "Internal error",
+  no_face_id:              "No face found on ID",
+  no_face_selfie:          "No face found in selfie",
+  low_confidence:          "Photos didn't match",
+  duplicate_submission:    "Duplicate image detected",
+  face_spoof_detected:     "Spoof detected",
+  id_type_mismatch:        "Wrong document type",
+  id_type_unclassifiable:  "Could not read document — retake in better lighting",
+  service_unavailable:     "Service unavailable — please retry",
+  service_error:           "Service error",
+  internal_error:          "Internal error",
 };
 
 function failLabel(code: string | null): string {
@@ -113,20 +115,19 @@ export default function VerifyIdentityScreen() {
   async function onSelfieCaptured(selfieUri: string) {
     if (!activeIdType || !idCardUri) return;
     setScreen("uploading");
+    setUploadError(null);
 
     const { error } = await verifyIdentityWithImages(activeIdType, idCardUri, selfieUri);
+    setScreen("list");
 
     if (error) {
       setUploadError(error);
     } else {
-      // Job queued — update status immediately to pending
       setStatuses((prev) => ({
         ...prev,
         [activeIdType]: { status: "pending", error_code: null },
       }));
-      setUploadError(null);
     }
-    setScreen("list");
   }
 
   // ── Full-screen camera overlays ────────────────────────────────────────────
@@ -156,7 +157,7 @@ export default function VerifyIdentityScreen() {
   if (screen === "uploading") {
     return (
       <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <HeaderBar title="Verify Identity" onBack={() => {}} />
+        <HeaderBar title="Verify Identity" onBack={() => setScreen("list")} />
         <View style={styles.centeredContent}>
           <ActivityIndicator color={T.primary} size="large" />
           <Text style={styles.bigTitle}>Uploading…</Text>
