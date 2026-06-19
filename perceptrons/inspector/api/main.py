@@ -13,7 +13,6 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-import aiofiles
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -74,7 +73,7 @@ async def _save_temp(upload: UploadFile) -> Path:
     response_model=VerifyResponse,
     summary="Verify that an ID card face matches a selfie",
 )
-async def verify(
+def verify(
     id_image: UploadFile = File(..., description="ID card image (JPEG/PNG/WebP)"),
     selfie: UploadFile = File(
         ...,
@@ -107,7 +106,7 @@ async def verify(
         )
 
     # Read ID image into memory directly (small file, no need to stream to disk)
-    id_bytes = await id_image.read()
+    id_bytes = id_image.file.read()
     if len(id_bytes) > 10 * 1024 * 1024:   # 10 MB guard
         raise HTTPException(status_code=413, detail="ID image too large (max 10 MB)")
 
@@ -119,15 +118,18 @@ async def verify(
 
     try:
         if is_video:
-            selfie_path = await _save_temp(selfie)
+            import uuid as _uuid
+            suffix = Path(selfie.filename or "file").suffix or ".bin"
+            selfie_path = Path(settings.UPLOAD_DIR) / f"{_uuid.uuid4().hex}{suffix}"
+            with open(selfie_path, "wb") as f:
+                while chunk := selfie.file.read(1 << 20):
+                    f.write(chunk)
             selfie_frames = extract_frames(selfie_path, max_frames=60, target_fps=5.0)
             if not selfie_frames:
                 raise HTTPException(status_code=422, detail="Could not extract frames from video")
-            # Use the middle frame as the representative selfie image for embedding
-            mid_frame = selfie_frames[len(selfie_frames) // 2]
-            selfie_image_np = mid_frame
+            selfie_image_np = selfie_frames[len(selfie_frames) // 2]
         else:
-            selfie_bytes = await selfie.read()
+            selfie_bytes = selfie.file.read()
             if len(selfie_bytes) > 10 * 1024 * 1024:
                 raise HTTPException(status_code=413, detail="Selfie too large (max 10 MB)")
             from utils.image_utils import load_image_bytes as lib
@@ -146,7 +148,6 @@ async def verify(
         return VerifyResponse(**result.to_dict())
 
     finally:
-        # Clean up temp video file
         if selfie_path and selfie_path.exists():
             selfie_path.unlink(missing_ok=True)
 
