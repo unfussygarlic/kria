@@ -113,7 +113,7 @@ async def _process(job: VerificationJob) -> None:
     # Map Inspector response fields to our error codes
     error_code: str | None = None
     inspector_error = result.get("error")
-    if inspector_error in ("id_type_mismatch", "id_type_unclassifiable"):
+    if inspector_error == "id_type_mismatch":
         error_code = inspector_error
     elif not result.get("id_face_detected"):
         error_code = "no_face_id"

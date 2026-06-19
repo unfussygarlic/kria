@@ -116,28 +116,25 @@ def run_verification(
     id_type_match: Optional[bool] = None
     if expected_id_type:
         if classification.id_type is None:
-            # OCR couldn't classify — reject so users can't bypass type enforcement
-            # with a blurry or wrong document
-            logger.warning("ID type unclassifiable (expected=%s)", expected_id_type)
-            return VerificationResult(
-                id_face_detected=False,
-                classification=classification,
-                id_type_match=None,
-                error="id_type_unclassifiable",
-            )
-        id_type_match = classification.id_type == expected_id_type
-        if not id_type_match:
-            logger.warning(
-                "ID type mismatch: expected=%s detected=%s",
-                expected_id_type,
-                classification.id_type,
-            )
-            return VerificationResult(
-                id_face_detected=False,
-                classification=classification,
-                id_type_match=False,
-                error="id_type_mismatch",
-            )
+            # OCR couldn't read the document (worn, low-res, bad lighting).
+            # Don't block — the face match is the primary security signal.
+            # id_type_match stays None (inconclusive).
+            logger.info("ID type unclassifiable (expected=%s) — proceeding with face match", expected_id_type)
+        else:
+            id_type_match = classification.id_type == expected_id_type
+            if not id_type_match:
+                # OCR is confident this is a different document type — reject.
+                logger.warning(
+                    "ID type mismatch: expected=%s detected=%s",
+                    expected_id_type,
+                    classification.id_type,
+                )
+                return VerificationResult(
+                    id_face_detected=False,
+                    classification=classification,
+                    id_type_match=False,
+                    error="id_type_mismatch",
+                )
 
     # ── 1. Detect face in ID ──────────────────────────────────────────
     id_face, status = _detector.detect_id_face(id_image)
