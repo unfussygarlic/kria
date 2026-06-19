@@ -74,6 +74,7 @@ async def _process(job: VerificationJob) -> None:
                     "id_image": ("id.jpg",     job.id_bytes,     job.id_content_type),
                     "selfie":   ("selfie.jpg",  job.selfie_bytes, job.selfie_content_type),
                 },
+                data={"expected_id_type": job.id_type},
             )
     except httpx.RequestError as exc:
         logger.error("Inspector unreachable for job %s: %r (type=%s)", job.job_id, exc, type(exc).__name__)
