@@ -13,11 +13,15 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
+from contextlib import asynccontextmanager
+
+import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.schemas import VerifyResponse
 from config import settings
+from services.face_detector import FaceDetector
 from services.id_classifier import KNOWN_ID_TYPES
 from services.pipeline import run_verification
 from utils.image_utils import load_image_bytes, load_image_path
@@ -29,10 +33,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Warm up models at startup so the first real request isn't slow.
+    logger.info("Warming up face detector models...")
+    try:
+        blank = np.zeros((100, 100, 3), dtype=np.uint8)
+        FaceDetector().detect_all(blank)
+        logger.info("Model warmup complete.")
+    except Exception:
+        logger.warning("Model warmup failed (non-fatal)", exc_info=True)
+    yield
+
+
 app = FastAPI(
     title="Inspector — ID Verification API",
     version="1.0.0",
     description="Open-source face-matching pipeline for ID cards and selfies.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

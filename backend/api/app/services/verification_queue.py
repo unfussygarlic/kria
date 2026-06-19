@@ -67,7 +67,7 @@ async def _process(job: VerificationJob) -> None:
     logger.info("Processing job %s (%s for user %s)", job.job_id, job.id_type, job.user_id)
 
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=180.0) as client:
             resp = await client.post(
                 f"{INSPECTOR_URL}/verify",
                 files={
