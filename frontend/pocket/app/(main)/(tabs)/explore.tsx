@@ -57,9 +57,15 @@ export default function ExploreScreen() {
   const locationRef = useRef<{ latitude: number; longitude: number } | undefined>(undefined);
 
   useEffect(() => {
-    const init = async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
+    // Load gigs immediately without location so the deck appears right away.
+    fetchGigs();
+    fetchMyApplications();
+
+    // Get location in background and re-rank once available.
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") return;
         const last = await Location.getLastKnownPositionAsync();
         if (last) {
           locationRef.current = { latitude: last.coords.latitude, longitude: last.coords.longitude };
@@ -67,12 +73,10 @@ export default function ExploreScreen() {
           const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
           locationRef.current = { latitude: fresh.coords.latitude, longitude: fresh.coords.longitude };
         }
-      }
-      // TTL guard is inside each store fn — safe to call unconditionally
-      fetchGigs(undefined, locationRef.current);
-      fetchMyApplications();
-    };
-    init();
+        // Re-fetch with location for distance-weighted ranking.
+        fetchGigs(undefined, locationRef.current);
+      } catch { /* silent — gigs already loaded without location */ }
+    })();
   }, []);
 
   useEffect(() => {

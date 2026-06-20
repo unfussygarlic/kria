@@ -1,5 +1,11 @@
+import { Platform, StatusBar as RNStatusBar } from "react-native";
 import { Stack } from "expo-router";
 import { T } from "@/constants/colors";
+
+// Edge-to-edge on Android (SDK 54 / RN 0.79+) makes the status bar translucent.
+// Explicitly pass currentHeight so the header never overlaps the notification bar.
+const HEADER_STATUS_BAR_HEIGHT =
+  Platform.OS === "android" ? (RNStatusBar.currentHeight ?? 24) : undefined;
 
 export default function MainLayout() {
   return (
@@ -20,6 +26,7 @@ export default function MainLayout() {
           headerTintColor: T.primary,
           headerStyle: { backgroundColor: T.bg },
           headerShadowVisible: false,
+          headerStatusBarHeight: HEADER_STATUS_BAR_HEIGHT,
         }}
       />
       <Stack.Screen
@@ -32,6 +39,7 @@ export default function MainLayout() {
           headerTintColor: T.primary,
           headerStyle: { backgroundColor: T.bg },
           headerShadowVisible: false,
+          headerStatusBarHeight: HEADER_STATUS_BAR_HEIGHT,
         }}
       />
       <Stack.Screen

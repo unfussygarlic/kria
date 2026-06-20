@@ -220,7 +220,8 @@ export const useGigStore = create<GigState>((set, get) => ({
     const now = Date.now();
     if (myPostedGigs.length > 0 && (now - _postedFetchedAt) < POSTED_TTL) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) return;
 
     const { data, error } = await supabase
@@ -251,7 +252,8 @@ export const useGigStore = create<GigState>((set, get) => ({
     const now = Date.now();
     if (myApplications.length > 0 && (now - _applicationsFetchedAt) < APPLICATIONS_TTL) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) return;
 
     const { data, error } = await supabase
@@ -327,7 +329,8 @@ export const useGigStore = create<GigState>((set, get) => ({
   },
 
   applyToGig: async (gigId: string, gig?: Gig, message?: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) return { error: "Not authenticated" };
 
     // Optimistic update — card is already gone from the deck, mark as applied instantly.

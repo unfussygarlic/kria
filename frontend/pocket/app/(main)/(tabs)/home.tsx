@@ -509,26 +509,27 @@ export default function HomeScreen() {
 
     (async () => {
       try {
-        let coords: { latitude: number; longitude: number } | undefined;
+        // Show gigs immediately — don't block on GPS.
+        const initial = await matchGigs({ limit: 5 });
+        setNearbyGigs(initial.data?.gigs ?? []);
+        setGigsLoading(false);
+
+        // Try to get location in background; refresh cards with distance info if available.
         const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === "granted") {
-          // Last-known position is instant (cached by OS) — no GPS wait.
-          // Fall back to a fresh low-accuracy fix only when there's no cache.
-          const last = await Location.getLastKnownPositionAsync();
-          if (last) {
-            coords = { latitude: last.coords.latitude, longitude: last.coords.longitude };
-          } else {
-            const fresh = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Low,
-            });
-            coords = { latitude: fresh.coords.latitude, longitude: fresh.coords.longitude };
-          }
-        }
-        const res = await matchGigs({ limit: 5, ...coords });
-        setNearbyGigs(res.data?.gigs ?? []);
+        if (status !== "granted") return;
+
+        const last = await Location.getLastKnownPositionAsync();
+        const coords = last?.coords ?? (
+          await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low })
+        ).coords;
+
+        const located = await matchGigs({
+          limit: 5,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        });
+        if (located.data) setNearbyGigs(located.data.gigs);
       } catch {
-        // silently show empty state
-      } finally {
         setGigsLoading(false);
       }
     })();

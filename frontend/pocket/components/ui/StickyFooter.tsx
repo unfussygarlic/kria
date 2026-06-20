@@ -19,7 +19,7 @@ export function StickyFooter({ children }: StickyFooterProps) {
     <View
       style={[
         styles.footer,
-        { paddingBottom: Math.max(insets.bottom, 16) },
+        { paddingBottom: Math.max(insets.bottom, 20) },
       ]}
     >
       {children}
