@@ -98,11 +98,13 @@ services:
       GOTRUE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       GOTRUE_EXTERNAL_PHONE_ENABLED: "true"
       GOTRUE_SMS_AUTOCONFIRM: ${SMS_AUTOCONFIRM:-true}
-      GOTRUE_SMS_PROVIDER: ${SMS_PROVIDER:-twilio}
-      GOTRUE_SMS_TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
-      GOTRUE_SMS_TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
-      GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: ${TWILIO_MESSAGE_SERVICE_SID:-}
       GOTRUE_MAILER_AUTOCONFIRM: "true"
+      # SMS hook — GoTrue calls kria-api instead of a real SMS provider.
+      # In dev, SMS_AUTOCONFIRM=true so the hook is never triggered.
+      # In production, set SMS_AUTOCONFIRM=false and supply the secrets below.
+      GOTRUE_HOOK_SEND_SMS_ENABLED: ${GOTRUE_HOOK_SEND_SMS_ENABLED:-false}
+      GOTRUE_HOOK_SEND_SMS_URI: ${GOTRUE_HOOK_SEND_SMS_URI:-http://kria-api:8000/api/v1/sms/hook}
+      GOTRUE_HOOK_SEND_SMS_SECRETS: ${GOTRUE_HOOK_SECRET:-}
     networks:
       - kria-network
 

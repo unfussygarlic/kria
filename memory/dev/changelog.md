@@ -6,6 +6,63 @@ type: project
 
 # Changelog
 
+## 2026-06-20 — Pocket Performance Fixes + App Icon + Fast2SMS SMS Hook
+
+### Mobile: Performance Fixes (Samsung M30s)
+
+Two root causes identified and fixed:
+
+**`getUser()` → `getSession()` in gigStore:**  
+`supabase.auth.getUser()` makes a server-side HTTP roundtrip to validate the JWT; `getSession()` reads from AsyncStorage (no network). Replaced in `fetchMyPostedGigs`, `fetchMyApplications`, and `applyToGig` in `frontend/pocket/stores/gigStore.ts`.
+
+**GPS blocking initial gig fetch:**  
+`Location.getCurrentPositionAsync()` can take 2–10s on cold start. Both `home.tsx` and `explore.tsx` now fire gig API calls immediately without GPS, then resolve location in a background `async IIFE` and re-fetch once coordinates are available. `Location.getLastKnownPositionAsync()` tried first (instant) before falling back to `getCurrentPositionAsync({ accuracy: Low })`.
+
+### Mobile: Android Edge-to-Edge Safe Area Fix
+
+**Root cause:** Expo SDK 54 enables edge-to-edge by default on Android. On Samsung devices `useSafeAreaInsets()` can return `{top:0}` on initial render.
+
+**Fixes applied:**
+- `app/_layout.tsx` — wrapped everything in `SafeAreaProvider` as outermost element
+- `app/(main)/_layout.tsx` — added `headerStatusBarHeight: Platform.OS === "android" ? RNStatusBar.currentHeight ?? 24 : undefined` to gig stack screens
+- `components/ui/StickyFooter.tsx` — bumped min bottom padding 16 → 20px
+
+### Mobile + Grid: Kria Logo Integration
+
+**Source:** `frontend/pocket/assets/logo.svg` (SVG with dark rect + lime triangle)
+
+**Assets regenerated with ImageMagick:**
+- `assets/icon.png` (1024×1024) — full logo on dark bg; Play Store / App Store icon
+- `assets/adaptive-icon.png` (1024×1024, transparent) — triangle only on transparent bg; Android adaptive icon (`backgroundColor: "#0e0e0e"` in app.json)
+- `assets/splash.png` (1284×2778) — logo centred on `#0B0F0A` bg
+
+**Grid:**
+- `components/ui/KriaLogo.tsx` (new) — inline SVG, triangle uses `currentColor` so it inherits CSS color (lime in dark, olive in light)
+- `components/layout/Sidebar.tsx` — logo mark + "kria" + "Grid" sub-label in sidebar header
+- `app/login/page.tsx` — `KriaLogo` icon next to login kicker
+- `public/logo.svg` — copied for browser favicon
+
+### Fast2SMS SMS Hook (OTP delivery)
+
+Replaced Twilio config with a GoTrue SMS hook pattern.
+
+**Architecture:** GoTrue (in Docker) calls `POST /api/v1/sms/hook` on `kria-api` instead of a real SMS provider. The hook verifies a standard-webhooks HMAC-SHA256 signature then forwards the OTP to Fast2SMS.
+
+**New files:**
+- `backend/api/app/routers/sms.py` — signature verification + Fast2SMS call (`POST https://www.fast2sms.com/dev/otp/send`, header `authorization: <api_key>`, body `{ mobile, otp_id, otp }`)
+
+**Modified:**
+- `backend/api/app/config/__init__.py` — added `fast2sms_api_key`, `fast2sms_otp_id`, `gotrue_hook_secret`
+- `backend/api/app/main.py` — `sms.router` registered
+- `docker-compose.yml` — replaced Twilio vars with GoTrue hook env vars: `GOTRUE_HOOK_SEND_SMS_ENABLED`, `GOTRUE_HOOK_SEND_SMS_URI`, `GOTRUE_HOOK_SEND_SMS_SECRETS`
+- `.env.example` — Twilio section replaced with Fast2SMS + GoTrue hook documentation
+
+**Phone normalisation:** GoTrue delivers E.164 (`+91XXXXXXXXXX`). Fast2SMS expects bare 10-digit mobile: `phone.lstrip("+").removeprefix("91")`.
+
+**Dev behaviour:** `SMS_AUTOCONFIRM=true` in dev → hook never fires → Pocket uses mock OTP `123456`. Set `SMS_AUTOCONFIRM=false` + `GOTRUE_HOOK_SEND_SMS_ENABLED=true` in production with real Fast2SMS credentials.
+
+---
+
 ## 2026-06-10 — Gig Pause + Email Notification System + Bug Fixes
 
 ### Grid: Gig Pause / Resume (full-stack)

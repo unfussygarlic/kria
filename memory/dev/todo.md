@@ -6,7 +6,7 @@ type: project
 
 # Todo & Open Issues
 
-Last updated: 2026-06-10
+Last updated: 2026-06-20
 
 ## Backend Optimisation Backlog
 
@@ -48,8 +48,8 @@ Audited 2026-05-30. Fix in priority order.
 |-------|----------|-------|
 | **Set up Supabase webhook for email triggers** | Supabase dashboard → Database → Webhooks | Table: `gig_applications`, event: `INSERT`, URL: `https://<api-domain>/api/v1/email/internal/application-created`, Header: `X-Webhook-Secret: <EMAIL_WEBHOOK_SECRET>`. Without this, no application emails fire. |
 | Grid Applications: left column not independently scrollable | `grid/app/(dashboard)/applications/page.tsx` | User wants applicant list to scroll while profile card stays in place. Fix: `overflow: hidden` on `main` in layout so inner columns own scroll, or `position: sticky` on profile column. `useLayoutEffect` approach tried and reverted. |
-| Pocket EAS build + app store submission | `frontend/pocket/` | See `infra/DEPLOY.md` Section 5. Twilio must be configured in Supabase first (phone OTP for mobile). Grid uses email OTP so doesn't need Twilio. |
-| Configure Twilio for mobile phone OTP | Supabase Cloud → Authentication → Sign In / Providers → Phone | Required before Pocket goes to App Store. Grid is unaffected (uses email OTP). |
+| Pocket EAS build + app store submission | `frontend/pocket/` | See `infra/DEPLOY.md` Section 5. Fast2SMS SMS hook must be live in production first (set `SMS_AUTOCONFIRM=false`, `GOTRUE_HOOK_SEND_SMS_ENABLED=true`, supply `FAST2SMS_API_KEY` + `FAST2SMS_OTP_ID` + `GOTRUE_HOOK_SECRET` in `.env.prod`). |
+| Configure Fast2SMS for production OTP | `.env.prod` on EC2 | Set `FAST2SMS_API_KEY`, `FAST2SMS_OTP_ID` (OTP template from fast2sms.com dashboard), `GOTRUE_HOOK_SECRET=v1,whsec_<openssl rand -base64 32>`, `GOTRUE_HOOK_SEND_SMS_ENABLED=true`, `SMS_AUTOCONFIRM=false`. Then `--build` kria-api + restart GoTrue. |
 
 ## Medium Priority
 
@@ -65,7 +65,7 @@ Audited 2026-05-30. Fix in priority order.
 
 | Issue | Location | Notes |
 |-------|----------|-------|
-| SVG logo integration (mobile) | `frontend/pocket/assets/` | `Kriya.svg` + `K.svg` exist with viewBox added; try `react-native-svg-transformer` again |
+| ~~SVG logo integration (mobile)~~ | ~~`frontend/pocket/assets/`~~ | ✅ Done 2026-06-20 — `logo.svg` converted to PNG assets (icon, adaptive-icon, splash) via ImageMagick; `KriaLogo.tsx` inline SVG component added to Grid |
 | Date picker text invisible (iOS) | `frontend/pocket/app/(main)/event/create.tsx` | Bug from earlier session, not fixed |
 | Host role in mobile | all `SHOW_HOST_ROLE` flags | Future: set to `true` and re-enable mobile Host experience |
 
