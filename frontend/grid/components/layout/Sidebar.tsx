@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, Briefcase, Calendar, User, LogOut, BarChart2, Inbox, Settings, Zap,
+  LayoutDashboard, Briefcase, Calendar, BarChart2, Inbox, Zap,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { KriaLogo } from "@/components/ui/KriaLogo";
 import type { Profile } from "@/types";
@@ -13,11 +12,9 @@ import type { Profile } from "@/types";
 const NAV = [
   { href: "/dashboard",    label: "Dashboard",    Icon: LayoutDashboard },
   { href: "/gigs",         label: "Gigs",         Icon: Briefcase },
-  { href: "/applications", label: "Applications", Icon: Inbox },
   { href: "/events",       label: "Events",       Icon: Calendar },
+  { href: "/applications", label: "Applications", Icon: Inbox },
   { href: "/analytics",    label: "Analytics",    Icon: BarChart2 },
-  { href: "/profile",      label: "Profile",      Icon: User },
-  { href: "/settings",     label: "Settings",     Icon: Settings },
   { href: "/subscription", label: "Subscription", Icon: Zap },
 ];
 
@@ -28,16 +25,10 @@ interface Props {
 
 export function Sidebar({ profile, trialDaysRemaining }: Props) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const showTrialDot =
     trialDaysRemaining !== undefined && trialDaysRemaining >= 0 && trialDaysRemaining <= 14;
   const trialDotColor = trialDaysRemaining !== undefined && trialDaysRemaining <= 7 ? "#ff7351" : "#FFC83D";
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.replace("/login");
-  };
 
   return (
     <aside
@@ -88,16 +79,6 @@ export function Sidebar({ profile, trialDaysRemaining }: Props) {
         style={{ borderTop: "1px solid var(--border-subtle)" }}
       >
         <ThemeToggle />
-        <div className="px-6 pb-8">
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-3 py-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 w-full nav-item hover:text-error"
-            style={{ color: "var(--nav-inactive-text)" }}
-          >
-            <LogOut size={16} />
-            Sign Out
-          </button>
-        </div>
       </div>
     </aside>
   );
