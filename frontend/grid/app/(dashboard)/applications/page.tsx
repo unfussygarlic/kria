@@ -257,6 +257,16 @@ export default function ApplicationsPage() {
     }
   }, [selectedGigId, sort]);
 
+  // Re-fetch when the user switches back to this tab — catches external state
+  // changes (e.g. a runner deleting their profile) without needing a full reload.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden) refresh();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [refresh]);
+
   const handleAccept = async (applicationId: string) => {
     setActionLoading(applicationId); setActionError(null);
     const res = await acceptApplicant(applicationId);

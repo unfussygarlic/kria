@@ -91,9 +91,10 @@ async def get_my_posted_gigs(
                 g.is_paused,
                 g.slots_total,
                 g.slots_filled,
-                COUNT(ga.id) FILTER (WHERE ga.status = 'pending') AS pending_count
+                COUNT(ga.id) FILTER (WHERE ga.status = 'pending' AND p.id IS NOT NULL) AS pending_count
             FROM gigs g
             LEFT JOIN gig_applications ga ON ga.gig_id = g.id
+            LEFT JOIN profiles p ON p.id = ga.applicant_id
             WHERE g.poster_id = :poster_id
             GROUP BY g.id
             ORDER BY g.event_date ASC
