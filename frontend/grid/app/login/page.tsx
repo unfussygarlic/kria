@@ -8,7 +8,7 @@ import { KriaLogo } from "@/components/ui/KriaLogo";
 type Step = "email" | "otp";
 
 const HOW_IT_WORKS = [
-  { n: "01", title: "Post",    sub: "Role, time, pay, location — four steps." },
+  { n: "01", title: "Post",    sub: "Role, time, pay, location.." },
   { n: "02", title: "Pick",    sub: "Browse applicants ranked by Momentum Score." },
   { n: "03", title: "Confirm", sub: "OTP check-in. Know exactly who showed up." },
 ];
@@ -153,7 +153,7 @@ export default function LoginPage() {
           <div className="lg:col-span-7 hidden lg:flex flex-col justify-center py-16 pr-16">
 
             {/* Kicker */}
-            <div className="flex items-center gap-3 mb-8">
+            {/* <div className="flex items-center gap-3 mb-8">
               <KriaLogo size={24} style={{ color: "#D4FF00" }} />
               <span className="font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: "#D4FF00" }}>
                 kria · Grid
@@ -161,7 +161,7 @@ export default function LoginPage() {
               <span className="font-mono text-[10px] text-neutral-600 tracking-[0.06em]">
                 for Hosts
               </span>
-            </div>
+            </div> */}
 
             {/* Headline */}
             <h1
@@ -174,7 +174,7 @@ export default function LoginPage() {
 
             {/* Lead */}
             <p className="text-[17px] leading-relaxed text-neutral-400 max-w-md mb-10">
-              Post a gig in four steps. Browse applicants ranked by Momentum Score — a verified track record built from real shifts, not a CV.
+              Post a gig in four steps. Browse applicants ranked by Momentum Score, a verified track record built from real shifts.
             </p>
 
             {/* ── Animated step list ── */}
