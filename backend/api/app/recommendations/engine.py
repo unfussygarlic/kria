@@ -21,10 +21,18 @@ from app.recommendations.geo import haversine_km
 
 # ── Scoring helpers ──────────────────────────────────────────────────────────
 
-def _distance_score(distance_km: float | None, max_distance_km: float) -> float:
-    if distance_km is None:
-        return 1.0  # remote / no-location gig — don't penalise
-    return max(0.0, 1.0 - distance_km / max_distance_km)
+def _distance_score(
+    distance_km: float | None,
+    max_distance_km: float,
+    worker_has_location: bool,
+) -> float:
+    if distance_km is not None:
+        return max(0.0, 1.0 - distance_km / max_distance_km)
+    if worker_has_location:
+        # Gig has no geocoded coordinates — deprioritise; don't reward the gap.
+        return 0.3
+    # Worker location unknown — neutral score so distance doesn't skew ranking.
+    return 0.5
 
 
 def _recency_score(created_at: datetime) -> float:
@@ -83,21 +91,26 @@ def score_gig(
     prev_successful_posters: set[UUID],
     prev_negative_posters: set[UUID],
     poster_avg_rating: float | None,
+    distance_mode: bool = False,
 ) -> tuple[float, float | None]:
     """Return (score, distance_km) for a single gig."""
+    worker_has_location = worker_lat is not None and worker_lng is not None
+
     if gig.is_remote or gig.latitude is None or gig.longitude is None:
         dist_km = None
-    elif worker_lat is not None and worker_lng is not None:
-        dist_km = haversine_km(worker_lat, worker_lng, gig.latitude, gig.longitude)
-        if dist_km > max_distance_km:
-            return 0.0, dist_km  # outside range — exclude
+    elif worker_has_location:
+        dist_km = haversine_km(worker_lat, worker_lng, gig.latitude, gig.longitude)  # type: ignore[arg-type]
+        # In score mode, exclude gigs beyond the distance cap.
+        # In distance mode, show all gigs sorted nearest-first — no cap.
+        if not distance_mode and dist_km > max_distance_km:
+            return 0.0, dist_km
     else:
         dist_km = None  # worker location unknown
 
     w_trust, w_dist, w_cat, w_pay, w_rec = 0.35, 0.25, 0.20, 0.10, 0.10
 
     trust = _trust_match(gig.poster_id, poster_avg_rating, prev_successful_posters, prev_negative_posters)
-    dist  = _distance_score(dist_km, max_distance_km)
+    dist  = _distance_score(dist_km, max_distance_km, worker_has_location)
     cat   = _category_match(gig.category.value, completed_categories, applied_categories)
     pay   = _pay_score(gig.pay_amount, avg_category_pay)
     rec   = min(1.0, _recency_score(gig.created_at) * _boost_multiplier(gig.boost_level))
@@ -239,6 +252,8 @@ async def match_gigs_for_worker(
     poster_ids = {g.poster_id for g in gigs}
     poster_ratings, poster_scores = await _fetch_poster_info(db, poster_ids)
 
+    distance_mode = request.sort == "distance"
+
     scored: list[tuple[float, float | None, GigRow]] = []
     for gig in gigs:
         score, dist_km = score_gig(
@@ -248,12 +263,17 @@ async def match_gigs_for_worker(
             max_distance_km=request.max_distance_km,
             avg_category_pay=avg_pay.get(gig.category.value, 500.0),
             poster_avg_rating=poster_ratings.get(str(gig.poster_id)),
+            distance_mode=distance_mode,
             **worker_ctx,
         )
         if score > 0:
             scored.append((score, dist_km, gig))
 
-    scored.sort(key=lambda x: x[0], reverse=True)
+    if distance_mode:
+        # Nearest-first; gigs without coordinates (no venue geocoded) go last.
+        scored.sort(key=lambda x: (x[1] is None, x[1] if x[1] is not None else 0.0))
+    else:
+        scored.sort(key=lambda x: x[0], reverse=True)
 
     total_available = len(scored)
     paginated = scored[request.offset : request.offset + request.limit]

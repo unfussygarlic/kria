@@ -5,6 +5,9 @@ export interface MatchGigsParams {
   longitude?: number;
   max_distance_km?: number;
   limit?: number;
+  offset?: number;
+  excluded_ids?: string[];
+  sort?: "score" | "distance";
 }
 
 export interface MatchedGig {
@@ -23,6 +26,7 @@ export interface MatchedGig {
 interface MatchGigsResponse {
   gigs: MatchedGig[];
   total: number;
+  has_more: boolean;
 }
 
 export async function matchGigs(params: MatchGigsParams = {}) {

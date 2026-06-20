@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Pressable,
-  Alert,
+  Linking,
 } from "react-native";
 import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,14 +15,16 @@ import { useGigStore } from "@/stores/gigStore";
 import { useAuthStore } from "@/stores/authStore";
 import { Gig } from "@/types/database";
 import { T } from "@/constants/colors";
-import { L } from "@/constants/labels";
 import { SwipeableJobCard } from "@/components/gig/SwipeableJobCard";
 import { Feather } from "@expo/vector-icons";
 import { rf, rw } from "@/constants/responsive";
+import { MatchGigsParams } from "@/lib/api/gigs";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const CARD_W = SCREEN_W * 0.93;
 const PREFETCH_THRESHOLD = 10;
+
+type LocationState = "loading" | "denied" | "ready";
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
@@ -50,32 +52,36 @@ export default function ExploreScreen() {
     applyToGig: s.applyToGig,
   })));
   const profile = useAuthStore((s) => s.profile);
-  const canApply = true;
 
   const [availableGigs, setAvailableGigs] = useState<Gig[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const locationRef = useRef<{ latitude: number; longitude: number } | undefined>(undefined);
+  const [locationState, setLocationState] = useState<LocationState>("loading");
+  const locationRef = useRef<MatchGigsParams | undefined>(undefined);
 
+  // Location is required for Explore — gigs are always sorted nearest-first.
   useEffect(() => {
-    // Load gigs immediately without location so the deck appears right away.
-    fetchGigs();
-    fetchMyApplications();
-
-    // Get location in background and re-rank once available.
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") return;
-        const last = await Location.getLastKnownPositionAsync();
-        if (last) {
-          locationRef.current = { latitude: last.coords.latitude, longitude: last.coords.longitude };
-        } else {
-          const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
-          locationRef.current = { latitude: fresh.coords.latitude, longitude: fresh.coords.longitude };
+        if (status !== "granted") {
+          setLocationState("denied");
+          return;
         }
-        // Re-fetch with location for distance-weighted ranking.
-        fetchGigs(undefined, locationRef.current);
-      } catch { /* silent — gigs already loaded without location */ }
+
+        // Try last-known first (instant), fall back to fresh fix.
+        const last = await Location.getLastKnownPositionAsync();
+        const coords = last?.coords ?? (
+          await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low })
+        ).coords;
+
+        locationRef.current = { latitude: coords.latitude, longitude: coords.longitude };
+        setLocationState("ready");
+
+        fetchGigs(undefined, locationRef.current, "distance");
+        fetchMyApplications();
+      } catch {
+        setLocationState("denied");
+      }
     })();
   }, []);
 
@@ -93,9 +99,9 @@ export default function ExploreScreen() {
   useEffect(() => {
     const cardsRemaining = availableGigs.length - currentIndex;
     if (cardsRemaining <= PREFETCH_THRESHOLD && hasMore && !isFetchingMore) {
-      fetchMoreGigs(locationRef.current);
+      fetchMoreGigs(locationRef.current, "distance");
     }
-  }, [currentIndex, availableGigs.length, hasMore, isFetchingMore, fetchMoreGigs]);
+  }, [currentIndex, availableGigs.length, hasMore, isFetchingMore]);
 
   const handleApply = () => {
     if (!availableGigs[currentIndex]) return;
@@ -109,28 +115,63 @@ export default function ExploreScreen() {
   const handlePrev = () =>
     setCurrentIndex((currentIndex - 1 + availableGigs.length) % availableGigs.length);
 
+  // ── Location loading ───────────────────────────────────────────────────────
+  if (locationState === "loading") {
+    return (
+      <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color={T.primary} />
+        <Text style={styles.stateTitle}>Finding gigs near you</Text>
+        <Text style={styles.stateSub}>Getting your location…</Text>
+      </View>
+    );
+  }
+
+  // ── Location denied ────────────────────────────────────────────────────────
+  if (locationState === "denied") {
+    return (
+      <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
+        <View style={styles.iconWrap}>
+          <Feather name="map-pin" size={rw(32)} color={T.primary} />
+        </View>
+        <Text style={styles.stateTitle}>Location needed</Text>
+        <Text style={styles.stateSub}>
+          Explore shows the nearest gigs to you. Enable location access to continue.
+        </Text>
+        <Pressable style={styles.ctaButton} onPress={() => Linking.openSettings()}>
+          <Text style={styles.ctaText}>Open Settings</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // ── Loading gigs (location ready, fetching) ────────────────────────────────
+  if (isLoading && availableGigs.length === 0) {
+    return (
+      <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color={T.primary} />
+        <Text style={styles.stateSub}>Loading nearby gigs…</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {/* ── Slim header ── */}
-      {profile?.city && (
-        <View style={styles.header}>
-          <View style={styles.locationPill}>
-            <Feather name="map-pin" size={rw(12)} color={T.primary} />
-            <Text style={styles.locationPillText}>{profile.city}</Text>
-          </View>
+      {/* ── Header ── */}
+      <View style={styles.header}>
+        <View style={styles.locationPill}>
+          <Feather name="map-pin" size={rw(12)} color={T.primary} />
+          <Text style={styles.locationPillText}>
+            {profile?.city ?? "Nearby"}
+          </Text>
         </View>
-      )}
+      </View>
 
-      {/* ── Card deck ── */}
-      {isLoading && availableGigs.length === 0 ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={T.primary} />
-        </View>
-      ) : availableGigs.length === 0 ? (
+      {/* ── Empty state ── */}
+      {availableGigs.length === 0 ? (
         <View style={styles.center}>
           <Feather name="check-circle" size={52} color={T.primary} />
-          <Text style={styles.emptyTitle}>You're all caught up!</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={styles.stateTitle}>You're all caught up!</Text>
+          <Text style={styles.stateSub}>
             No more gigs nearby right now. Check back soon.
           </Text>
         </View>
@@ -141,14 +182,14 @@ export default function ExploreScreen() {
               key={availableGigs[currentIndex].id}
               gig={availableGigs[currentIndex]}
               posterMomentum={posterScores[availableGigs[currentIndex].id]}
-              canApply={canApply}
+              canApply={true}
               onApply={handleApply}
               onNext={handleNext}
               onPrev={handlePrev}
             />
           </View>
 
-          {/* Swipe hint */}
+          {/* Swipe hints */}
           <View style={styles.hintRow}>
             <View style={styles.hintItem}>
               <Feather name="chevron-left" size={13} color={T.textMuted} />
@@ -182,7 +223,47 @@ const styles = StyleSheet.create({
     gap: rw(16),
   },
 
-  // Header — location pill only
+  // Location / state screens
+  iconWrap: {
+    width: rw(72),
+    height: rw(72),
+    borderRadius: rw(36),
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: rw(4),
+  },
+  stateTitle: {
+    fontSize: rf(20),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.text,
+    textAlign: "center",
+  },
+  stateSub: {
+    fontSize: rf(14),
+    fontFamily: "SpaceGrotesk_400Regular",
+    color: T.textSub,
+    textAlign: "center",
+    lineHeight: rf(21),
+  },
+  ctaButton: {
+    marginTop: rw(8),
+    paddingHorizontal: rw(28),
+    paddingVertical: rw(12),
+    backgroundColor: T.ctaBg,
+    borderRadius: rw(12),
+  },
+  ctaText: {
+    fontSize: rf(15),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.ctaText,
+  },
+
+  // Header
   header: {
     paddingHorizontal: rw(20),
     paddingTop: rw(12),
@@ -251,20 +332,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     color: T.selText,
-  },
-
-  // Empty state
-  emptyTitle: {
-    fontSize: rf(20),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
-  },
-  emptySubtitle: {
-    fontSize: rf(15),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textSub,
-    textAlign: "center",
-    lineHeight: rf(22),
   },
 });

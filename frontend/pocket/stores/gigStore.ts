@@ -36,8 +36,8 @@ interface GigState {
   _postedFetchedAt: number;
 
   // Actions
-  fetchGigs: (filters?: GigFilters, location?: MatchGigsParams) => Promise<void>;
-  fetchMoreGigs: (location?: MatchGigsParams) => Promise<void>; // NEW: Fetch next batch
+  fetchGigs: (filters?: GigFilters, location?: MatchGigsParams, sort?: "score" | "distance") => Promise<void>;
+  fetchMoreGigs: (location?: MatchGigsParams, sort?: "score" | "distance") => Promise<void>;
   fetchMyPostedGigs: () => Promise<void>;
   fetchMyPostedEvents: () => Promise<void>;
   fetchMyApplications: () => Promise<void>;
@@ -64,7 +64,7 @@ export const useGigStore = create<GigState>((set, get) => ({
   seenGigIds: new Set(),
   posterScores: {},
 
-  fetchGigs: async (filters?: GigFilters, location?: MatchGigsParams) => {
+  fetchGigs: async (filters?: GigFilters, location?: MatchGigsParams, sort: "score" | "distance" = "score") => {
     set({ isLoading: true, error: null, seenGigIds: new Set() });
 
     try {
@@ -73,8 +73,14 @@ export const useGigStore = create<GigState>((set, get) => ({
         ...location,
         limit: 20,
         offset: 0,
-        excluded_ids: [], // Fresh start
+        excluded_ids: [],
+        sort,
       });
+
+      if (matchResult.error) {
+        set({ error: matchResult.error.message ?? "Matching failed", isLoading: false });
+        return;
+      }
 
       const matchedGigs = matchResult.data?.gigs ?? [];
       const gigIds: string[] = matchedGigs.map((g) => g.gig_id);
@@ -141,10 +147,9 @@ export const useGigStore = create<GigState>((set, get) => ({
     }
   },
 
-  fetchMoreGigs: async (location?: MatchGigsParams) => {
+  fetchMoreGigs: async (location?: MatchGigsParams, sort: "score" | "distance" = "score") => {
     const { isFetchingMore, hasMore, seenGigIds, gigs } = get();
 
-    // Prevent duplicate fetches
     if (isFetchingMore || !hasMore) return;
 
     set({ isFetchingMore: true, error: null });
@@ -154,9 +159,15 @@ export const useGigStore = create<GigState>((set, get) => ({
       const matchResult = await matchGigs({
         ...location,
         limit: 10,
-        offset: 0, // Always 0 because we're using exclusion list
+        offset: 0,
         excluded_ids: Array.from(seenGigIds),
+        sort,
       });
+
+      if (matchResult.error) {
+        set({ error: matchResult.error.message ?? "Matching failed", isFetchingMore: false });
+        return;
+      }
 
       const matchedGigs = matchResult.data?.gigs ?? [];
       const gigIds: string[] = matchedGigs.map((g) => g.gig_id);

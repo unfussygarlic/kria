@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from enum import Enum
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -64,12 +65,19 @@ class GigRow(BaseModel):
 class GigMatchRequest(BaseModel):
     latitude: float | None = Field(None, description="Worker's current latitude")
     longitude: float | None = Field(None, description="Worker's current longitude")
-    max_distance_km: float = Field(50.0, ge=1, le=200)
+    max_distance_km: float = Field(50.0, ge=1, le=500)
     limit: int = Field(20, ge=1, le=100)
     offset: int = Field(0, ge=0, description="Number of results to skip (for pagination)")
     excluded_ids: list[UUID] = Field(
         default_factory=list,
         description="Gig IDs to exclude (already seen/applied)",
+    )
+    sort: Literal["score", "distance"] = Field(
+        "score",
+        description=(
+            "score: composite ranking (trust/distance/category/pay/recency). "
+            "distance: nearest-first, no distance cap, requires lat/lng."
+        ),
     )
 
 

@@ -2,12 +2,15 @@
 Geographic utilities: Haversine distance and Google Maps geocoding.
 """
 
+import logging
 import math
 from dataclasses import dataclass
 
 import httpx
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 # ── Distance ─────────────────────────────────────────────────────────────────
@@ -35,24 +38,39 @@ class GeocodedLocation:
 async def geocode_venue(venue_name: str, city: str) -> GeocodedLocation | None:
     """
     Geocode a venue address using the Google Maps Geocoding API.
-    Returns None if no API key is configured or the address cannot be resolved.
+    Returns None if the address cannot be resolved; logs the specific reason.
     """
     if not settings.google_maps_api_key:
+        logger.warning("geocode_venue: GOOGLE_MAPS_API_KEY not set — skipping geocoding.")
         return None
 
     address = f"{venue_name}, {city}, India"
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(
-            "https://maps.googleapis.com/maps/api/geocode/json",
-            params={"address": address, "key": settings.google_maps_api_key, "region": "in"},
-        )
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                "https://maps.googleapis.com/maps/api/geocode/json",
+                params={"address": address, "key": settings.google_maps_api_key, "region": "in"},
+            )
+    except httpx.RequestError as exc:
+        logger.error("geocode_venue: network error for '%s': %s", address, exc)
+        return None
 
     if resp.status_code != 200:
+        logger.error("geocode_venue: HTTP %s for '%s'", resp.status_code, address)
         return None
 
     data = resp.json()
-    if data.get("status") != "OK" or not data.get("results"):
+    status = data.get("status")
+
+    if status == "REQUEST_DENIED":
+        logger.error("geocode_venue: API key rejected by Google Maps — check GOOGLE_MAPS_API_KEY and billing.")
+        return None
+    if status == "OVER_QUERY_LIMIT":
+        logger.error("geocode_venue: Google Maps quota exceeded.")
+        return None
+    if status != "OK" or not data.get("results"):
+        logger.warning("geocode_venue: no results for '%s' (status=%s).", address, status)
         return None
 
     result = data["results"][0]
