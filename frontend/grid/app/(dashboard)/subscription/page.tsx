@@ -23,9 +23,9 @@ function TimeBox({ value, label }: { value: number; label: string }) {
       <div
         className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold tabular-nums"
         style={{
-          backgroundColor: "rgba(212,255,0,0.06)",
-          border: "1px solid rgba(212,255,0,0.18)",
-          color: "#D4FF00",
+          backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--color-primary) 22%, transparent)",
+          color: "var(--color-primary)",
           fontFamily: "var(--font-comfortaa)",
           letterSpacing: "-0.02em",
         }}
@@ -34,7 +34,7 @@ function TimeBox({ value, label }: { value: number; label: string }) {
       </div>
       <span
         className="text-[10px] uppercase tracking-[0.2em] font-semibold"
-        style={{ color: "rgba(255,255,255,0.35)" }}
+        style={{ color: "var(--color-text-muted)" }}
       >
         {label}
       </span>
@@ -46,20 +46,20 @@ function TrialProgress({ daysUsed, totalDays }: { daysUsed: number; totalDays: n
   const pct = totalDays > 0 ? Math.min(100, (daysUsed / totalDays) * 100) : 0;
   const remaining = 100 - pct;
 
-  let barColor = "#D4FF00";
-  if (remaining <= 20) barColor = "#ff7351";
-  else if (remaining <= 40) barColor = "#FFC83D";
+  let barColor = "var(--color-primary)";
+  if (remaining <= 20) barColor = "var(--color-error)";
+  else if (remaining <= 40) barColor = "var(--color-amber)";
 
   return (
     <div className="w-full">
-      <div className="flex justify-between text-[11px] font-semibold mb-2.5" style={{ color: "rgba(255,255,255,0.40)" }}>
+      <div className="flex justify-between text-[11px] font-semibold mb-2.5" style={{ color: "var(--color-text-muted)" }}>
         <span>Day 1</span>
         <span>Day {totalDays}</span>
       </div>
-      <div className="h-1.5 rounded-full w-full" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
+      <div className="h-1.5 rounded-full w-full" style={{ backgroundColor: "var(--color-surface-3)" }}>
         <div
           className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, backgroundColor: barColor, boxShadow: `0 0 8px ${barColor}60` }}
+          style={{ width: `${pct}%`, backgroundColor: barColor }}
         />
       </div>
     </div>
@@ -132,13 +132,13 @@ export default function SubscriptionPage() {
             className="rounded-2xl p-8 mb-6 relative overflow-hidden"
             style={{
               backgroundColor: "var(--card-bg)",
-              border: "1px solid rgba(212,255,0,0.12)",
+              border: "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)",
             }}
           >
             {/* Subtle glow */}
             <div
               className="absolute -top-20 -right-20 w-64 h-64 pointer-events-none rounded-full"
-              style={{ backgroundColor: "#D4FF00", opacity: 0.03, filter: "blur(60px)" }}
+              style={{ backgroundColor: "var(--color-primary)", opacity: 0.04, filter: "blur(60px)" }}
             />
 
             <div className="relative z-10">
@@ -147,15 +147,19 @@ export default function SubscriptionPage() {
                   <div className="flex items-center gap-2 mb-1.5">
                     <span
                       className="text-[10px] font-bold uppercase tracking-[0.2em] px-2.5 py-0.5 rounded-full"
-                      style={{ backgroundColor: "rgba(212,255,0,0.10)", color: "#D4FF00", border: "1px solid rgba(212,255,0,0.20)" }}
+                      style={{
+                        backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)",
+                        color: "var(--color-primary)",
+                        border: "1px solid color-mix(in srgb, var(--color-primary) 22%, transparent)",
+                      }}
                     >
                       Free Trial
                     </span>
                   </div>
-                  <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+                  <h2 className="text-lg font-bold" style={{ color: "var(--color-text)" }}>
                     {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} remaining
                   </h2>
-                  <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+                  <p className="text-sm mt-1" style={{ color: "var(--color-text-muted)" }}>
                     {totalDays}-day trial · all features included
                   </p>
                 </div>
@@ -165,11 +169,11 @@ export default function SubscriptionPage() {
               {countdown && (
                 <div className="flex items-start gap-4 mb-8 flex-wrap">
                   <TimeBox value={countdown.days} label="Days" />
-                  <div className="text-2xl font-bold mt-6" style={{ color: "rgba(255,255,255,0.20)" }}>:</div>
+                  <div className="text-2xl font-bold mt-6" style={{ color: "var(--color-text-muted)" }}>:</div>
                   <TimeBox value={countdown.hours} label="Hours" />
-                  <div className="text-2xl font-bold mt-6" style={{ color: "rgba(255,255,255,0.20)" }}>:</div>
+                  <div className="text-2xl font-bold mt-6" style={{ color: "var(--color-text-muted)" }}>:</div>
                   <TimeBox value={countdown.minutes} label="Min" />
-                  <div className="text-2xl font-bold mt-6" style={{ color: "rgba(255,255,255,0.20)" }}>:</div>
+                  <div className="text-2xl font-bold mt-6" style={{ color: "var(--color-text-muted)" }}>:</div>
                   <TimeBox value={countdown.seconds} label="Sec" />
                 </div>
               )}
@@ -189,11 +193,14 @@ export default function SubscriptionPage() {
                 <div key={f} className="flex items-center gap-3">
                   <span
                     className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
-                    style={{ backgroundColor: "rgba(212,255,0,0.10)", color: "#D4FF00" }}
+                    style={{
+                      backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)",
+                      color: "var(--color-primary)",
+                    }}
                   >
                     ✓
                   </span>
-                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{f}</span>
+                  <span className="text-sm" style={{ color: "var(--color-text-sub)" }}>{f}</span>
                 </div>
               ))}
             </div>
@@ -210,38 +217,41 @@ function ExpiredView() {
       className="rounded-2xl p-10 text-center"
       style={{
         backgroundColor: "var(--card-bg)",
-        border: "1px solid rgba(255,115,81,0.20)",
+        border: "1px solid color-mix(in srgb, var(--color-error) 22%, transparent)",
       }}
     >
       <div
         className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-5"
-        style={{ backgroundColor: "rgba(255,115,81,0.08)", border: "1px solid rgba(255,115,81,0.20)" }}
+        style={{
+          backgroundColor: "color-mix(in srgb, var(--color-error) 8%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--color-error) 22%, transparent)",
+        }}
       >
         ⚡
       </div>
-      <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)", fontFamily: "var(--font-comfortaa)" }}>
+      <h2 className="text-xl font-bold mb-2" style={{ color: "var(--color-text)", fontFamily: "var(--font-comfortaa)" }}>
         Your trial has ended
       </h2>
-      <p className="text-sm mb-8 max-w-xs mx-auto" style={{ color: "var(--text-muted)" }}>
+      <p className="text-sm mb-8 max-w-xs mx-auto" style={{ color: "var(--color-text-muted)" }}>
         Paid plans are coming soon. We'll notify you when they're ready.
       </p>
 
       <div
         className="inline-flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-widest"
         style={{
-          backgroundColor: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          color: "rgba(255,255,255,0.40)",
+          backgroundColor: "var(--color-surface-2)",
+          border: "1px solid var(--border-subtle)",
+          color: "var(--color-text-muted)",
           cursor: "default",
         }}
       >
-        <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#FFC83D" }} />
+        <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "var(--color-amber)" }} />
         Plans Coming Soon
       </div>
 
-      <p className="text-[11px] mt-6" style={{ color: "rgba(255,255,255,0.20)" }}>
+      <p className="text-[11px] mt-6" style={{ color: "var(--color-text-muted)" }}>
         In the meantime, contact us at{" "}
-        <a href="mailto:hello@trykria.com" className="underline" style={{ color: "rgba(255,255,255,0.35)" }}>
+        <a href="mailto:hello@trykria.com" className="underline" style={{ color: "var(--color-text-sub)" }}>
           hello@trykria.com
         </a>
       </p>

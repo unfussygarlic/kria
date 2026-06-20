@@ -102,7 +102,7 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   --card-bg:       #FEFCFF;
   --sidebar-bg:    #FEFCFF;
   --topbar-bg:     rgba(254,252,255,0.92);
-  --content-bg:    #F5F3F7;
+  --content-bg:    #FEFCFF;
   --input-bg:      #F5F3F7;
 
   /* Borders — obsidian black for definition */
