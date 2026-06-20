@@ -10,7 +10,8 @@ from app.config import settings
 from app.db.session import engine
 from app.momentum import router as momentum
 from app.recommendations import router as recommendations
-from app.routers import account, applicants, badges, chat, email as email_router, events, gigs, health, profiles, ratings, search, sms, subscriptions
+from app.routers import account, applicants, badges, chat, email as email_router, events, gigs, health, profiles, ratings, search, subscriptions
+from app.sms_notifications.hook import router as sms_hook_router
 
 
 @asynccontextmanager
@@ -99,4 +100,4 @@ app.include_router(recommendations.router, prefix=f"/api/{settings.api_version}"
 app.include_router(account.router,         prefix=f"/api/{settings.api_version}")
 app.include_router(subscriptions.router,   prefix=f"/api/{settings.api_version}")
 app.include_router(email_router.router,    prefix=f"/api/{settings.api_version}")
-app.include_router(sms.router,             prefix=f"/api/{settings.api_version}")
+app.include_router(sms_hook_router,        prefix=f"/api/{settings.api_version}")

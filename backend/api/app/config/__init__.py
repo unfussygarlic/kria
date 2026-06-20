@@ -28,10 +28,8 @@ class Settings(BaseSettings):
     email_webhook_secret: str = ""  # Shared secret for Supabase → FastAPI webhooks
     app_base_url: str = "https://grid.trykria.com"
 
-    # Fast2SMS — OTP delivery via GoTrue SMS hook
+    # Fast2SMS — API key only; template sender IDs and message IDs live in sms_notifications/templates.py
     fast2sms_api_key: str = ""
-    fast2sms_sender_id: str = ""    # Sender ID registered on DLT (e.g. WAGIFY)
-    fast2sms_message_id: str = ""   # 6-digit Message ID from your DLT-approved OTP template
     gotrue_hook_secret: str = ""    # Format: "v1,whsec_<base64>" — must match GOTRUE_HOOK_SEND_SMS_SECRETS
 
 
