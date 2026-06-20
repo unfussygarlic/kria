@@ -27,6 +27,7 @@
 - [Events](features/events.md) — events table, creation wizard, host/runner split
 - [Chat](features/chat.md) — hidden feature, tables, real-time bug, do-not-install list
 - [Email Notifications](features/email.md) — Resend, 3 email types, webhook architecture, unsubscribe, env vars, pending Supabase webhook setup
+- [SMS Notifications](features/sms_notifications.md) — Fast2SMS via GoTrue hook, sms_notifications/ module, template registry, how to add new templates
 
 ## Project
 - [Demo Seed](project/demo_seed.md) — Priya Mehta demo account, 15 gigs, 15 runners, all UUIDs
@@ -120,6 +121,14 @@ score, items, profile_items = compute_worker_breakdown(
 - **Badges:** `BadgeList earnedKeys={profile.verified_id_types}` — auto-shows `photo_verified` meta-badge
 
 ### Next Migration: `0029_...py`
+
+### SMS Notifications Quick Ref
+- **Module:** `backend/api/app/sms_notifications/` — `templates.py` (registry), `sender.py` (Fast2SMS), `hook.py` (GoTrue endpoint)
+- **Add template:** entry in `templates.py` → `await send_sms("key", mobile_10, ["var1", ...])` from anywhere
+- **Phone format:** strip `+91` → 10-digit number; `variables_values` = pipe-separated vars with trailing `|`
+- **Hook:** Supabase Dashboard → Auth → Hooks → Send SMS → `https://api.trykria.com/api/v1/sms/hook`
+- **Dev:** `SMS_AUTOCONFIRM=true` → hook never fires; Pocket uses mock OTP `123456`
+- **Env vars:** only `FAST2SMS_API_KEY` + `GOTRUE_HOOK_SECRET`; sender/message IDs live in `templates.py`
 
 ### Email Notifications Quick Ref
 - **Trigger:** Supabase DB webhook → `POST /api/v1/email/internal/application-created` (header: `X-Webhook-Secret`)
