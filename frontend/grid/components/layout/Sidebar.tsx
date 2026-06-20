@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { KriaLogo } from "@/components/ui/KriaLogo";
 import type { Profile } from "@/types";
 
 const NAV = [
@@ -47,9 +48,12 @@ export function Sidebar({ profile, trialDaysRemaining }: Props) {
       }}
     >
       {/* Logo */}
-      <div className="px-8 pt-8 pb-10">
-        <div className="text-primary text-2xl" style={{ fontFamily: "var(--font-comfortaa)", fontWeight: 700 }}>kria</div>
-        <div className="text-[10px] font-semibold tracking-[0.3em] uppercase text-text-muted mt-0.5">Grid</div>
+      <div className="px-6 pt-7 pb-8 flex items-center gap-3">
+        <KriaLogo size={28} style={{ color: "var(--color-primary)" }} />
+        <div>
+          <div className="text-sm font-bold leading-none" style={{ fontFamily: "var(--font-comfortaa)", color: "var(--color-primary)" }}>kria</div>
+          <div className="text-[9px] font-semibold tracking-[0.3em] uppercase mt-0.5" style={{ color: "var(--color-text-muted)" }}>Grid</div>
+        </div>
       </div>
 
       {/* Nav */}

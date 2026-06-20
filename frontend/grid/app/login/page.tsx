@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { KriaLogo } from "@/components/ui/KriaLogo";
 
 type Step = "email" | "otp";
 
@@ -153,6 +154,7 @@ export default function LoginPage() {
 
             {/* Kicker */}
             <div className="flex items-center gap-3 mb-8">
+              <KriaLogo size={24} style={{ color: "#D4FF00" }} />
               <span className="font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: "#D4FF00" }}>
                 kria · Grid
               </span>
