@@ -34,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       if (!mounted) return;
 
-      if (!profileData) {
+      if (!profileData || !profileData.first_name) {
         router.replace("/onboarding");
         return;
       }

@@ -31,11 +31,12 @@ export default function OnboardingPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id")
+        .select("first_name")
         .eq("id", session.user.id)
         .single();
 
-      if (profile) { router.replace("/dashboard"); return; }
+      // Stub profiles (first_name=NULL) from the DB trigger should still see onboarding.
+      if (profile?.first_name) { router.replace("/dashboard"); return; }
 
       setUserId(session.user.id);
       setUserEmail(session.user.email ?? null);

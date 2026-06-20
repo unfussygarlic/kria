@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -22,7 +22,7 @@ import { MatchGigsParams } from "@/lib/api/gigs";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const CARD_W = SCREEN_W * 0.93;
-const PREFETCH_THRESHOLD = 10;
+const PREFETCH_THRESHOLD = 15;
 
 type LocationState = "loading" | "denied" | "ready";
 
@@ -56,9 +56,17 @@ export default function ExploreScreen() {
   const [availableGigs, setAvailableGigs] = useState<Gig[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [locationState, setLocationState] = useState<LocationState>("loading");
+
+  // Refs so animation callbacks never capture stale values.
+  const availableGigsRef = useRef<Gig[]>([]);
   const locationRef = useRef<MatchGigsParams | undefined>(undefined);
 
-  // Location is required for Explore — gigs are always sorted nearest-first.
+  // Keep ref in sync with state so handlers always see the latest array length.
+  useEffect(() => {
+    availableGigsRef.current = availableGigs;
+  }, [availableGigs]);
+
+  // ── Location (required for Explore) ───────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
@@ -67,8 +75,6 @@ export default function ExploreScreen() {
           setLocationState("denied");
           return;
         }
-
-        // Try last-known first (instant), fall back to fresh fix.
         const last = await Location.getLastKnownPositionAsync();
         const coords = last?.coords ?? (
           await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low })
@@ -76,7 +82,6 @@ export default function ExploreScreen() {
 
         locationRef.current = { latitude: coords.latitude, longitude: coords.longitude };
         setLocationState("ready");
-
         fetchGigs(undefined, locationRef.current, "distance");
         fetchMyApplications();
       } catch {
@@ -85,17 +90,20 @@ export default function ExploreScreen() {
     })();
   }, []);
 
+  // ── Derive available gigs from store ──────────────────────────────────────
   useEffect(() => {
     const appliedIds = new Set(myApplications.map((a) => a.gig.id));
     const filtered = gigs.filter(
       (g) => !appliedIds.has(g.id) && g.poster_id !== profile?.id
     );
     setAvailableGigs(filtered);
-    if (currentIndex >= filtered.length && filtered.length > 0) {
-      setCurrentIndex(filtered.length - 1);
-    }
+    // Clamp index — never let it go out of bounds when the deck shrinks.
+    setCurrentIndex((prev) =>
+      filtered.length === 0 ? 0 : Math.min(prev, filtered.length - 1)
+    );
   }, [gigs, myApplications, profile?.id]);
 
+  // ── Prefetch next batch ───────────────────────────────────────────────────
   useEffect(() => {
     const cardsRemaining = availableGigs.length - currentIndex;
     if (cardsRemaining <= PREFETCH_THRESHOLD && hasMore && !isFetchingMore) {
@@ -103,17 +111,51 @@ export default function ExploreScreen() {
     }
   }, [currentIndex, availableGigs.length, hasMore, isFetchingMore]);
 
-  const handleApply = () => {
-    if (!availableGigs[currentIndex]) return;
-    applyToGig(availableGigs[currentIndex].id, availableGigs[currentIndex]);
-    setCurrentIndex((currentIndex + 1) % availableGigs.length);
-  };
+  // ── Auto-fetch when available gigs run dry but more exist ─────────────────
+  useEffect(() => {
+    if (
+      availableGigs.length === 0 &&
+      hasMore &&
+      !isFetchingMore &&
+      !isLoading &&
+      locationState === "ready"
+    ) {
+      fetchMoreGigs(locationRef.current, "distance");
+    }
+  }, [availableGigs.length, hasMore, isFetchingMore, isLoading, locationState]);
 
-  const handleNext = () =>
-    setCurrentIndex((currentIndex + 1) % availableGigs.length);
+  // ── Handlers — use functional setCurrentIndex + ref so no stale closures ──
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => {
+      const len = availableGigsRef.current.length;
+      return len > 0 ? (prev + 1) % len : 0;
+    });
+  }, []);
 
-  const handlePrev = () =>
-    setCurrentIndex((currentIndex - 1 + availableGigs.length) % availableGigs.length);
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((prev) => {
+      const len = availableGigsRef.current.length;
+      return len > 0 ? (prev - 1 + len) % len : 0;
+    });
+  }, []);
+
+  const handleApply = useCallback(() => {
+    const gig = availableGigsRef.current[currentIndex];
+    if (!gig) return;
+    applyToGig(gig.id, gig);
+    // Advance to next — deck will shrink by 1 after the optimistic update,
+    // so use len - 1 as the modulus to stay in bounds.
+    setCurrentIndex((prev) => {
+      const len = availableGigsRef.current.length;
+      return len > 1 ? (prev + 1) % len : 0;
+    });
+  }, [currentIndex, applyToGig]);
+
+  const handleRefresh = useCallback(() => {
+    if (locationRef.current) {
+      fetchGigs(undefined, locationRef.current, "distance");
+    }
+  }, [fetchGigs]);
 
   // ── Location loading ───────────────────────────────────────────────────────
   if (locationState === "loading") {
@@ -144,8 +186,8 @@ export default function ExploreScreen() {
     );
   }
 
-  // ── Loading gigs (location ready, fetching) ────────────────────────────────
-  if (isLoading && availableGigs.length === 0) {
+  // ── Fetching gigs (first load) ─────────────────────────────────────────────
+  if ((isLoading || isFetchingMore) && availableGigs.length === 0) {
     return (
       <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={T.primary} />
@@ -174,14 +216,19 @@ export default function ExploreScreen() {
           <Text style={styles.stateSub}>
             No more gigs nearby right now. Check back soon.
           </Text>
+          {!hasMore && (
+            <Pressable style={styles.ctaButton} onPress={handleRefresh}>
+              <Text style={styles.ctaText}>Refresh</Text>
+            </Pressable>
+          )}
         </View>
       ) : (
         <View style={styles.deckArea}>
           <View style={[styles.deckCenter, { width: CARD_W }]}>
             <SwipeableJobCard
-              key={availableGigs[currentIndex].id}
+              key={availableGigs[currentIndex]?.id}
               gig={availableGigs[currentIndex]}
-              posterMomentum={posterScores[availableGigs[currentIndex].id]}
+              posterMomentum={posterScores[availableGigs[currentIndex]?.id]}
               canApply={true}
               onApply={handleApply}
               onNext={handleNext}
@@ -189,16 +236,22 @@ export default function ExploreScreen() {
             />
           </View>
 
-          {/* Swipe hints */}
+          {/* Counter + swipe hints */}
           <View style={styles.hintRow}>
             <View style={styles.hintItem}>
               <Feather name="chevron-left" size={13} color={T.textMuted} />
               <Text style={styles.hintText}>Prev</Text>
             </View>
-            <Pressable style={styles.applyHint} onPress={handleApply}>
-              <Feather name="arrow-up" size={13} color={T.selText} />
-              <Text style={styles.applyHintText}>Swipe up to apply</Text>
-            </Pressable>
+            <View style={styles.counterWrap}>
+              <Pressable style={styles.applyHint} onPress={handleApply}>
+                <Feather name="arrow-up" size={13} color={T.selText} />
+                <Text style={styles.applyHintText}>Swipe up to apply</Text>
+              </Pressable>
+              <Text style={styles.counterText}>
+                {currentIndex + 1} / {availableGigs.length}
+                {hasMore ? "+" : ""}
+              </Text>
+            </View>
             <View style={styles.hintItem}>
               <Text style={styles.hintText}>Next</Text>
               <Feather name="chevron-right" size={13} color={T.textMuted} />
@@ -312,11 +365,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: rw(3),
   },
-  hintText: {
-    fontSize: rf(11),
-    fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
-    color: T.textMuted,
+  counterWrap: {
+    alignItems: "center",
+    gap: rw(4),
   },
   applyHint: {
     flexDirection: "row",
@@ -332,5 +383,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     color: T.selText,
+  },
+  counterText: {
+    fontSize: rf(11),
+    fontFamily: "SpaceGrotesk_400Regular",
+    color: T.textMuted,
+  },
+  hintText: {
+    fontSize: rf(11),
+    fontWeight: "500",
+    fontFamily: "SpaceGrotesk_500Medium",
+    color: T.textMuted,
   },
 });

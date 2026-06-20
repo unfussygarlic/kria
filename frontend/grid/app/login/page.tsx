@@ -104,11 +104,13 @@ export default function LoginPage() {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id")
+      .select("first_name")
       .eq("id", data.user!.id)
       .single();
 
-    router.replace(profile ? "/dashboard" : "/onboarding");
+    // A trigger may auto-create a stub profile with first_name=NULL.
+    // Only treat the profile as complete if first_name has been set by onboarding.
+    router.replace(profile?.first_name ? "/dashboard" : "/onboarding");
   };
 
   const handleVerifyOtp = (e: React.FormEvent) => {
