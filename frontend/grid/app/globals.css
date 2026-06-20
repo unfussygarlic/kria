@@ -75,50 +75,52 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   --lime-on: #0e0e0e;
 }
 
-/* ── Solar Flare Light (from stitch_kria_grid_host_dashboard-light) ── */
+/* ── Pumpkin Orange Light (white + orange + black) ── */
 [data-theme="light"] {
-  /* @theme cascade overrides */
-  --color-bg:        #f4f5df;
-  --color-surface-1: #ffffff;   /* cards = pure white */
-  --color-surface-2: #f4f5df;
-  --color-surface-3: #eef0da;
-  --color-surface-4: #e8ead4;
-  --color-surface-5: #e2e4cf;
+  /* Surfaces — milk white hierarchy */
+  --color-bg:        #FEFCFF;
+  --color-surface-1: #FEFCFF;
+  --color-surface-2: #F5F3F7;
+  --color-surface-3: #ECEAED;
+  --color-surface-4: #E3E1E4;
+  --color-surface-5: #D9D7DA;
 
-  /* Lime → olive in light mode. Olive (#536600) on light surfaces is readable;
-     for nav-active text on the dark block, use muted olive-lime (#a8cc00)
-     which matches Tailwind lime-400 and stays legible on near-black. */
-  --color-primary:     #536600;
-  --color-primary-dim: #3e4c00;
-  --color-secondary:   #4858ab;
-  --color-error:       #ba1a1a;
+  /* Primary = pumpkin orange; secondary = obsidian black */
+  --color-primary:     #FF7518;
+  --color-primary-dim: #E05E08;
+  --color-secondary:   #0D0D0D;
+  --color-error:       #CC2200;
+  --color-amber:       #D97706;
 
-  --color-text:       #1a1d10;
-  --color-text-sub:   #444932;
-  --color-text-muted: #757a60;
-  --color-text-inv:   #ffffff;   /* text ON olive buttons → white */
+  /* Text — obsidian hierarchy */
+  --color-text:       #0D0D0D;
+  --color-text-sub:   #2D2D2D;
+  --color-text-muted: #666666;
+  --color-text-inv:   #FEFCFF;   /* white on orange/black buttons */
 
   /* Component tokens */
-  --card-bg:       #ffffff;
-  --sidebar-bg:    #ffffff;
-  --topbar-bg:     rgba(255,255,255,0.92);
-  --content-bg:    #f4f5df;
-  --input-bg:      #f8f9fa;
+  --card-bg:       #FEFCFF;
+  --sidebar-bg:    #FEFCFF;
+  --topbar-bg:     rgba(254,252,255,0.92);
+  --content-bg:    #F5F3F7;
+  --input-bg:      #F5F3F7;
 
-  --border-color:  rgba(0,0,0,0.08);
-  --border-subtle: rgba(0,0,0,0.05);
-  --hover-bg:      rgba(0,0,0,0.04);
+  /* Borders — obsidian black for definition */
+  --border-color:  rgba(13,13,13,0.20);
+  --border-subtle: rgba(13,13,13,0.10);
+  --hover-bg:      rgba(13,13,13,0.04);
 
-  --nav-active-bg:     #eef0da;   /* warm beige — sits naturally on white sidebar */
-  --nav-active-text:   #536600;   /* olive on beige */
-  --nav-active-border: #536600;   /* olive right-edge indicator */
-  --nav-inactive-text: #757a60;
-  --nav-hover-bg:      rgba(0,0,0,0.05);
-  --nav-hover-text:    #1a1d10;
+  /* Nav */
+  --nav-active-bg:     rgba(255,117,24,0.08);
+  --nav-active-text:   #FF7518;
+  --nav-active-border: #FF7518;
+  --nav-inactive-text: #666666;
+  --nav-hover-bg:      rgba(13,13,13,0.04);
+  --nav-hover-text:    #0D0D0D;
 
-  /* Lime constant → olive in light */
-  --lime:    #536600;
-  --lime-on: #ffffff;   /* white on olive */
+  /* Orange replaces lime constant */
+  --lime:    #FF7518;
+  --lime-on: #FEFCFF;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -126,33 +128,34 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
    These fix pages that use border-white/* and bg-white/* without
    needing to touch individual component files.
    ───────────────────────────────────────────────────────────────── */
-[data-theme="light"] .border-white\/10  { border-color: rgba(0,0,0,0.08) !important; }
-[data-theme="light"] .border-white\/5   { border-color: rgba(0,0,0,0.05) !important; }
-[data-theme="light"] .border-white\/20  { border-color: rgba(0,0,0,0.12) !important; }
-[data-theme="light"] .border-white\/30  { border-color: rgba(0,0,0,0.16) !important; }
+/* Borders — obsidian black at varying opacities for definition */
+[data-theme="light"] .border-white\/5   { border-color: rgba(13,13,13,0.10) !important; }
+[data-theme="light"] .border-white\/10  { border-color: rgba(13,13,13,0.20) !important; }
+[data-theme="light"] .border-white\/20  { border-color: rgba(13,13,13,0.25) !important; }
+[data-theme="light"] .border-white\/30  { border-color: rgba(13,13,13,0.30) !important; }
 
-[data-theme="light"] .bg-white\/5  { background-color: rgba(0,0,0,0.04) !important; }
-[data-theme="light"] .bg-white\/10 { background-color: rgba(0,0,0,0.06) !important; }
+[data-theme="light"] .bg-white\/5  { background-color: rgba(13,13,13,0.03) !important; }
+[data-theme="light"] .bg-white\/10 { background-color: rgba(13,13,13,0.05) !important; }
 
-[data-theme="light"] .hover\:border-white\/20:hover { border-color: rgba(0,0,0,0.14) !important; }
-[data-theme="light"] .hover\:border-white\/40:hover { border-color: rgba(0,0,0,0.20) !important; }
-[data-theme="light"] .hover\:bg-white\/5:hover       { background-color: rgba(0,0,0,0.04) !important; }
-[data-theme="light"] .hover\:bg-white\/\[0\.02\]:hover { background-color: rgba(0,0,0,0.02) !important; }
-[data-theme="light"] .hover\:bg-surface-2:hover      { background-color: #f4f5df !important; }
+[data-theme="light"] .hover\:border-white\/20:hover    { border-color: rgba(13,13,13,0.30) !important; }
+[data-theme="light"] .hover\:border-white\/40:hover    { border-color: rgba(13,13,13,0.40) !important; }
+[data-theme="light"] .hover\:bg-white\/5:hover         { background-color: rgba(13,13,13,0.04) !important; }
+[data-theme="light"] .hover\:bg-white\/\[0\.02\]:hover { background-color: rgba(13,13,13,0.02) !important; }
+[data-theme="light"] .hover\:bg-surface-2:hover        { background-color: #F5F3F7 !important; }
 
-/* Hardcoded input background used in several forms */
-[data-theme="light"] .bg-\[\#201f1f\] { background-color: #f8f9fa !important; }
+/* Hardcoded input / surface backgrounds */
+[data-theme="light"] .bg-\[\#201f1f\] { background-color: #F5F3F7 !important; }
 
-/* Hardcoded lime hex → olive in light mode */
-[data-theme="light"] .bg-\[\#D4FF00\]   { background-color: #536600 !important; }
-[data-theme="light"] .text-\[\#D4FF00\] { color: #536600 !important; }
-[data-theme="light"] .border-\[\#D4FF00\] { border-color: #536600 !important; }
+/* Hardcoded lime hex → orange in light mode */
+[data-theme="light"] .bg-\[\#D4FF00\]    { background-color: #FF7518 !important; }
+[data-theme="light"] .text-\[\#D4FF00\]  { color: #FF7518 !important; }
+[data-theme="light"] .border-\[\#D4FF00\] { border-color: #FF7518 !important; }
 
 /* Text color fixes for things using literal white/near-white on dark */
-[data-theme="light"] .text-neutral-400 { color: #757a60 !important; }
-[data-theme="light"] .text-neutral-300 { color: #444932 !important; }
-[data-theme="light"] .text-neutral-500 { color: #757a60 !important; }
-[data-theme="light"] .text-neutral-600 { color: #444932 !important; }
+[data-theme="light"] .text-neutral-300 { color: #2D2D2D !important; }
+[data-theme="light"] .text-neutral-400 { color: #666666 !important; }
+[data-theme="light"] .text-neutral-500 { color: #555555 !important; }
+[data-theme="light"] .text-neutral-600 { color: #333333 !important; }
 
 /* ── Skill Graph canvas tokens ── */
 :root {
@@ -161,9 +164,9 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   --sg-grid:        rgba(255,255,255,0.07);
 }
 [data-theme="light"] {
-  --sg-canvas-from: #e4e7d6;
-  --sg-canvas-to:   #d8dcc6;
-  --sg-grid:        rgba(0,0,0,0.09);
+  --sg-canvas-from: #F5F3F7;
+  --sg-canvas-to:   #ECEAED;
+  --sg-grid:        rgba(13,13,13,0.08);
 }
 
 /* ── Momentum band colors ── */
@@ -176,8 +179,8 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   --band-newcomer: #777575;
 }
 [data-theme="light"] {
-  --band-legend:   #1a1d10;
-  --band-elite:    #536600;
+  --band-legend:   #0D0D0D;
+  --band-elite:    #FF7518;
   --band-trusted:  #8a6200;
   --band-reliable: #4858ab;
   --band-building: #b84c35;
@@ -190,8 +193,8 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   --star-empty-stroke: rgba(255,255,255,0.20);
 }
 [data-theme="light"] {
-  --star-filled:       #536600;
-  --star-empty-stroke: rgba(0,0,0,0.20);
+  --star-filled:       #FF7518;
+  --star-empty-stroke: rgba(13,13,13,0.20);
 }
 
 /* ── Progress bar / fill colors ── */
@@ -201,9 +204,9 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   --color-amber:   #FFC83D;
 }
 [data-theme="light"] {
-  --fill-complete: #536600;
+  --fill-complete: #FF7518;
   --fill-partial:  #4858ab;
-  --color-amber:   #8a6200;
+  --color-amber:   #D97706;
 }
 
 /* ─────────────────────────────────────────────────────────────────

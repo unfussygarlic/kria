@@ -30,6 +30,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"profile" | "identity">("profile");
+  const [gigsPosted, setGigsPosted] = useState(0);
 
   // Profile tab
   const [firstName, setFirstName] = useState("");
@@ -53,7 +54,10 @@ export default function ProfilePage() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      const [{ data }, { count: postedCount }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
+        supabase.from("gigs").select("*", { count: "exact", head: true }).eq("poster_id", user.id),
+      ]);
       if (data) {
         setProfile(data as Profile);
         setFirstName(data.first_name ?? "");
@@ -66,6 +70,7 @@ export default function ProfilePage() {
         setIdType(data.id_type ?? "");
         setIdValue(data.id_value ?? "");
       }
+      setGigsPosted(postedCount ?? 0);
       setLoading(false);
     };
     load();
@@ -188,7 +193,7 @@ export default function ProfilePage() {
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Gigs Posted</span>
             <Briefcase size={15} className="text-primary" />
           </div>
-          <p className="text-3xl font-bold text-primary">{profile?.total_gigs_posted ?? 0}</p>
+          <p className="text-3xl font-bold text-primary">{gigsPosted}</p>
           <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary/20 group-hover:bg-primary transition-colors duration-300" />
         </div>
         <div className="bg-surface-1 border border-white/10 rounded-xl p-5 relative overflow-hidden group">
