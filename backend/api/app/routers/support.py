@@ -9,7 +9,7 @@ from app.email.client import send_email
 
 router = APIRouter(prefix="/support", tags=["support"])
 
-ADMIN_EMAIL = "vs.therojgaar@gmail.com"
+ADMIN_EMAIL = "coreofkria@gmail.com"
 
 CATEGORY_LABELS = {
     "account":   "Account & Profile",
