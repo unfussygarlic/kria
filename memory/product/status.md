@@ -94,23 +94,34 @@ Last updated: 2026-06-21
 - **Profile/Settings/Sign Out** moved from sidebar to TopBar profile dropdown
 - **Onboarding bypass fixed:** all three auth checkpoints now gate on `first_name` not just profile row existence
 
-## Upcoming: Admin Dashboard
+## Admin Dashboard (Phase 1 Complete — 2026-06-21)
 
-Separate Next.js app (`frontend/admin/`). Full plan: `memory/apps/admin/plan.md`.
+- Separate Next.js app at `frontend/admin/`, live at `admin.trykria.com` (Vercel)
+- **Auth:** `coreofkria@gmail.com` is admin (`is_admin = TRUE` in profiles). Any other email is denied.
+- **Login:** email OTP → checks `is_admin` → denies with message if false
+- **Sections live:** Overview (bento metrics, live clock, system health), Users (band-colored table + slide-in drawer), Support Tickets (split panel + resolve emails), Verification Queue (kanban)
+- **Stub sections (Phase 2/3):** Gigs, Momentum, Subscriptions, System Health
+- **Backend:** `routers/admin.py` (ticket list/patch + overview stats), `routers/support.py` (submit endpoint), `require_admin` FastAPI dep in `auth/middleware.py`
+- **Migration 0030:** `is_admin BOOLEAN` on profiles + `support_queries` table — applied via EC2 alembic
+- **Env var:** `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (new Supabase key format, `sb_publishable_...`)
+- **CORS:** `admin.trykria.com` added to `_PROD_ORIGINS` in `main.py`
+- Full progress: `memory/apps/admin/progress.md`
 
-Phase 1 (next to build): app scaffold, `is_admin` flag, Overview, Users, Support Tickets.
+## Help & Support (Grid — Complete 2026-06-21)
 
-## Upcoming: Help & Support (Grid)
-
-`/support` page in Grid, linked from TopBar dropdown. FAQ accordion + categorized query form. Full plan: `memory/features/help_support.md`. Part of Admin Phase 1.
+- `/support` page at `app/(dashboard)/support/page.tsx`
+- 4-section FAQ accordion (Getting Started, Gigs & Applications, Momentum & Ratings, Account & Billing)
+- Categorized query form: 7 categories, subject, message, auto-submits via `POST /api/v1/support/submit`
+- On submit: inserts to `support_queries`, emails `coreofkria@gmail.com`, sends ack to user
+- Linked from TopBar profile dropdown (between Settings and Sign Out)
 
 ## Open / Pending Items
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| **Admin Dashboard Phase 1** | High | See `memory/apps/admin/progress.md` for task checklist |
-| **Help & Support page (Grid)** | High | Part of Admin Phase 1 |
-| **Set up Supabase webhook** | High | Table: `gig_applications`, INSERT → `https://<api-domain>/api/v1/email/internal/application-created`, header `X-Webhook-Secret` |
+| **Set up Supabase webhook** | High | Table: `gig_applications`, INSERT → `https://api.trykria.com/api/v1/email/internal/application-created`, header `X-Webhook-Secret` |
+| **Admin Phase 2** | Medium | Verification re-queue/approve via FastAPI admin endpoints; Gigs management page |
+| **Admin Phase 3** | Low | Momentum leaderboard + audit log; Subscriptions management; System Health radar rings |
 | Show badges on applicant cards (Grid) | Medium | Display `BadgeList` in `ApplicantProfileModal` and applicant list rows using `verified_id_types` |
 | Enable anti-spoof in prod | Medium | Set `ANTISPOOF_MODEL_ENABLED=True` in Inspector docker env once on controlled hardware/lighting |
 | Grid: Host rating UI (sub-scores) | Medium | Post-gig: collect punctuality/communication/professionalism sub-scores when rating runner |

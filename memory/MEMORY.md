@@ -6,7 +6,7 @@
 
 ## Architecture
 - [Stack](architecture/stack.md) — Expo, FastAPI, Supabase, Next.js, Inspector, ports, Docker networking
-- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (0001–0029 applied; 0030 planned for admin)
+- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (0001–0030 applied; next: 0031)
 - [Data Access](architecture/data_access.md) — Supabase direct vs FastAPI, auth patterns, key utils
 
 ## Apps
@@ -18,7 +18,7 @@
 - [Grid (Host Dashboard)](apps/grid/overview.md) — routes, sidebar order, TopBar dropdown, onboarding bypass fix, auth flow, CSS vars
 - [Admin Dashboard: Plan](apps/admin/plan.md) — architecture, auth (is_admin flag), all 8 sections, backend work, 3 phases
 - [Admin Dashboard: Design](apps/admin/design.md) — Dark Ops aesthetic, icon rail nav, bento overview, band-DNA user table, kanban queue, split ticket panel, radar health rings
-- [Admin Dashboard: Progress](apps/admin/progress.md) — phase-by-phase task checklist with statuses
+- [Admin Dashboard: Progress](apps/admin/progress.md) — Phase 1 complete ✅; Phase 2 (verification FastAPI endpoints, gigs page) next
 - [Landing Page](apps/landing-page/overview.md) — trykria.com, i18n, inline styles, gotchas
 
 ## Features
@@ -55,6 +55,7 @@ cd frontend/pocket && npx expo start                   # Mobile (Expo Go)
 docker-compose --env-file .env.dev \
   -f docker-compose.yml -f docker-compose.dev.yml up  # Backend + Supabase + Inspector
 cd frontend/grid && npm run dev                        # Grid (port 3000)
+cd frontend/admin && npm run dev                       # Admin (port 3002)
 cd landing-page && npm run dev                         # Landing page
 ```
 
@@ -62,6 +63,7 @@ cd landing-page && npm run dev                         # Landing page
 - Mobile (Pocket): phone OTP, any number → `123456`
 - Grid (web): email OTP — enter any email, get 6-digit code via Supabase built-in email
 - **Demo host account:** `9988776655` (Priya Mehta, Bangalore) — 15 seeded gigs, 16 runners
+- **Admin:** `coreofkria@gmail.com` → email OTP → `admin.trykria.com` (or `localhost:3002`)
 
 ### Theme (key tokens)
 - `T.primary` = `#D4FF00` (lime) | `T.secondary` = `#8097ff` (cobalt)
@@ -124,8 +126,15 @@ score, items, profile_items = compute_worker_breakdown(
 - **DB column:** `verified_id_types jsonb[]` — use `jsonb_build_array(:id_type)` NOT `':id_type'::jsonb` (asyncpg binding bug)
 - **Badges:** `BadgeList earnedKeys={profile.verified_id_types}` — auto-shows `photo_verified` meta-badge
 
-### Next Migration: `0030_admin_support.py`
-Planned: `is_admin BOOLEAN DEFAULT FALSE` on profiles + `support_queries` table (Admin Dashboard Phase 1). Check `backend/api/alembic/versions/` to confirm 0029 filename.
+### Admin Quick Ref
+- **URL:** `admin.trykria.com` (Vercel) | local: `http://localhost:3002`
+- **Login:** `coreofkria@gmail.com` → email OTP
+- **Grant new admin:** `INSERT INTO profiles (id, display_name, is_admin) SELECT id, 'Name', TRUE FROM auth.users WHERE email = '...' ON CONFLICT (id) DO UPDATE SET is_admin = TRUE;`
+- **`display_name` is NOT NULL** — must include in INSERT or it will fail
+- **FastAPI dep:** `AdminUser = Annotated[AuthenticatedUser, Depends(require_admin)]` in `auth/middleware.py`
+- **Env var:** `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (new Supabase format `sb_publishable_...`)
+
+### Next Migration: `0031`
 
 ### SMS Notifications Quick Ref
 - **Module:** `backend/api/app/sms_notifications/` — `templates.py` (registry), `sender.py` (Fast2SMS), `hook.py` (GoTrue endpoint)

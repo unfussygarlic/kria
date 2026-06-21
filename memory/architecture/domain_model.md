@@ -11,7 +11,8 @@ type: reference
 ### `profiles`
 One row per user. **Created explicitly at onboarding completion** (migration 0024 made the auth trigger a no-op).
 - `id` (uuid, FK → auth.users)
-- `phone` (nullable), `email` (nullable, added migration 0023), `display_name`, `first_name`, `last_name`
+- `phone` (nullable), `email` (nullable, added migration 0023), `display_name` (NOT NULL), `first_name`, `last_name`
+- `is_admin BOOLEAN NOT NULL DEFAULT FALSE` (migration 0030) — checked by `require_admin` FastAPI dep
 - `default_role` TEXT ('runner' | 'host') — set at onboarding: Grid sets 'host', Pocket sets 'runner' (added migration 0025)
 - `city`, `state`, `gender`, `date_of_birth`
 - `worker_reputation` (0–5 float), `poster_reputation` (0–5 float)
@@ -133,6 +134,16 @@ Junction table — earned badges per user.
 - `earned_at` (timestamptz, default NOW())
 - UNIQUE `(profile_id, badge_id)` — prevents duplicate awards; `INSERT ... ON CONFLICT DO NOTHING` pattern used in `badge_service.py`
 
+### `support_queries` (migration 0030)
+Submitted via Grid Help & Support page. Managed from Admin Dashboard Tickets section.
+- `id` UUID PK
+- `user_id` UUID FK → profiles (ON DELETE SET NULL, nullable)
+- `category` TEXT — `account | gigs | checkin | payments | runners | technical | other`
+- `subject` TEXT, `message` TEXT, `email` TEXT (submitter email for reply)
+- `status` TEXT DEFAULT `open` — `open | in_progress | resolved`
+- `admin_note` TEXT — written by admin on resolve, included in resolution email
+- `created_at`, `updated_at` TIMESTAMPTZ (auto-updated by trigger)
+
 ### Chat Tables (hidden feature)
 - `conversations`, `messages`, `conversation_participants`
 - Code preserved, tab hidden
@@ -186,33 +197,14 @@ events ──< gigs (event_id nullable FK)
 | `0027_gig_pause.py` | ADD `is_paused BOOLEAN DEFAULT FALSE` to gigs; partial index on `(poster_id) WHERE NOT is_paused` |
 | `0028_email_tracking.py` | ADD `first_application_notified`, `last_burst_email_at` to gigs; CREATE `email_unsubscribes`, `profile_reminder_log` tables |
 | `0029_...py` | (check alembic/versions/ for exact name) |
+| `0030_admin_support.py` | ADD `is_admin BOOLEAN NOT NULL DEFAULT FALSE` to profiles; CREATE `support_queries` table with indexes + auto-update trigger |
 
-**Applied migrations:** 0001–0028 confirmed. 0029 written (subscriptions).
+**Applied migrations:** 0001–0030 confirmed, all applied via EC2 `alembic upgrade head`.
 
-**Next migration number:** `0030` (planned: `is_admin` on profiles + `support_queries` table)
+**Next migration number:** `0031`
 
 Migrations live at: `backend/api/alembic/versions/`
 Auto-run on backend startup.
-
----
-
-## Planned Tables (Admin Dashboard — Phase 1)
-
-### `support_queries` (migration 0030)
-Submitted via Grid Help & Support page. Managed from Admin Dashboard.
-- `id` UUID PK
-- `user_id` UUID FK → profiles (ON DELETE SET NULL)
-- `category` TEXT — one of: `gig_posting | runner_applications | payments_billing | account_profile | bug_report | feature_request | other`
-- `subject` TEXT
-- `message` TEXT
-- `email` TEXT — submitter email for reply
-- `status` TEXT DEFAULT `open` — `open | in_progress | resolved`
-- `admin_note` TEXT — written by admin on resolve
-- `created_at`, `updated_at` TIMESTAMPTZ
-
-### `profiles.is_admin` (migration 0030)
-`ALTER TABLE profiles ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE`
-Checked by `require_admin` FastAPI dependency on all `/admin/*` routes.
 
 ## RLS Critical Rule
 

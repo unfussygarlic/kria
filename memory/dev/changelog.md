@@ -6,6 +6,83 @@ type: project
 
 # Changelog
 
+## 2026-06-21 — Admin Dashboard Phase 1 Complete + Help & Support + Supabase Key Updates
+
+### Admin Dashboard — Phase 1 shipped
+
+Full admin app built at `frontend/admin/`, deployed to `admin.trykria.com` (Vercel).
+
+**App scaffold (Dark Ops design):**
+- `#080808` background, `#111111`/`#161616` surfaces
+- Space Grotesk (UI) + JetBrains Mono (data/mono)
+- CSS keyframes: `pulse-dot`, `glow-amber`, `glow-lime`, `radar-spin`, `slide-in-right`, `blink-border`
+- Band CSS vars: `--band-newcomer` through `--band-legend`
+
+**Auth:**
+- Email OTP login → checks `is_admin` on profiles → denies non-admins with message before session creation
+- `_AdminLayoutClient.tsx` double-check on every page load using `getUser()` (not `getSession()`)
+- Admin email: `coreofkria@gmail.com` (inserted via SQL editor with `display_name` — NOT NULL constraint)
+- `require_admin` FastAPI dep in `auth/middleware.py`; `AdminUser` type alias
+
+**Pages:**
+- **Overview:** live clock, system health strip (pings API + DB every 30s), bento metric tiles with `requestAnimationFrame` count-up animation, runner/host split bar, quick links
+- **Users:** search + role filter, band-colored 3px left border, `ShieldCheck` for verified, slide-in drawer with momentum bar + suspend/reactivate
+- **Support Tickets:** split panel (380px list / flex detail), category-colored chips, status filter tabs, resolve via FastAPI (sends Resend email to user), in-progress action
+- **Verification Queue:** 4-column kanban, live `useTickingAge` counters, `blink-border` animation on processing cards
+- **Stubs (Phase 2/3):** Gigs, Momentum, Subscriptions, System Health
+
+**Components:** `IconRail`, `Sparkline` (pure SVG polyline), `MetricTile` (count-up + glow states)
+
+**Backend:**
+- `routers/admin.py`: `GET /admin/support/tickets`, `PATCH /admin/support/tickets/{id}` (sends Resend resolve email), `GET /admin/stats/overview`
+- `routers/support.py`: `POST /support/submit` — inserts to `support_queries`, emails `coreofkria@gmail.com`, sends ack to submitter
+- Both routers registered in `main.py`
+- CORS: `admin.trykria.com` added to `_PROD_ORIGINS`; `localhost:3002` to `_DEV_ORIGINS`
+
+**Migration 0030** (`backend/api/alembic/versions/0030_admin_support.py`):
+- `ALTER TABLE profiles ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE`
+- `CREATE TABLE support_queries` with indexes + auto-update trigger
+- Applied via `docker exec -it kria-api bash → alembic upgrade head` on EC2
+
+**Supabase SQL to grant admin (documented for future admins):**
+```sql
+INSERT INTO profiles (id, display_name, is_admin)
+SELECT id, 'Admin', TRUE FROM auth.users WHERE email = 'coreofkria@gmail.com'
+ON CONFLICT (id) DO UPDATE SET is_admin = TRUE;
+```
+Note: `display_name` is NOT NULL on profiles — must be included in INSERT.
+
+### Grid: Help & Support page
+
+`app/(dashboard)/support/page.tsx` — FAQ accordion + categorized query form.
+- 4 FAQ sections: Getting Started, Gigs & Applications, Momentum & Ratings, Account & Billing (12 questions total)
+- Query form: 7 categories (`account | gigs | checkin | payments | runners | technical | other`), subject (120 char), message (2000 char), character counter
+- Success state replaces form; "Submit another" link resets
+- Submits via `POST /api/v1/support/submit` (requires auth session for email lookup)
+- `lib/api/support.ts` — `submitSupportQuery()` API helper
+
+TopBar dropdown updated: "Help & Support" (HelpCircle icon) added between Settings and Sign Out divider.
+
+### Supabase key naming update
+
+Supabase introduced new non-JWT key format:
+- `sb_publishable_...` → replaces `anon` key → frontend use
+- `sb_secret_...` → replaces `service_role` key → backend only, never in frontend
+
+**Admin app:** uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (new name).
+**Grid app:** kept on `NEXT_PUBLIC_SUPABASE_ANON_KEY` (still working, not changed).
+
+`getUser()` used instead of `getSession()` in auth guard files (`_AdminLayoutClient.tsx`) — `getUser()` validates JWT server-side; `getSession()` only reads local storage. `getSession()` kept in API token-forwarding helpers (no network overhead needed there).
+
+### Vercel deployment (Admin)
+
+- Root directory: `frontend/admin`
+- Domain: `admin.trykria.com` (CNAME → `cname.vercel-dns.com`)
+- Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_API_URL=https://api.trykria.com/api/v1`
+- Backend rebuilt on EC2 to pick up CORS change: `docker compose ... up -d --build kria-api`
+
+---
+
 ## 2026-06-21 — Grid Nav Overhaul + Onboarding Bypass Fix + Admin Dashboard Plan
 
 ### Grid: Sidebar Reorder + TopBar Profile Dropdown

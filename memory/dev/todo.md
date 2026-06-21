@@ -46,8 +46,8 @@ Audited 2026-05-30. Fix in priority order.
 
 | Project | Phase | Notes |
 |---------|-------|-------|
-| **Admin Dashboard** | Phase 1 next | See `memory/apps/admin/plan.md` + `memory/apps/admin/progress.md`. Start with: app scaffold, `is_admin` migration, `require_admin` dep, Overview page, Users page, Support Tickets page. |
-| **Help & Support (Grid)** | With Phase 1 | `/support` page — FAQ accordion + categorized query form. Part of Admin Phase 1. See `memory/features/help_support.md`. |
+| **Admin Dashboard** | Phase 2 | Verification re-queue/approve via proper FastAPI admin endpoints; Gigs management page. See `memory/apps/admin/progress.md`. |
+| **Admin Dashboard** | Phase 3 | Momentum leaderboard + audit log; Subscriptions management; System Health radar rings. |
 
 ## High Priority
 

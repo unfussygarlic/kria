@@ -15,28 +15,31 @@ Last updated: 2026-06-21
 
 ## Phase 1 — Auth + Overview + Users + Support Tickets
 
-**Status: NOT STARTED**
+**Status: COMPLETE ✅**
 
 ### Tasks
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `frontend/admin/` Next.js app scaffold | ⬜ | Mirror Grid setup: App Router, Tailwind v4, lucide-react, Space Grotesk |
-| Migration: `is_admin BOOLEAN` on profiles | ⬜ | Next migration number — check `backend/api/alembic/versions/` for latest |
-| FastAPI: `require_admin` dependency | ⬜ | `app/auth/middleware.py` — check `is_admin` after JWT validation |
-| FastAPI: `routers/admin.py` router | ⬜ | All admin endpoints gated by `require_admin` |
-| Admin auth gate (frontend) | ⬜ | On load: fetch profile, check `is_admin`, redirect if false |
-| Overview page | ⬜ | Metrics: users, active gigs, open tickets, pending verifications, trials expiring ≤7d, 7d application count |
-| Users page (list) | ⬜ | Searchable table, toggle Runners/Hosts/All |
-| Users page (detail drawer) | ⬜ | Full profile, momentum history, verification status, actions |
-| User actions: suspend/reactivate | ⬜ | Reuse `account.py` logic via admin endpoint |
-| Migration: `support_queries` table | ⬜ | id, user_id, category, subject, message, email, status, created_at, admin_note |
-| FastAPI: support submit endpoint | ⬜ | `POST /admin/support/submit` — insert + Resend notification to admin inbox |
-| Support Tickets page (list) | ⬜ | Category, subject, submitter, status, date |
-| Support Tickets page (detail + resolve) | ⬜ | Read message, write note, change status, send resolve email |
-| FastAPI: support resolve endpoint | ⬜ | `PATCH /admin/support/{id}/resolve` — update status + send Resend email to user |
-| Grid: Help & Support page | ⬜ | FAQ accordion + categorized submission form |
-| Grid: TopBar dropdown "Help & Support" link | ⬜ | Between Settings and Sign Out divider |
+| `frontend/admin/` Next.js app scaffold | ✅ | Dark Ops theme, Space Grotesk + JetBrains Mono, Tailwind v4, lucide-react |
+| Migration: `is_admin BOOLEAN` on profiles | ✅ | Migration 0030, applied via `alembic upgrade head` on EC2 |
+| Migration: `support_queries` table | ✅ | Migration 0030, same file as is_admin |
+| FastAPI: `require_admin` dependency | ✅ | `app/auth/middleware.py` — `AdminUser` type alias |
+| FastAPI: `routers/admin.py` router | ✅ | `GET /admin/support/tickets`, `PATCH /admin/support/tickets/{id}`, `GET /admin/stats/overview` |
+| FastAPI: `routers/support.py` | ✅ | `POST /support/submit` — insert + Resend to admin + ack email to user |
+| Admin auth gate (frontend) | ✅ | `_AdminLayoutClient.tsx` — `getUser()` + `is_admin` check, redirects if false |
+| Login page with admin gate | ✅ | `app/login/page.tsx` — email OTP, denies non-admins before session creation |
+| Icon rail navigation | ✅ | 48px fixed rail, 8 sections, hover tooltips, lime active state |
+| Overview page | ✅ | Live clock, system health strip, bento metric tiles with count-up animation, runner/host split bar |
+| Users page (list) | ✅ | Search + role filter, band-colored rows, `ShieldCheck` for verified users |
+| Users page (detail drawer) | ✅ | Slide-in from right, momentum bar, profile details, suspend/reactivate actions |
+| Support Tickets page | ✅ | Split panel, category colors, status tabs, resolve via FastAPI (sends email), in-progress action |
+| Verification Queue page | ✅ | 4-column kanban, live age counters, blink-border animation for processing |
+| Gigs / Momentum / Subscriptions / Health pages | ✅ | Stub pages (Phase 2/3) |
+| Grid: Help & Support page | ✅ | `app/(dashboard)/support/page.tsx` — 4-section FAQ accordion + categorized form |
+| Grid: TopBar dropdown "Help & Support" link | ✅ | Between Settings and Sign Out divider |
+| Admin deployed to Vercel | ✅ | `admin.trykria.com`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` env var |
+| Admin granted to coreofkria@gmail.com | ✅ | Inserted via Supabase SQL editor (display_name required for NOT NULL constraint) |
 
 ---
 

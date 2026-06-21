@@ -1,3 +1,10 @@
+---
+name: Debugging Guide
+description: Known bugs, root causes, and fixes for dev and production issues
+metadata:
+  type: reference
+---
+
 # Debugging Guide
 
 ## NativeWind Breaks Animated API (CRITICAL)
@@ -180,6 +187,7 @@ Same principle applies to stroke:
 - Supabase "Direct connection" tab gives an IPv6 address → `Network is unreachable` on EC2
 - Use **Session mode pooler** tab: `aws-0-[region].pooler.supabase.com:5432`
 - The region is encoded in the hostname — copy the exact URL from Supabase dashboard, don't construct manually
+- **Alembic migrations work fine on EC2** — `alembic upgrade head` inside the container uses the Session Pooler URL (`MIGRATION_DATABASE_URL`), not the direct IPv6 URL
 
 **`docker compose environment:` vs `env_file:`**
 - `env_file: .env.prod` → injects vars INTO the container ✓
@@ -200,7 +208,7 @@ Same principle applies to stroke:
 
 **Root cause:** `NEXT_PUBLIC_*` env vars must be set in Vercel dashboard BEFORE building. Next.js embeds them at build time. If missing, `createClient()` throws at module evaluation.
 
-**Fix:** Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Vercel → Settings → Environment Variables before deploying.
+**Fix:** Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in Vercel → Settings → Environment Variables before deploying.
 
 **Secondary fix:** Dashboard pages use `export const dynamic = "force-dynamic"` in a server component layout to prevent static prerendering of auth-gated routes.
 
@@ -275,4 +283,17 @@ JOIN ratings ON ratings.rater_id = :poster_id  # collision!
 WHERE gigs.poster_id = :poster_id
 JOIN ratings ON ratings.rater_id = :rater_id
 # params: {"poster_id": user_id, "rater_id": user_id}
+```
+
+## Admin: profiles.display_name is NOT NULL
+
+**Symptom:** `ERROR: 23502: null value in column "display_name" of relation "profiles" violates not-null constraint` when inserting a profile for an admin user who never went through onboarding.
+
+**Root cause:** `display_name` is NOT NULL on profiles. Admin users registered via email OTP (not via onboarding form) have no profile row, so a bare `INSERT INTO profiles (id, is_admin)` fails.
+
+**Fix:** Always include `display_name` when inserting a profile manually:
+```sql
+INSERT INTO profiles (id, display_name, is_admin)
+SELECT id, 'Admin', TRUE FROM auth.users WHERE email = 'coreofkria@gmail.com'
+ON CONFLICT (id) DO UPDATE SET is_admin = TRUE;
 ```
