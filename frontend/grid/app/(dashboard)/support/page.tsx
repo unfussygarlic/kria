@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, CheckCircle2, Send } from "lucide-react";
 import { submitSupportQuery } from "@/lib/api/support";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 // ── FAQ data ──────────────────────────────────────────────────────────────────
 
@@ -142,7 +142,6 @@ export default function SupportPage() {
     setErrorMsg("");
 
     try {
-      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       const email = user?.email ?? "";
 
