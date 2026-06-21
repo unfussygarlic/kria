@@ -105,9 +105,9 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   --content-bg:    #FEFCFF;
   --input-bg:      #F5F3F7;
 
-  /* Borders — obsidian black for definition */
-  --border-color:  rgba(13,13,13,0.20);
-  --border-subtle: rgba(13,13,13,0.10);
+  /* Borders — obsidian black */
+  --border-color:  rgba(13,13,13,0.80);
+  --border-subtle: rgba(13,13,13,0.45);
   --hover-bg:      rgba(13,13,13,0.04);
 
   /* Nav */
@@ -128,17 +128,22 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
    These fix pages that use border-white/* and bg-white/* without
    needing to touch individual component files.
    ───────────────────────────────────────────────────────────────── */
-/* Borders — obsidian black at varying opacities for definition */
-[data-theme="light"] .border-white\/5   { border-color: rgba(13,13,13,0.10) !important; }
-[data-theme="light"] .border-white\/10  { border-color: rgba(13,13,13,0.20) !important; }
-[data-theme="light"] .border-white\/20  { border-color: rgba(13,13,13,0.25) !important; }
-[data-theme="light"] .border-white\/30  { border-color: rgba(13,13,13,0.30) !important; }
+/* Borders — obsidian black */
+[data-theme="light"] .border-white\/5   { border-color: var(--border-subtle) !important; }
+[data-theme="light"] .border-white\/10  { border-color: var(--border-color)  !important; }
+[data-theme="light"] .border-white\/20  { border-color: rgba(13,13,13,0.88)  !important; }
+[data-theme="light"] .border-white\/30  { border-color: rgba(13,13,13,0.92)  !important; }
+
+/* Table/list dividers — also obsidian */
+[data-theme="light"] .divide-white\/5  > * + * { border-color: var(--border-subtle) !important; }
+[data-theme="light"] .divide-white\/10 > * + * { border-color: var(--border-color)  !important; }
 
 [data-theme="light"] .bg-white\/5  { background-color: rgba(13,13,13,0.03) !important; }
 [data-theme="light"] .bg-white\/10 { background-color: rgba(13,13,13,0.05) !important; }
 
-[data-theme="light"] .hover\:border-white\/20:hover    { border-color: rgba(13,13,13,0.30) !important; }
-[data-theme="light"] .hover\:border-white\/40:hover    { border-color: rgba(13,13,13,0.40) !important; }
+[data-theme="light"] .hover\:border-white\/20:hover    { border-color: rgba(13,13,13,0.90) !important; }
+[data-theme="light"] .hover\:border-white\/25:hover    { border-color: rgba(13,13,13,0.92) !important; }
+[data-theme="light"] .hover\:border-white\/40:hover    { border-color: rgba(13,13,13,0.95) !important; }
 [data-theme="light"] .hover\:bg-white\/5:hover         { background-color: rgba(13,13,13,0.04) !important; }
 [data-theme="light"] .hover\:bg-white\/\[0\.02\]:hover { background-color: rgba(13,13,13,0.02) !important; }
 [data-theme="light"] .hover\:bg-surface-2:hover        { background-color: #F5F3F7 !important; }
