@@ -120,13 +120,16 @@ async def my_tickets(
     rows = await db.execute(
         text("""
             SELECT
-                id::text, category, subject, message,
-                status, admin_note,
-                created_at::text, updated_at::text
-            FROM support_queries
-            WHERE user_id = :uid
-            ORDER BY created_at DESC
+                sq.id::text, sq.category, sq.subject, sq.message,
+                sq.status, sq.admin_note,
+                sq.created_at::text, sq.updated_at::text
+            FROM support_queries sq
+            WHERE sq.user_id = :uid
+               OR (sq.user_id IS NULL AND sq.email = (
+                   SELECT email FROM profiles WHERE id = :uid2
+               ))
+            ORDER BY sq.created_at DESC
         """),
-        {"uid": current_user.user_id},
+        {"uid": current_user.user_id, "uid2": current_user.user_id},
     )
     return [dict(r._mapping) for r in rows.fetchall()]
