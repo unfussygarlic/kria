@@ -206,11 +206,21 @@ Same principle applies to stroke:
 
 **Symptom:** Vercel build fails with `supabaseUrl is required` during static page generation.
 
-**Root cause:** `NEXT_PUBLIC_*` env vars must be set in Vercel dashboard BEFORE building. Next.js embeds them at build time. If missing, `createClient()` throws at module evaluation.
+**Root cause:** `NEXT_PUBLIC_*` env vars must be set in Vercel dashboard BEFORE building. Next.js embeds them at build time. If missing, `createClient()` throws at module evaluation when Next.js tries to statically prerender a page that imports `lib/supabase.ts`.
 
-**Fix:** Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in Vercel → Settings → Environment Variables before deploying.
+**Fix 1 (required):** Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in Vercel → Settings → Environment Variables before deploying.
 
-**Secondary fix:** Dashboard pages use `export const dynamic = "force-dynamic"` in a server component layout to prevent static prerendering of auth-gated routes.
+**Fix 2 (belt-and-suspenders):** Add a layout wrapper with `export const dynamic = "force-dynamic"` for any page that imports the Supabase client at the module level:
+
+```typescript
+// app/login/layout.tsx  (and app/auth/confirm/layout.tsx)
+export const dynamic = "force-dynamic";
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+```
+
+These two files are already present in Grid for `/login` and `/auth/confirm`. If a new page crashes with `supabaseKey is required` at build, add the same layout pattern.
 
 **DO NOT use a Proxy to lazy-init the Supabase client** — `supabase.from()` loses `this` binding through a Proxy, causing silent runtime crashes on every query.
 

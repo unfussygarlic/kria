@@ -1,13 +1,13 @@
 ---
 name: help-support
-description: Help & Support feature for Grid — FAQ accordion + categorized query submission form; queries stored in support_queries table with Resend admin notification; managed via Admin Dashboard
+description: Help & Support feature for Grid — FAQ accordion + categorized query form + My Tickets tracking; queries stored in support_queries table with Resend admin notification; managed via Admin Dashboard
 metadata:
   type: project
 ---
 
 # Help & Support
 
-A page in Grid where Hosts can browse FAQs and submit categorized support queries. Managed from the Admin Dashboard.
+A page in Grid where Hosts can browse FAQs, submit categorized support queries, and track previous tickets.
 
 ---
 
@@ -15,39 +15,52 @@ A page in Grid where Hosts can browse FAQs and submit categorized support querie
 
 Accessible via **TopBar profile dropdown** (between Settings and the Sign Out divider). Route: `/support`.
 
+**File:** `frontend/grid/app/(dashboard)/support/page.tsx`
+**API helpers:** `frontend/grid/lib/api/support.ts`
+
 ---
 
 ## Page Layout
 
-### Top: FAQ Accordion
-Hardcoded in the component — no backend fetch needed. Grouped by category with collapsible sections.
+### Two tabs: FAQ and My Tickets
 
-**FAQ Categories:**
+**Tab 1 — FAQ Accordion**
+Hardcoded — no backend fetch. 4 sections:
 - Getting Started
-- Gigs & Events
-- Runners & Applications
-- Payments & Billing
-- Account & Profile
+- Gigs & Applications
+- Momentum & Ratings
+- Account & Billing
 
-Each group = one accordion section. Expand/collapse with chevron. Only one section open at a time (optional — can allow multiple).
+Each section = collapsible `FaqItem` accordion. Chevron rotates on expand.
 
-### Bottom: Submit a Query
+**Tab 2 — My Tickets**
+Shows submitted tickets fetched from `GET /api/v1/support/my-tickets`. Tab badge shows count when > 0.
+
+Each ticket rendered as `TicketRow` — expandable to show full message + admin response ("Response from Kria") if `admin_note` is set. Status chip: `open` (grey) / `in_progress` (amber) / `resolved` (lime).
+
+Auto-fetches on mount. Refreshes ticket list after form submit so new ticket appears immediately.
+
+---
+
+### Submit a Query form (bottom of FAQ tab)
 
 **Form fields:**
-- **Category** (required dropdown): 7 options listed below
+- **Category** (required dropdown): 7 options
 - **Subject** (required text input, max 120 chars)
-- **Message** (required textarea, max 1000 chars)
+- **Message** (required textarea, max 2000 chars with character counter)
 - **Email** (pre-filled from profile, editable)
-- **Submit** button → success state shows confirmation message ("We'll get back to you within 24 hours")
+- **Submit** → success state replaces form with confirmation + "View my tickets" link + "Submit another" to reset
 
-**Query Categories:**
-1. Gig Posting
-2. Runner & Applications
-3. Payments & Billing
-4. Account & Profile
-5. Bug Report
-6. Feature Request
-7. Other
+**Query Categories** (match backend `CATEGORY_LABELS`):
+```
+account   → Account & Profile
+gigs      → Gigs & Applications
+checkin   → Check-in & OTP
+payments  → Payments & Billing
+runners   → Runners & Ratings
+technical → Technical Issue
+other     → Other
+```
 
 ---
 
@@ -55,60 +68,91 @@ Each group = one accordion section. Expand/collapse with chevron. Only one secti
 
 ### Database
 
-`support_queries` table (new migration):
+`support_queries` table (migration 0030):
 ```sql
 id          UUID PRIMARY KEY DEFAULT gen_random_uuid()
-user_id     UUID REFERENCES profiles(id) ON DELETE SET NULL
-category    TEXT NOT NULL  -- one of the 7 categories above
+user_id     UUID REFERENCES profiles(id) ON DELETE SET NULL  -- always set now (stored on submit)
+category    TEXT NOT NULL
 subject     TEXT NOT NULL
 message     TEXT NOT NULL
-email       TEXT NOT NULL  -- submitter's email for reply
+email       TEXT NOT NULL
 status      TEXT NOT NULL DEFAULT 'open'  -- open | in_progress | resolved
-admin_note  TEXT  -- written by admin when resolving
+admin_note  TEXT
 created_at  TIMESTAMPTZ DEFAULT NOW()
-updated_at  TIMESTAMPTZ DEFAULT NOW()
+updated_at  TIMESTAMPTZ DEFAULT NOW()  -- auto-updated via trigger
 ```
+
+**Note:** Old tickets (submitted before `user_id` was added to the INSERT) have `user_id = NULL`. The `GET /my-tickets` query handles this via email fallback.
 
 ### FastAPI Endpoints
 
-**Submit (Grid → FastAPI):**
+**Submit:**
 `POST /api/v1/support/submit`
-- Auth: `CurrentUser` (must be logged in as host)
-- Inserts row to `support_queries`
-- Sends Resend email notification to admin inbox with category, subject, message, submitter email
+- Auth: `CurrentUser`
+- Stores `user_id` from JWT + all form fields
+- Sends Resend notification to `coreofkria@gmail.com`
+- Sends ack email to submitter
+
+**My Tickets:**
+`GET /api/v1/support/my-tickets`
+- Auth: `CurrentUser`
+- Returns tickets where `user_id = :uid OR (user_id IS NULL AND email = profile.email)`
+- Two distinct param names `uid` and `uid2` (same UUID) — required to avoid asyncpg named-param deduplication bug
+
+```python
+WHERE sq.user_id = :uid
+   OR (sq.user_id IS NULL AND sq.email = (
+       SELECT email FROM profiles WHERE id = :uid2
+   ))
+```
 
 **Resolve (Admin Dashboard → FastAPI):**
-`PATCH /admin/support/{id}/resolve`
-- Auth: `require_admin`
-- Updates `status` → `resolved`, sets `admin_note`
-- Sends Resend "resolved" email to submitter including admin note
+`PATCH /admin/support/tickets/{ticket_id}`
+- Auth: `require_admin` (`AdminUser`)
+- Updates `status`, `admin_note`
+- Sends Resend resolve email to submitter
+
+### TypeScript API helper (`lib/api/support.ts`)
+
+```typescript
+export interface MyTicket {
+  id: string; category: string; subject: string; message: string;
+  status: "open" | "in_progress" | "resolved";
+  admin_note: string | null;
+  created_at: string; updated_at: string;
+}
+export async function submitSupportQuery(payload: SupportSubmitPayload): Promise<{ ok: boolean }>
+export async function getMyTickets(): Promise<MyTicket[]>
+```
 
 ### Email Notification (to admin on new ticket)
 
-Subject: `[Kria Support] {category} — {subject}`
-Body: submitter email, category, full message, link to Admin Dashboard ticket.
-From: `noreply@trykria.com` → To: `vs.therojgaar@gmail.com`
+Subject: `[Support] {category_label}: {subject}`
+To: `coreofkria@gmail.com`; From: `noreply@trykria.com`
 
 ### Resolve Email (to submitter)
 
-Subject: `Re: {subject} — Your Kria support query`
-Body: confirmation that query is resolved + admin note if provided.
-From: `support@trykria.com` (or `noreply@trykria.com`)
+Sent by `PATCH /admin/support/tickets/{id}` when admin resolves via Admin Dashboard.
 
 ---
 
 ## Admin Management
 
-Tickets are managed in **Admin Dashboard → Support Tickets** section (Phase 1 of [[admin-plan]]).
+Tickets managed in **Admin Dashboard → Support Tickets** (Phase 1 — see [[admin-progress]]).
 
 Flow:
-1. Host submits → row created in `support_queries` + Resend email to admin
-2. Admin opens Admin Dashboard → Support Tickets → sees all open tickets
-3. Admin clicks ticket → reads message, writes optional reply note, clicks "Resolve"
-4. `PATCH /admin/support/{id}/resolve` → status → `resolved` → Resend email to host
+1. Host submits → `support_queries` row + Resend to admin
+2. Admin opens Tickets → split-panel list/detail, category chips, status filter tabs
+3. Admin clicks ticket → reads message, writes optional note, clicks Resolve or In Progress
+4. `PATCH /admin/support/tickets/{id}` via `apiPatch()` → status + admin_note → Resend email fires
+5. Host sees "Response from Kria" in their My Tickets tab
 
 ---
 
-## Build Status
+## Grid Build Fixes (related, 2026-06-21)
 
-Part of Admin Dashboard Phase 1 — see [[admin-progress]] for task tracking.
+Two Next.js pages needed `export const dynamic = "force-dynamic"` to prevent static prerender crash when Supabase env vars are absent at build time:
+- `frontend/grid/app/login/layout.tsx`
+- `frontend/grid/app/auth/confirm/layout.tsx`
+
+See [[debugging]] for the full pattern.

@@ -54,14 +54,23 @@ Note: `display_name` is NOT NULL on profiles — must be included in INSERT.
 
 ### Grid: Help & Support page
 
-`app/(dashboard)/support/page.tsx` — FAQ accordion + categorized query form.
-- 4 FAQ sections: Getting Started, Gigs & Applications, Momentum & Ratings, Account & Billing (12 questions total)
-- Query form: 7 categories (`account | gigs | checkin | payments | runners | technical | other`), subject (120 char), message (2000 char), character counter
-- Success state replaces form; "Submit another" link resets
-- Submits via `POST /api/v1/support/submit` (requires auth session for email lookup)
-- `lib/api/support.ts` — `submitSupportQuery()` API helper
+`app/(dashboard)/support/page.tsx` — two tabs: FAQ + My Tickets.
+- **FAQ tab:** 4 accordion sections (Getting Started, Gigs & Applications, Momentum & Ratings, Account & Billing), `FaqItem` component, chevron rotation
+- **My Tickets tab:** `TicketRow` expandable cards — shows status chip, full message, "Response from Kria" (admin_note) when resolved. Tab badge shows ticket count. Auto-fetches on mount; refreshes after submit.
+- Query form (bottom of FAQ tab): 7 categories (`account | gigs | checkin | payments | runners | technical | other`), subject (120 char), message (2000 char), character counter
+- Success state: confirmation + "View my tickets" link + "Submit another"
+- Submits via `POST /api/v1/support/submit` (requires auth — stores `user_id`)
+- `lib/api/support.ts` — `submitSupportQuery()`, `getMyTickets()`, `MyTicket` interface
 
 TopBar dropdown updated: "Help & Support" (HelpCircle icon) added between Settings and Sign Out divider.
+
+**Backend changes:**
+- `POST /support/submit` now stores `user_id` in INSERT
+- `GET /support/my-tickets` returns tickets matching `user_id = :uid OR (user_id IS NULL AND email = profile.email)` — email fallback handles old tickets created before `user_id` was stored. Uses `uid` + `uid2` as distinct asyncpg param names (same value).
+
+**Build fixes (Grid):**
+- `app/login/layout.tsx` — `export const dynamic = "force-dynamic"` to prevent static prerender crash
+- `app/auth/confirm/layout.tsx` — same fix; these pages call `createClient()` at module load which throws when env vars are absent at build time
 
 ### Supabase key naming update
 
@@ -70,9 +79,9 @@ Supabase introduced new non-JWT key format:
 - `sb_secret_...` → replaces `service_role` key → backend only, never in frontend
 
 **Admin app:** uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (new name).
-**Grid app:** kept on `NEXT_PUBLIC_SUPABASE_ANON_KEY` (still working, not changed).
+**Grid app:** migrated to `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — `lib/supabase.ts` updated, Vercel env var added.
 
-`getUser()` used instead of `getSession()` in auth guard files (`_AdminLayoutClient.tsx`) — `getUser()` validates JWT server-side; `getSession()` only reads local storage. `getSession()` kept in API token-forwarding helpers (no network overhead needed there).
+`getUser()` used instead of `getSession()` in auth guard files (`_AdminLayoutClient.tsx`, `_DashboardLayoutClient.tsx`) — `getUser()` validates JWT server-side; `getSession()` only reads local storage. `getSession()` kept in API token-forwarding helpers (no network overhead needed there).
 
 ### Vercel deployment (Admin)
 

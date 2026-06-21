@@ -59,7 +59,8 @@ grid/
 │       ├── client.ts            # apiGet, apiPost, apiPatch
 │       ├── events.ts            # createEvent, getMyEvents, getEvent, addJobToEvent
 │       ├── applicants.ts        # listApplicants (per-gig), listAllApplicants (global), acceptApplicant, rejectApplicant, markNoShow
-│       └── momentum.ts          # fetchUserBreakdown(userId) → GET /momentum/user/{id}/breakdown
+│       ├── momentum.ts          # fetchUserBreakdown(userId) → GET /momentum/user/{id}/breakdown
+│       └── support.ts           # submitSupportQuery(), getMyTickets(), MyTicket type
 └── types/index.ts               # All TypeScript types incl. BreakdownItem, ProfileSignalItem, MomentumBreakdownResponse, GlobalApplicantItem
 ```
 
@@ -80,7 +81,7 @@ grid/
 | `/applications` | Global applications inbox — all applicants across host's gigs |
 | `/analytics` | Analytics Center — KPI cards, funnel, category perf, monthly activity, city distribution, heatmap |
 | `/profile` | Edit display_name + bio, reputation bar, stats |
-| `/support` | Help & Support — FAQ accordion + categorized query submission form |
+| `/support` | Help & Support — FAQ accordion + query form + My Tickets tab |
 
 ## Applications Page (`/applications`) — "Command Center" Design
 
@@ -243,16 +244,18 @@ Pure SVG — no react-native-svg dependency. Works in browser.
 The name + avatar block in the top-right is now a clickable button with a `ChevronDown` icon. Click opens a dropdown:
 
 ```
-┌──────────────┐
-│ 👤 Profile   │
-│ ⚙️ Settings  │
-│──────────────│
-│ 🚪 Sign Out  │  ← red label
-└──────────────┘
+┌────────────────────┐
+│ 👤 Profile         │
+│ ⚙️ Settings        │
+│ ❓ Help & Support  │
+│────────────────────│
+│ 🚪 Sign Out        │  ← red label
+└────────────────────┘
 ```
 
 - **Profile** → `router.push("/profile")`
 - **Settings** → `router.push("/settings")`
+- **Help & Support** → `router.push("/support")` (HelpCircle icon, between Settings and divider)
 - **Sign Out** → `supabase.auth.signOut()` + `router.replace("/login")`
 - Click outside closes dropdown (`mousedown` listener on `document`)
 - `useRef` on the wrapper + `useEffect` for outside-click detection
@@ -329,7 +332,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx  # new Supabase key format (replaces anon key)
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ```
 
@@ -339,9 +342,10 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 
 - **URL:** `grid.trykria.com` (Vercel)
 - **Deploy:** `cd frontend/grid && vercel --prod` (from EC2 after `git pull`)
-- **Vercel env vars:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (use `sb_publishable_xxx`), `NEXT_PUBLIC_API_URL=https://api.trykria.com/api/v1`
+- **Vercel env vars:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_xxx`), `NEXT_PUBLIC_API_URL=https://api.trykria.com/api/v1`
 - **DNS:** CNAME `grid` → `cname.vercel-dns.com` added in Vercel DNS panel (since trykria.com DNS is Vercel-managed)
 - **Supabase Auth:** disable "Confirm email" in Authentication → Sign In / Providers → Email; set Site URL to `https://grid.trykria.com` in URL Configuration
+- **Static prerender guard:** `app/login/layout.tsx` and `app/auth/confirm/layout.tsx` both export `export const dynamic = "force-dynamic"` — prevents build-time crash when env vars are missing
 
 ## Supabase Client (`lib/supabase.ts`)
 

@@ -36,7 +36,7 @@ Last updated: 2026-06-21
 
 - **Status:** Live at `grid.trykria.com` (Vercel) — deployed 2026-05-09
 - **Deploy:** `cd frontend/grid && vercel --prod`
-- **Vercel env vars:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`sb_publishable_xxx`), `NEXT_PUBLIC_API_URL=https://api.trykria.com/api/v1`
+- **Vercel env vars:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_xxx`), `NEXT_PUBLIC_API_URL=https://api.trykria.com/api/v1`
 - **Features complete:**
   - Auth (email OTP — 6-digit code via Supabase built-in email, no Twilio needed), Dashboard, Post Gig (4-step), My Gigs, Gig Detail + Applicants + OTP
   - Events list, Create Event, Event Detail
@@ -110,10 +110,11 @@ Last updated: 2026-06-21
 ## Help & Support (Grid — Complete 2026-06-21)
 
 - `/support` page at `app/(dashboard)/support/page.tsx`
-- 4-section FAQ accordion (Getting Started, Gigs & Applications, Momentum & Ratings, Account & Billing)
-- Categorized query form: 7 categories, subject, message, auto-submits via `POST /api/v1/support/submit`
+- **FAQ tab:** 4-section accordion (Getting Started, Gigs & Applications, Momentum & Ratings, Account & Billing)
+- **Query form:** 7 categories, subject (120c), message (2000c), submits via `POST /api/v1/support/submit` (stores `user_id`)
+- **My Tickets tab:** `GET /support/my-tickets` — shows status, message, admin note ("Response from Kria") per ticket. Email fallback for old tickets where `user_id = NULL`.
 - On submit: inserts to `support_queries`, emails `coreofkria@gmail.com`, sends ack to user
-- Linked from TopBar profile dropdown (between Settings and Sign Out)
+- Linked from TopBar profile dropdown: Help & Support (HelpCircle icon) between Settings and Sign Out
 
 ## Open / Pending Items
 
