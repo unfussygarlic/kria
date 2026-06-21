@@ -250,9 +250,9 @@ export default function SupportPage() {
       {/* Tabs */}
       <div className="flex items-center gap-1 mb-8 border-b" style={{ borderColor: "var(--border-color)" }}>
         {([
-          { key: "faq",     label: "FAQ" },
-          { key: "tickets", label: "My Tickets", count: tickets.length },
-        ] as const).map(({ key, label, count }) => (
+          { key: "faq"     as Tab, label: "FAQ",        count: null },
+          { key: "tickets" as Tab, label: "My Tickets", count: tickets.length },
+        ]).map(({ key, label, count }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -260,7 +260,7 @@ export default function SupportPage() {
             style={{ color: tab === key ? "var(--color-primary)" : "var(--color-text-muted)" }}
           >
             {label}
-            {count !== undefined && count > 0 && (
+            {count !== null && count > 0 && (
               <span
                 className="px-1.5 py-0.5 rounded text-[10px]"
                 style={{ backgroundColor: "var(--color-surface-2)", color: "var(--color-text-muted)" }}
