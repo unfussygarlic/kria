@@ -12,13 +12,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) { router.replace("/login"); return; }
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) { router.replace("/login"); return; }
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("is_admin")
-        .eq("id", session.user.id)
+        .eq("id", user.id)
         .single();
 
       if (!mounted) return;

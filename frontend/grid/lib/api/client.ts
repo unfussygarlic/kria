@@ -14,7 +14,7 @@ function extractError(detail: unknown, status: number): string {
 
 async function getAuthHeader(): Promise<string | null> {
   const { data: { session } } = await supabase.auth.getSession();
-  return session ? `Bearer ${session.access_token}` : null;
+  return session?.access_token ? `Bearer ${session.access_token}` : null;
 }
 
 export async function apiGet<T>(path: string): Promise<ApiResult<T>> {

@@ -26,21 +26,21 @@ export default function OnboardingPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) { router.replace("/login"); return; }
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) { router.replace("/login"); return; }
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("first_name")
-        .eq("id", session.user.id)
+        .eq("id", user.id)
         .single();
 
       // Stub profiles (first_name=NULL) from the DB trigger should still see onboarding.
       if (profile?.first_name) { router.replace("/dashboard"); return; }
 
-      setUserId(session.user.id);
-      setUserEmail(session.user.email ?? null);
-      setPhone(session.user.phone ?? null);
+      setUserId(user.id);
+      setUserEmail(user.email ?? null);
+      setPhone(user.phone ?? null);
       setChecking(false);
     });
   }, [router]);

@@ -20,8 +20,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     let mounted = true;
 
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         router.replace("/login");
         return;
       }
@@ -29,7 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", session.user.id)
+        .eq("id", user.id)
         .single();
 
       if (!mounted) return;
