@@ -6,7 +6,7 @@ type: project
 
 # Kria — Current Product Status
 
-Last updated: 2026-06-10
+Last updated: 2026-06-21
 
 ## Mobile App (Runners)
 
@@ -88,16 +88,33 @@ Last updated: 2026-06-10
 - Unsubscribe: HMAC-signed links → `GET /api/v1/email/unsubscribe` → styled confirmation page
 - Migration 0028 applied (via SQL editor + manual stamp)
 
+## Grid (Host Dashboard) — Navigation Changes (2026-06-21)
+
+- **Sidebar order:** Dashboard → Gigs → Events → Applications → Analytics → Subscription
+- **Profile/Settings/Sign Out** moved from sidebar to TopBar profile dropdown
+- **Onboarding bypass fixed:** all three auth checkpoints now gate on `first_name` not just profile row existence
+
+## Upcoming: Admin Dashboard
+
+Separate Next.js app (`frontend/admin/`). Full plan: `memory/apps/admin/plan.md`.
+
+Phase 1 (next to build): app scaffold, `is_admin` flag, Overview, Users, Support Tickets.
+
+## Upcoming: Help & Support (Grid)
+
+`/support` page in Grid, linked from TopBar dropdown. FAQ accordion + categorized query form. Full plan: `memory/features/help_support.md`. Part of Admin Phase 1.
+
 ## Open / Pending Items
 
 | Item | Priority | Notes |
 |------|----------|-------|
+| **Admin Dashboard Phase 1** | High | See `memory/apps/admin/progress.md` for task checklist |
+| **Help & Support page (Grid)** | High | Part of Admin Phase 1 |
 | **Set up Supabase webhook** | High | Table: `gig_applications`, INSERT → `https://<api-domain>/api/v1/email/internal/application-created`, header `X-Webhook-Secret` |
 | Show badges on applicant cards (Grid) | Medium | Display `BadgeList` in `ApplicantProfileModal` and applicant list rows using `verified_id_types` |
 | Enable anti-spoof in prod | Medium | Set `ANTISPOOF_MODEL_ENABLED=True` in Inspector docker env once on controlled hardware/lighting |
 | Grid: Host rating UI (sub-scores) | Medium | Post-gig: collect punctuality/communication/professionalism sub-scores when rating runner |
-| Host onboarding flow in Grid | Medium | Currently assumes profile exists — new Hosts with no mobile profile will have `profile = null` |
-| Pocket notification system | Medium | Discussed but not started — "first let's focus on Grid" |
+| Pocket notification system | Medium | Discussed but not started |
 | SVG logo integration (mobile) | Low | See `dev/todo.md` for details |
 | Receiver real-time chat bug | Low | See `features/chat.md` |
 | Host role in mobile | Future | Set `SHOW_HOST_ROLE = true` in 5 files to re-enable |

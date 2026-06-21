@@ -6,7 +6,7 @@ type: project
 
 # Todo & Open Issues
 
-Last updated: 2026-06-20
+Last updated: 2026-06-21
 
 ## Backend Optimisation Backlog
 
@@ -41,6 +41,13 @@ Audited 2026-05-30. Fix in priority order.
 | B13 | Verification status polled every 5s with no cache/ETag — hits DB on every poll | `routers/profiles.py`, mobile `verify-identity.tsx` | Add short-lived cache or `Last-Modified` header |
 
 ---
+
+## Upcoming Major Work
+
+| Project | Phase | Notes |
+|---------|-------|-------|
+| **Admin Dashboard** | Phase 1 next | See `memory/apps/admin/plan.md` + `memory/apps/admin/progress.md`. Start with: app scaffold, `is_admin` migration, `require_admin` dep, Overview page, Users page, Support Tickets page. |
+| **Help & Support (Grid)** | With Phase 1 | `/support` page — FAQ accordion + categorized query form. Part of Admin Phase 1. See `memory/features/help_support.md`. |
 
 ## High Priority
 

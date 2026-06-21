@@ -40,8 +40,8 @@ grid/
 ├── components/
 │   ├── layout/
 │   │   ├── Sidebar.tsx          # Nav sidebar — CSS vars, .nav-item/.nav-item-active, ThemeToggle
-│   │   │                        # Nav items: Dashboard, Gigs, Applications, Events, Analytics, Profile
-│   │   └── TopBar.tsx           # Top bar — CSS vars for bg, border, search input, avatar
+│   │   │                        # Nav items: Dashboard, Gigs, Events, Applications, Analytics, Subscription
+│   │   └── TopBar.tsx           # Top bar — search input, Bell icon, profile dropdown (Profile/Settings/Sign Out)
 │   ├── applicants/
 │   │   └── ApplicantProfileModal.tsx  # Full applicant modal with SkillGraph + profile details
 │   └── ui/
@@ -80,6 +80,7 @@ grid/
 | `/applications` | Global applications inbox — all applicants across host's gigs |
 | `/analytics` | Analytics Center — KPI cards, funnel, category perf, monthly activity, city distribution, heatmap |
 | `/profile` | Edit display_name + bio, reputation bar, stats |
+| `/support` | Help & Support — FAQ accordion + categorized query submission form |
 
 ## Applications Page (`/applications`) — "Command Center" Design
 
@@ -233,9 +234,30 @@ Pure SVG — no react-native-svg dependency. Works in browser.
 ## Sidebar
 
 - Logo: "kria" in Comfortaa 700 (`var(--font-comfortaa)`), `text-primary` color; "Grid" label in text-text-muted
-- Nav items in order: Dashboard, Gigs, **Applications** (Inbox icon), Events, Analytics, Profile
-- Bottom: ThemeToggle + Sign Out button
-- Sign Out → `supabase.auth.signOut()` + `router.replace("/login")`
+- **Nav items in order:** Dashboard, Gigs, Events, Applications, Analytics, Subscription
+- Bottom: ThemeToggle only (Sign Out moved to TopBar dropdown)
+- Profile, Settings, Sign Out **removed from sidebar** — all live in TopBar dropdown
+
+## TopBar Profile Dropdown
+
+The name + avatar block in the top-right is now a clickable button with a `ChevronDown` icon. Click opens a dropdown:
+
+```
+┌──────────────┐
+│ 👤 Profile   │
+│ ⚙️ Settings  │
+│──────────────│
+│ 🚪 Sign Out  │  ← red label
+└──────────────┘
+```
+
+- **Profile** → `router.push("/profile")`
+- **Settings** → `router.push("/settings")`
+- **Sign Out** → `supabase.auth.signOut()` + `router.replace("/login")`
+- Click outside closes dropdown (`mousedown` listener on `document`)
+- `useRef` on the wrapper + `useEffect` for outside-click detection
+
+**File:** `components/layout/TopBar.tsx`
 
 ## Auth Flow
 
@@ -244,9 +266,21 @@ Email OTP (no SMS/Twilio required):
 1. `/login` → host enters email
 2. `supabase.auth.signInWithOtp({ email })` sends 6-digit OTP via email
 3. OTP auto-submits at 6 digits; 60s resend cooldown
-4. After verify: profile exists → `/dashboard`; no profile → `/onboarding`
-5. `/onboarding` → Step 1 (first/last name) → Step 2 (city/state, skippable) → `profiles.upsert` → `/dashboard`
-6. Dashboard layout guard: no profile → `/onboarding` (catches edge cases)
+4. After verify: check `profiles.first_name` — set → `/dashboard`; null/missing → `/onboarding`
+5. `/onboarding` → Step 1 (first/last name required) → Step 2 (city/state, skippable) → `profiles.upsert` → `/dashboard`
+6. Dashboard layout guard: no profile OR `first_name` null → `/onboarding`
+
+### Onboarding Bypass Fix (2026-06-21)
+
+**Root cause:** `handle_new_user` DB trigger auto-creates a stub profile (`first_name = NULL`, `display_name = 'New User'`) on every `auth.users` INSERT. Migration 0024 disabled this for local dev but production Supabase Cloud still runs the old trigger.
+
+**Fix:** All three profile checks now use `first_name` as the discriminator (trigger never sets it; onboarding always requires it):
+
+| File | Old | New |
+|------|-----|-----|
+| `login/page.tsx` | `select("id")` → `profile ? /dashboard : /onboarding` | `select("first_name")` → `profile?.first_name ? /dashboard : /onboarding` |
+| `onboarding/page.tsx` | `if (profile) → /dashboard` | `if (profile?.first_name) → /dashboard` |
+| `_DashboardLayoutClient.tsx` | `if (!profileData) → /onboarding` | `if (!profileData \|\| !profileData.first_name) → /onboarding` |
 
 OLD STEP (removed):
 2. `supabase.auth.signInWithOtp({ email })` — Supabase sends a 6-digit OTP via built-in email service. Handles sign-in and sign-up in one call (`shouldCreateUser: true` by default).

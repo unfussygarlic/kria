@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Settings, User, LogOut, ChevronDown } from "lucide-react";
+import { Bell, Settings, User, LogOut, ChevronDown, HelpCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -129,6 +129,13 @@ export function TopBar({ profile }: Props) {
               >
                 <Settings size={15} />
                 Settings
+              </button>
+              <button
+                onClick={() => { setOpen(false); router.push("/support"); }}
+                className="flex items-center gap-3 w-full px-4 py-3 text-xs font-bold uppercase tracking-wider nav-item transition-colors"
+              >
+                <HelpCircle size={15} />
+                Help &amp; Support
               </button>
               <div style={{ borderTop: "1px solid var(--border-subtle)" }} />
               <button

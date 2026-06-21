@@ -6,8 +6,11 @@ import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import ExpiredSignatureError, JWTError, jwt
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
 from app.config import settings
+from app.db.session import get_db
 
 bearer_scheme = HTTPBearer()
 
@@ -107,3 +110,21 @@ def get_current_user(
 
 # Convenience type alias for dependency injection
 CurrentUser = Annotated[AuthenticatedUser, Depends(get_current_user)]
+
+
+async def require_admin(
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AuthenticatedUser:
+    """Dependency that rejects non-admin users with 403."""
+    row = await db.execute(
+        text("SELECT is_admin FROM profiles WHERE id = :uid"),
+        {"uid": current_user.user_id},
+    )
+    result = row.fetchone()
+    if not result or not result.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return current_user
+
+
+AdminUser = Annotated[AuthenticatedUser, Depends(require_admin)]

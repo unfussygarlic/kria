@@ -6,7 +6,7 @@
 
 ## Architecture
 - [Stack](architecture/stack.md) — Expo, FastAPI, Supabase, Next.js, Inspector, ports, Docker networking
-- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (latest: 0028)
+- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (0001–0029 applied; 0030 planned for admin)
 - [Data Access](architecture/data_access.md) — Supabase direct vs FastAPI, auth patterns, key utils
 
 ## Apps
@@ -15,7 +15,10 @@
 - [Mobile: Screens](apps/mobile/screens.md) — screen-by-screen UX decisions (incl. verify-identity multi-ID flow)
 - [Mobile: Animations](apps/mobile/animations.md) — PanResponder, Animated API, NativeWind conflict
 - [Mobile: Patterns](apps/mobile/patterns.md) — reusable components, stores, code gotchas
-- [Grid (Host Dashboard)](apps/grid/overview.md) — Next.js webapp, routes, Applications page, SkillGraph, MomentumChip, theming, gotchas
+- [Grid (Host Dashboard)](apps/grid/overview.md) — routes, sidebar order, TopBar dropdown, onboarding bypass fix, auth flow, CSS vars
+- [Admin Dashboard: Plan](apps/admin/plan.md) — architecture, auth (is_admin flag), all 8 sections, backend work, 3 phases
+- [Admin Dashboard: Design](apps/admin/design.md) — Dark Ops aesthetic, icon rail nav, bento overview, band-DNA user table, kanban queue, split ticket panel, radar health rings
+- [Admin Dashboard: Progress](apps/admin/progress.md) — phase-by-phase task checklist with statuses
 - [Landing Page](apps/landing-page/overview.md) — trykria.com, i18n, inline styles, gotchas
 
 ## Features
@@ -28,6 +31,7 @@
 - [Chat](features/chat.md) — hidden feature, tables, real-time bug, do-not-install list
 - [Email Notifications](features/email.md) — Resend, 3 email types, webhook architecture, unsubscribe, env vars, pending Supabase webhook setup
 - [SMS Notifications](features/sms_notifications.md) — Fast2SMS via GoTrue hook, sms_notifications/ module, template registry, how to add new templates
+- [Help & Support](features/help_support.md) — Grid /support page, FAQ accordion, 7-category query form, support_queries table, Resend admin notification, Admin Dashboard integration
 
 ## Project
 - [Demo Seed](project/demo_seed.md) — Priya Mehta demo account, 15 gigs, 15 runners, all UUIDs
@@ -120,7 +124,8 @@ score, items, profile_items = compute_worker_breakdown(
 - **DB column:** `verified_id_types jsonb[]` — use `jsonb_build_array(:id_type)` NOT `':id_type'::jsonb` (asyncpg binding bug)
 - **Badges:** `BadgeList earnedKeys={profile.verified_id_types}` — auto-shows `photo_verified` meta-badge
 
-### Next Migration: `0029_...py`
+### Next Migration: `0030_admin_support.py`
+Planned: `is_admin BOOLEAN DEFAULT FALSE` on profiles + `support_queries` table (Admin Dashboard Phase 1). Check `backend/api/alembic/versions/` to confirm 0029 filename.
 
 ### SMS Notifications Quick Ref
 - **Module:** `backend/api/app/sms_notifications/` — `templates.py` (registry), `sender.py` (Fast2SMS), `hook.py` (GoTrue endpoint)

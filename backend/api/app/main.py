@@ -10,7 +10,7 @@ from app.config import settings
 from app.db.session import engine
 from app.momentum import router as momentum
 from app.recommendations import router as recommendations
-from app.routers import account, applicants, badges, chat, email as email_router, events, gigs, health, profiles, ratings, search, subscriptions
+from app.routers import account, admin as admin_router, applicants, badges, chat, email as email_router, events, gigs, health, profiles, ratings, search, subscriptions, support as support_router
 from app.sms_notifications.hook import router as sms_hook_router
 
 
@@ -64,6 +64,7 @@ _PROD_ORIGINS = [
     "https://trykria.com",
     "https://www.trykria.com",
     "https://grid.trykria.com",
+    "https://admin.trykria.com",
 ]
 
 # allow_credentials=True + allow_origins=["*"] is invalid per the CORS spec —
@@ -72,9 +73,11 @@ _PROD_ORIGINS = [
 # In dev we list the known local origins explicitly; in prod we use the real domains.
 _DEV_ORIGINS = [
     "http://localhost:3000",   # Grid (Next.js dev)
+    "http://localhost:3002",   # Admin dashboard
     "http://localhost:8081",   # Expo Metro
     "exp://localhost:8081",    # Expo Go
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3002",
     "http://127.0.0.1:8081",
 ]
 
@@ -101,3 +104,5 @@ app.include_router(account.router,         prefix=f"/api/{settings.api_version}"
 app.include_router(subscriptions.router,   prefix=f"/api/{settings.api_version}")
 app.include_router(email_router.router,    prefix=f"/api/{settings.api_version}")
 app.include_router(sms_hook_router,        prefix=f"/api/{settings.api_version}")
+app.include_router(admin_router.router,    prefix=f"/api/{settings.api_version}")
+app.include_router(support_router.router,  prefix=f"/api/{settings.api_version}")

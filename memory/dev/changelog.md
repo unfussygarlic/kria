@@ -6,6 +6,60 @@ type: project
 
 # Changelog
 
+## 2026-06-21 — Grid Nav Overhaul + Onboarding Bypass Fix + Admin Dashboard Plan
+
+### Grid: Sidebar Reorder + TopBar Profile Dropdown
+
+**Sidebar nav order changed** to: Dashboard → Gigs → Events → Applications → Analytics → Subscription.
+
+**Removed from sidebar:** Profile, Settings, Sign Out.
+
+**TopBar** (`components/layout/TopBar.tsx`): the name/avatar block is now a clickable dropdown button (`ChevronDown` icon). Dropdown contains:
+- Profile → `/profile`
+- Settings → `/settings`
+- ── divider ──
+- Sign Out (red label) → `supabase.auth.signOut()` + `/login`
+
+Click-outside detection via `useRef` + `useEffect` + `document.addEventListener("mousedown", ...)`.
+
+Removed the standalone Settings icon button from TopBar (now in dropdown).
+
+### Grid: Onboarding Bypass Fix
+
+**Root cause:** `handle_new_user` DB trigger creates a stub profile with `first_name = NULL` on every signup. Migration 0024 disabled this locally but Supabase Cloud production still fires the old trigger. Login page found the stub row and routed to `/dashboard` bypassing onboarding.
+
+**Fix — three-layer defense using `first_name` as discriminator:**
+- `login/page.tsx`: `select("first_name")` → route on `profile?.first_name` not just profile existence
+- `onboarding/page.tsx`: `if (profile?.first_name)` redirect → `/dashboard` (not just `if (profile)`)
+- `_DashboardLayoutClient.tsx`: `if (!profileData || !profileData.first_name)` → `/onboarding`
+
+`first_name` is reliable: trigger never sets it, onboarding always requires it.
+
+### Admin Dashboard: Architecture Plan Finalized
+
+Full plan documented in `memory/apps/admin/plan.md`. Build tracker in `memory/apps/admin/progress.md`.
+
+**Key decisions:**
+- Separate Next.js app at `frontend/admin/` (`admin.trykria.com`)
+- Auth: `is_admin BOOLEAN DEFAULT FALSE` on profiles + `require_admin` FastAPI dep
+- Sections: Overview, Users, Gigs, Verification Queue, Support Tickets, Momentum, Subscriptions, System Health
+- Phase 1 (next): scaffold + auth + overview + users + support tickets
+- Phase 2: verification queue + gigs management
+- Phase 3: momentum audit + subscriptions + system health
+
+### Help & Support: Plan Finalized
+
+`/support` page in Grid (linked from TopBar dropdown). Full plan in `memory/features/help_support.md`.
+
+**Key decisions:**
+- FAQ accordion (hardcoded, 5 groups)
+- Categorized query form (7 categories: Gig Posting, Runner & Applications, Payments & Billing, Account & Profile, Bug Report, Feature Request, Other)
+- `support_queries` table (migration 0030 alongside `is_admin`)
+- FastAPI submit endpoint: insert to DB + Resend notification to admin inbox
+- Admin resolves via Admin Dashboard → sends Resend email to host with note
+
+---
+
 ## 2026-06-20 — Pocket Performance Fixes + App Icon + Fast2SMS SMS Hook
 
 ### Mobile: Performance Fixes (Samsung M30s)
