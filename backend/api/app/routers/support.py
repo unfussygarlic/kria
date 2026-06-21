@@ -1,9 +1,10 @@
-"""Public support query submission endpoint."""
+"""Support query endpoints — submit (public) and my-tickets (auth required)."""
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.middleware import CurrentUser
 from app.db.session import get_db
 from app.email.client import send_email
 
@@ -32,14 +33,16 @@ class SupportSubmitIn(BaseModel):
 @router.post("/submit")
 async def submit_support_query(
     body: SupportSubmitIn,
+    current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ):
     await db.execute(
         text("""
-            INSERT INTO support_queries (category, subject, message, email, status)
-            VALUES (:category, :subject, :message, :email, 'open')
+            INSERT INTO support_queries (user_id, category, subject, message, email, status)
+            VALUES (:user_id, :category, :subject, :message, :email, 'open')
         """),
         {
+            "user_id":  current_user.user_id,
             "category": body.category,
             "subject":  body.subject,
             "message":  body.message,
@@ -107,3 +110,23 @@ async def submit_support_query(
     )
 
     return {"ok": True}
+
+
+@router.get("/my-tickets")
+async def my_tickets(
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await db.execute(
+        text("""
+            SELECT
+                id::text, category, subject, message,
+                status, admin_note,
+                created_at::text, updated_at::text
+            FROM support_queries
+            WHERE user_id = :uid
+            ORDER BY created_at DESC
+        """),
+        {"uid": current_user.user_id},
+    )
+    return [dict(r._mapping) for r in rows.fetchall()]
