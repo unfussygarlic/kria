@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Settings, User, LogOut, ChevronDown, HelpCircle } from "lucide-react";
+import { Settings, User, LogOut, ChevronDown, HelpCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -42,32 +42,27 @@ export function TopBar({ profile }: Props) {
 
   return (
     <header
-      className="sticky top-0 z-40 h-16 flex items-center justify-between px-8 backdrop-blur-md"
+      className="sticky top-0 z-40 h-16 flex items-center justify-end px-8 backdrop-blur-md"
       style={{
         backgroundColor: "var(--topbar-bg)",
         borderBottom: "1px solid var(--border-color)",
       }}
     >
-      {/* Search */}
+      {/* Search — commented out until wired up
       <div
         className="flex items-center gap-3 rounded-lg px-4 py-2 w-80 focus-within:ring-1 focus-within:ring-primary transition-all"
-        style={{
-          backgroundColor: "var(--input-bg)",
-          border: "1px solid var(--border-color)",
-        }}
+        style={{ backgroundColor: "var(--input-bg)", border: "1px solid var(--border-color)" }}
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted flex-shrink-0">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
-        <input
-          type="text"
-          placeholder="Search gigs or locations..."
-          className="bg-transparent text-sm text-text placeholder:text-text-muted outline-none w-full"
-        />
+        <input type="text" placeholder="Search gigs or locations..." className="bg-transparent text-sm text-text placeholder:text-text-muted outline-none w-full" />
       </div>
+      */}
 
       {/* Right side */}
       <div className="flex items-center gap-5">
+        {/* Bell — commented out until notifications are implemented
         <button
           className="text-text-muted hover:text-primary transition-colors p-2 rounded-lg"
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--hover-bg)")}
@@ -75,9 +70,8 @@ export function TopBar({ profile }: Props) {
         >
           <Bell size={18} />
         </button>
-
-        {/* Divider */}
         <div className="w-px h-6" style={{ backgroundColor: "var(--border-color)" }} />
+        */}
 
         {/* Profile dropdown trigger */}
         <div className="relative" ref={menuRef}>

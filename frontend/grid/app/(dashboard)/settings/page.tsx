@@ -230,7 +230,7 @@ function DeleteModal({ onClose }: { onClose: () => void }) {
           border: `1.5px solid ${confirmed ? "var(--color-error)" : "var(--border-color)"}`,
           color: "var(--color-text)",
         }}
-        onFocus={(e) => !confirmed && (e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)")}
+        onFocus={(e) => !confirmed && (e.currentTarget.style.borderColor = "var(--color-primary)")}
         onBlur={(e) => !confirmed && (e.currentTarget.style.borderColor = "var(--border-color)")}
       />
 

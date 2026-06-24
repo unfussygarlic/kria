@@ -10,7 +10,7 @@ from app.config import settings
 from app.db.session import engine
 from app.momentum import router as momentum
 from app.recommendations import router as recommendations
-from app.routers import account, admin as admin_router, applicants, badges, chat, email as email_router, events, gigs, health, profiles, ratings, search, subscriptions, support as support_router
+from app.routers import account, admin as admin_router, analytics as analytics_router, applicants, badges, chat, email as email_router, events, gigs, health, profiles, ratings, search, subscriptions, support as support_router
 from app.sms_notifications.hook import router as sms_hook_router
 
 
@@ -106,3 +106,4 @@ app.include_router(email_router.router,    prefix=f"/api/{settings.api_version}"
 app.include_router(sms_hook_router,        prefix=f"/api/{settings.api_version}")
 app.include_router(admin_router.router,    prefix=f"/api/{settings.api_version}")
 app.include_router(support_router.router,  prefix=f"/api/{settings.api_version}")
+app.include_router(analytics_router.router, prefix=f"/api/{settings.api_version}")

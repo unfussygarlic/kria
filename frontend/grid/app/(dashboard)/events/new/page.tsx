@@ -52,7 +52,7 @@ const BLANK_JOB: JobInEventCreate = {
 
 const STEPS = ["Event Details", "Roles"];
 
-const inputCls = "w-full bg-[#201f1f] border border-white/10 rounded-lg px-4 py-3 text-text text-sm focus:outline-none focus:border-primary transition-colors placeholder:text-text-muted";
+const inputCls = "w-full bg-surface-3 border border-theme rounded-lg px-4 py-3 text-text text-sm focus:outline-none focus:border-primary transition-colors placeholder:text-text-muted";
 const labelCls = "block text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1.5";
 
 export default function NewEventPage() {

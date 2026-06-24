@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MapPin, Calendar, ChevronRight, Users, Briefcase, TrendingUp, Pause, Play } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, ChevronRight, Users, Briefcase, TrendingUp, Pause, Play, Inbox } from "lucide-react";
 import { getEvent } from "@/lib/api/events";
 import { pauseGig, unpauseGig } from "@/lib/api/gigs";
 import { PageLoader } from "@/components/ui/Spinner";
@@ -22,11 +22,13 @@ function JobCard({
   job,
   onClick,
   onTogglePause,
+  onManageApplicants,
   pauseLoading,
 }: {
   job: EventJobSummary;
   onClick: () => void;
   onTogglePause: (e: React.MouseEvent) => void;
+  onManageApplicants: (e: React.MouseEvent) => void;
   pauseLoading: boolean;
 }) {
   const spotsLeft = job.slots_total - job.slots_filled;
@@ -72,7 +74,12 @@ function JobCard({
         {job.application_count > 0 && (
           <>
             <span className="text-text-muted">·</span>
-            <span className="text-primary font-semibold">{job.application_count} applicant{job.application_count !== 1 ? "s" : ""}</span>
+            <button
+              onClick={onManageApplicants}
+              className="text-primary font-semibold hover:underline underline-offset-2 transition-all"
+            >
+              {job.application_count} applicant{job.application_count !== 1 ? "s" : ""}
+            </button>
           </>
         )}
       </div>
@@ -194,6 +201,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       {/* Roles */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xs font-bold uppercase tracking-widest text-text-muted">Roles</h2>
+        {pendingApplicants > 0 && (
+          <button
+            onClick={() => router.push("/applications")}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+            style={{ border: "1px solid var(--color-primary)", color: "var(--color-primary)", backgroundColor: "rgba(212,255,0,0.06)" }}
+          >
+            <Inbox size={12} />
+            Manage All Applicants ({pendingApplicants})
+          </button>
+        )}
       </div>
 
       {event.jobs.length === 0 ? (
@@ -209,6 +226,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               job={job}
               onClick={() => router.push(`/gigs/${job.id}`)}
               onTogglePause={(e) => handleTogglePause(e, job)}
+              onManageApplicants={(e) => { e.stopPropagation(); router.push(`/applications?gig=${job.id}`); }}
               pauseLoading={pauseLoading === job.id}
             />
           ))}

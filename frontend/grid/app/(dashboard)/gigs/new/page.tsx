@@ -105,7 +105,7 @@ const INITIAL: FormData = {
   venue_lat: null, venue_lng: null, geocoded_address: "",
 };
 
-const inputCls = "w-full bg-[#201f1f] border border-white/10 rounded-lg px-4 py-3 text-text text-sm focus:outline-none focus:border-primary transition-colors placeholder:text-text-muted";
+const inputCls = "w-full bg-surface-3 border border-theme rounded-lg px-4 py-3 text-text text-sm focus:outline-none focus:border-primary transition-colors placeholder:text-text-muted";
 const labelCls = "block text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1.5";
 
 export default function NewGigPage() {
@@ -194,7 +194,7 @@ export default function NewGigPage() {
   const canNext = () => {
     if (step === 0) return !!form.category;
     if (step === 1) return !!form.title && form.pay_amount > 0 && form.slots_total > 0;
-    if (step === 2) return !!form.venue_name && !!form.city && !!form.event_date;
+    if (step === 2) return !!form.venue_name && !!form.city && !!form.event_date && form.venue_lat !== null;
     return true;
   };
 
@@ -382,18 +382,30 @@ export default function NewGigPage() {
               </select>
             </div>
 
-            {/* Location fetch */}
+            {/* Location fetch — required to proceed */}
             {form.venue_name && form.city && (
               <div className="space-y-3">
+                {form.venue_lat === null && !geocoding && !geocodeError && (
+                  <p className="text-xs font-semibold" style={{ color: "var(--color-primary)" }}>
+                    Pin the location to continue — runners use this to find nearby gigs.
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={handleFetchLocation}
                   disabled={geocoding}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 bg-surface-2 text-xs font-bold uppercase tracking-wider text-text-muted hover:border-primary/50 hover:text-text transition-all disabled:opacity-50 disabled:pointer-events-none"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 disabled:pointer-events-none"
+                  style={
+                    form.venue_lat !== null
+                      ? { border: "1px solid rgba(212,255,0,0.3)", color: "var(--color-text-muted)", backgroundColor: "var(--hover-bg)" }
+                      : { border: "1px solid var(--color-primary)", color: "var(--color-primary)", backgroundColor: "rgba(212,255,0,0.06)" }
+                  }
                 >
                   {geocoding
                     ? <><Loader2 size={13} className="animate-spin" /> Locating…</>
-                    : <><MapPin size={13} className="text-primary" /> Fetch Location</>
+                    : form.venue_lat !== null
+                      ? <><MapPin size={13} /> Location Pinned — Re-fetch</>
+                      : <><MapPin size={13} /> Pin Location (Required)</>
                   }
                 </button>
 
@@ -412,7 +424,7 @@ export default function NewGigPage() {
                 {!geocoding && geocodeError && (
                   <div className="flex items-start gap-3 p-4 bg-surface-2 border border-error/20 rounded-lg">
                     <AlertCircle size={14} className="text-error flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-text-muted">{geocodeError}</p>
+                    <p className="text-xs text-text-muted">{geocodeError} Please check the venue name and try again.</p>
                   </div>
                 )}
               </div>

@@ -230,8 +230,12 @@ export default function ApplicationsPage() {
     listMyGigs().then((res) => {
       const items = (res.data?.items ?? []).sort((a, b) => b.pending_count - a.pending_count);
       setGigs(items);
+      // Honour ?gig=<id> query param from events page deep-link
+      const params = new URLSearchParams(window.location.search);
+      const requestedId = params.get("gig");
+      const requestedGig = requestedId ? items.find((g) => g.id === requestedId) : null;
       const firstPending = items.find((g) => g.pending_count > 0);
-      setSelectedGigId(firstPending?.id ?? items[0]?.id ?? null);
+      setSelectedGigId(requestedGig?.id ?? firstPending?.id ?? items[0]?.id ?? null);
       setGigsLoading(false);
     });
   }, []);

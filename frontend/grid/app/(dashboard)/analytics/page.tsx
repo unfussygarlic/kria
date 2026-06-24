@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiGet } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/Spinner";
 import { TrendingUp, CheckCircle, AlertTriangle, BarChart2, MapPin, Calendar, Users } from "lucide-react";
 import type { Gig } from "@/types";
@@ -58,34 +58,12 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: gigsData } = await supabase
-        .from("gigs")
-        .select("id, title, category, city, pay_amount, pay_type, slots_total, slots_filled, status, event_date, created_at")
-        .eq("poster_id", user.id)
-        .order("event_date", { ascending: false });
-
-      const gigsList = (gigsData ?? []) as Gig[];
-      setGigs(gigsList);
-
-      if (gigsList.length > 0) {
-        const gigIds = gigsList.map((g) => g.id);
-        const [appsRes, assignRes] = await Promise.all([
-          supabase
-            .from("gig_applications")
-            .select("id, gig_id, status, applied_at, responded_at")
-            .in("gig_id", gigIds),
-          supabase
-            .from("gig_assignments")
-            .select("id, gig_id, worker_id, status, assigned_at, checked_in_at, completed_at")
-            .in("gig_id", gigIds),
-        ]);
-        setApplications((appsRes.data ?? []) as RawApplication[]);
-        setAssignments((assignRes.data ?? []) as RawAssignment[]);
+      const res = await apiGet<{ gigs: Gig[]; applications: RawApplication[]; assignments: RawAssignment[] }>("/analytics/host");
+      if (res.data) {
+        setGigs(res.data.gigs ?? []);
+        setApplications(res.data.applications ?? []);
+        setAssignments(res.data.assignments ?? []);
       }
-
       setLoading(false);
     };
     load();
