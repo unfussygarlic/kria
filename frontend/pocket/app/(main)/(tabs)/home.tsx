@@ -118,7 +118,7 @@ const BandHeroCard = memo(function BandHeroCard({ score, gigsDone, streak }: {
         <View style={styles.heroStat}>
           <Feather name="zap" size={12} color={T.textMuted} />
           <Text style={styles.heroStatVal}>{streak}</Text>
-          <Text style={styles.heroStatKey}>{streak === 1 ? "day streak" : "day streak"}</Text>
+          <Text style={styles.heroStatKey}>day streak</Text>
         </View>
         <View style={styles.heroStatDivider} />
         <View style={styles.heroStat}>
@@ -436,7 +436,7 @@ const RecentGigCard = memo(function RecentGigCard({ gig, status }: { gig: any; s
   return (
     <Pressable
       style={styles.recentGigCard}
-      onPress={() => router.push("/(main)/(tabs)/space")}
+      onPress={() => router.push(`/(main)/gig/${gig.id}` as any)}
     >
       {/* Top: category stripe + status pill */}
       <View style={styles.recentGigTop}>

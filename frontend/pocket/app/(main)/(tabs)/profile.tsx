@@ -152,6 +152,7 @@ export default function ProfileScreen() {
         <QuickBox
           icon="help-circle"
           label="Help & Support"
+          onPress={() => router.push("/(main)/settings")}
         />
       </View>
 
@@ -162,12 +163,12 @@ export default function ProfileScreen() {
           onPress={() => router.push("/(main)/verify-identity")}
         >
           <Feather
-            name={profile?.id_verified ? "shield" : "shield-off"}
+            name={(profile?.verified_id_types ?? []).length > 0 ? "shield" : "shield-off"}
             size={20}
-            color={profile?.id_verified ? "#16a34a" : T.text}
+            color={(profile?.verified_id_types ?? []).length > 0 ? T.success : T.text}
           />
           <Text style={styles.menuItemText}>Verify Identity</Text>
-          {profile?.id_verified ? (
+          {(profile?.verified_id_types ?? []).length > 0 ? (
             <Text style={styles.verifiedTag}>Verified</Text>
           ) : (
             <Feather name="chevron-right" size={20} color={T.textMuted} />

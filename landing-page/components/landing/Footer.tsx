@@ -36,8 +36,8 @@ export default function Footer() {
       {/* Links */}
       <div style={{ display: "flex", gap: 28 }}>
         {[
-          { label: "Privacy", href: "mailto:support@trykria.com" },
-          { label: "Terms", href: "mailto:support@trykria.com" },
+          { label: "Privacy", href: "/privacy" },
+          { label: "Terms", href: "/terms" },
           { label: "Contact", href: "mailto:support@trykria.com" },
         ].map(({ label, href }) => (
           <a

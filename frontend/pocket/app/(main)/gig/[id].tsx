@@ -7,6 +7,7 @@ import {
   Pressable,
   Alert,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -63,7 +64,7 @@ export default function GigDetailScreen() {
   if (!gig) {
     return (
       <View style={styles.loading}>
-        <Text>Loading...</Text>
+        <ActivityIndicator size="large" color={T.primary} />
       </View>
     );
   }
@@ -267,6 +268,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: T.bg,
   },
   container: {
     flex: 1,

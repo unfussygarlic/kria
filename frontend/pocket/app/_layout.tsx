@@ -1,5 +1,6 @@
 import "../global.css";
 import { useEffect, useRef } from "react";
+import { router } from "expo-router";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
@@ -60,10 +61,18 @@ export default function RootLayout() {
       }
     );
 
-    // Handle tap on notification
+    // Handle tap on notification — navigate based on payload type
     responseListener.current = Notifications.addNotificationResponseReceivedListener(
-      (_response) => {
-        // TODO: navigate based on _response.notification.request.content.data.type
+      (response) => {
+        const data = response.notification.request.content.data as Record<string, string> | undefined;
+        const type = data?.type;
+        if (type === "application_accepted" || type === "application_rejected" || type === "otp_ready") {
+          router.push("/(main)/(tabs)/space");
+        } else if (type === "new_applicant") {
+          router.push("/(main)/(tabs)/space");
+        } else if (data?.gig_id) {
+          router.push(`/(main)/gig/${data.gig_id}` as any);
+        }
       }
     );
 

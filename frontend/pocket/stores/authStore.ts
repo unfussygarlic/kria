@@ -8,6 +8,9 @@ import { Session } from "@supabase/supabase-js";
 // can be used without sending real SMS. GOTRUE_MAILER_AUTOCONFIRM=true handles
 // confirmation automatically.
 const DEV_PASSWORD = "kria-dev-2026";
+
+// Module-level guard — prevents duplicate subscriptions on hot reload / StrictMode.
+let authListenerRegistered = false;
 function devEmail(phone: string) {
   // Strip all non-digits so +91-8148095499 and 918148095499 map to the same email
   return `${phone.replace(/\D/g, "")}@kria.dev`;
@@ -58,15 +61,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: false });
     }
 
-    // Listen for auth changes triggered by sign-in / sign-out
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      set({ session });
-      if (session) {
-        await get().fetchProfile();
-      } else {
-        set({ profile: null, isOnboarded: false, activeRole: null });
-      }
-    });
+    if (!authListenerRegistered) {
+      authListenerRegistered = true;
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        set({ session });
+        if (session) {
+          await get().fetchProfile();
+        } else {
+          set({ profile: null, isOnboarded: false, activeRole: null });
+        }
+      });
+    }
   },
 
   sendOtp: async (phone: string) => {

@@ -56,6 +56,7 @@ export default function ExploreScreen() {
   const [availableGigs, setAvailableGigs] = useState<Gig[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [locationState, setLocationState] = useState<LocationState>("loading");
+  const [locationLabel, setLocationLabel] = useState<string>("Nearby");
 
   // Refs so animation callbacks never capture stale values.
   const availableGigsRef = useRef<Gig[]>([]);
@@ -81,6 +82,19 @@ export default function ExploreScreen() {
         ).coords;
 
         locationRef.current = { latitude: coords.latitude, longitude: coords.longitude };
+
+        // Reverse geocode to get a human-readable place name from GPS coords.
+        // "city" is often null in Indian metros — fall back through district → subregion.
+        try {
+          const [place] = await Location.reverseGeocodeAsync(
+            { latitude: coords.latitude, longitude: coords.longitude },
+          );
+          const label = place?.city ?? place?.district ?? place?.subregion ?? null;
+          if (label) setLocationLabel(label);
+        } catch {
+          // Non-critical — pill stays "Nearby"
+        }
+
         setLocationState("ready");
         fetchGigs(undefined, locationRef.current, "distance");
         fetchMyApplications();
@@ -202,9 +216,7 @@ export default function ExploreScreen() {
       <View style={styles.header}>
         <View style={styles.locationPill}>
           <Feather name="map-pin" size={rw(12)} color={T.primary} />
-          <Text style={styles.locationPillText}>
-            {profile?.city ?? "Nearby"}
-          </Text>
+          <Text style={styles.locationPillText}>{locationLabel}</Text>
         </View>
       </View>
 

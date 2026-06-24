@@ -73,7 +73,7 @@ function RunnerTab() {
     const result = await verifyOtp(item.assignment_id, otp);
     setOtpSubmitting(null);
     if (result.error) {
-      Alert.alert("Invalid OTP", result.error);
+      Alert.alert("Invalid OTP", "The code is incorrect. Please check with the host and try again.");
     } else {
       setItems((prev) =>
         prev.map((i) =>
@@ -90,10 +90,10 @@ function RunnerTab() {
       return { label: "Upcoming", color: T.selText, bg: T.selBg };
     }
     if (item.assignment_status === "completed") {
-      return { label: "Done", color: "#16a34a", bg: "#DCFCE7" };
+      return { label: "Done", color: T.success, bg: T.success + "25" };
     }
     if (item.assignment_status === "no_show") {
-      return { label: "No-Show", color: T.error, bg: "#FEE2E2" };
+      return { label: "No-Show", color: T.error, bg: T.error + "25" };
     }
     return { label: item.assignment_status, color: T.textMuted, bg: T.border };
   };

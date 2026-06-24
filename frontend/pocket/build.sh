@@ -150,5 +150,18 @@ if [[ "$PROFILE" == "production" ]]; then
   fi
 fi
 
+# ── Cleanup artifact ──────────────────────────────────────────────────────────
+# APKs/AABs are 80–150 MB each and accumulate fast on a space-constrained machine.
+if [[ -n "${ARTIFACT_FILE:-}" && -f "$ARTIFACT_FILE" ]]; then
+  echo ""
+  read -rp "Delete artifact to free space? (${SIZE}) [y/N]: " CLEANUP_CHOICE
+  if [[ "${CLEANUP_CHOICE,,}" == "y" ]]; then
+    rm -f "$ARTIFACT_FILE"
+    success "Artifact deleted"
+  else
+    info "Kept at: $ARTIFACT_FILE"
+  fi
+fi
+
 echo ""
 success "Done."
