@@ -9,6 +9,12 @@ import { Session } from "@supabase/supabase-js";
 // confirmation automatically.
 const DEV_PASSWORD = "kria-dev-2026";
 
+// Hardcoded reviewer account for Google Play review.
+// This number bypasses real SMS OTP in all environments — pin is always 123456.
+// Do NOT use this number for real user registration.
+const REVIEWER_PHONE = "+919000000001";
+const REVIEWER_PIN   = "123456";
+
 // Module-level guard — prevents duplicate subscriptions on hot reload / StrictMode.
 let authListenerRegistered = false;
 function devEmail(phone: string) {
@@ -77,8 +83,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   sendOtp: async (phone: string) => {
     const isDev = process.env.EXPO_PUBLIC_APP_ENV === "development";
 
-    if (isDev) {
-      console.log(`[DEV] Mock OTP for ${phone}. Use "123456" to verify.`);
+    if (isDev || phone === REVIEWER_PHONE) {
+      console.log(`[AUTH] Mock OTP for ${phone}. Use "${REVIEWER_PIN}" to verify.`);
       return { error: null };
     }
 
@@ -90,9 +96,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifyOtp: async (phone: string, token: string) => {
     const isDev = process.env.EXPO_PUBLIC_APP_ENV === "development";
 
-    if (isDev) {
-      if (token !== "123456") {
-        return { error: "Invalid OTP. Use 123456 for development." };
+    if (isDev || phone === REVIEWER_PHONE) {
+      if (token !== REVIEWER_PIN) {
+        return { error: "Invalid OTP. Use 123456." };
       }
 
       const email = devEmail(phone);
