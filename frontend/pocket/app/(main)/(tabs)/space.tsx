@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,23 +10,25 @@ import {
   Alert,
   TextInput,
   Linking,
+  Modal,
+  Animated,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { PressableScale } from "@/components/ui/PressableScale";
 import { rf, rw } from "@/constants/responsive";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGigStore } from "@/stores/gigStore";
 import { useAuthStore } from "@/stores/authStore";
 import { Gig, MyEventSummary } from "@/types/database";
-import { T } from "@/constants/colors";
+import { T, CategoryColors } from "@/constants/colors";
 import { L } from "@/constants/labels";
 import { JobCard, formatDate } from "@/components/gig/JobCard";
 import { RatingModal } from "@/components/ui/RatingModal";
 import { getMyAcceptedGigs, AcceptedGigItem } from "@/lib/api/gigs";
-import { verifyOtp } from "@/lib/api/ratings";
-
-// ── Tab types (kept for compatibility) ───────────────────────────────────────
+import { verifyOtp, finalizeExpiredAssignments } from "@/lib/api/ratings";
 
 // ── Poster tab items ──────────────────────────────────────────────────────────
 
@@ -34,207 +36,776 @@ type SpaceItem =
   | { kind: "gig"; data: Gig; created_at: string }
   | { kind: "event"; data: MyEventSummary; created_at: string };
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function getStatusChip(item: AcceptedGigItem, isHistory = false): { label: string; color: string; bg: string } {
+  if (!item.assignment_status || item.assignment_status === "assigned") {
+    if (isHistory) return { label: "Past", color: T.textMuted, bg: T.border };
+    return { label: "Upcoming", color: T.selText, bg: T.selBg };
+  }
+  if (item.assignment_status === "completed") {
+    return { label: "Done", color: T.success, bg: T.success + "25" };
+  }
+  if (item.assignment_status === "no_show") {
+    return { label: "No-Show", color: T.error, bg: T.error + "25" };
+  }
+  return { label: item.assignment_status, color: T.textMuted, bg: T.border };
+}
+
+function getTimeLabel(
+  eventDate: string | null,
+  shiftStart: string
+): { label: string; color: string } {
+  if (!eventDate) return { label: "Date TBD", color: T.textMuted };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const gig = new Date(eventDate);
+  gig.setHours(0, 0, 0, 0);
+  const diff = Math.round((gig.getTime() - today.getTime()) / 864e5);
+  const t = shiftStart.slice(0, 5);
+  if (diff === 0) return { label: `Today ${t}`, color: T.primary };
+  if (diff === 1) return { label: `Tomorrow ${t}`, color: "#f59e0b" };
+  if (diff > 1 && diff <= 6) return { label: `in ${diff} days`, color: T.textSub };
+  return { label: formatDate(eventDate), color: T.textMuted };
+}
+
+function isUpcoming(item: AcceptedGigItem, today: Date): boolean {
+  if (item.assignment_status === "completed" || item.assignment_status === "no_show") return false;
+  if (!item.event_date) return true;
+  const d = new Date(item.event_date);
+  d.setHours(0, 0, 0, 0);
+  return d >= today;
+}
+
+// ── Compact upcoming card ─────────────────────────────────────────────────────
+
+function UpcomingGigCard({ item, onPress }: { item: AcceptedGigItem; onPress: () => void }) {
+  const { label, color } = getTimeLabel(item.event_date, item.shift_start_time);
+  const chip = getStatusChip(item);
+  const catColor = (CategoryColors as Record<string, string>)[item.category] ?? T.textMuted;
+
+  return (
+    <PressableScale style={gcStyles.card} onPress={onPress}>
+      <View style={[gcStyles.accent, { backgroundColor: catColor }]} />
+      <View style={gcStyles.content}>
+        <View style={gcStyles.topRow}>
+          <Text style={gcStyles.title} numberOfLines={1}>{item.title}</Text>
+          <Text style={[gcStyles.timeLabel, { color }]}>{label}</Text>
+        </View>
+        <View style={gcStyles.bottomRow}>
+          <Text style={gcStyles.sub} numberOfLines={1}>
+            {item.company_name ?? item.city}
+          </Text>
+          <View style={[gcStyles.pill, { backgroundColor: chip.bg }]}>
+            <Text style={[gcStyles.pillText, { color: chip.color }]}>{chip.label}</Text>
+          </View>
+        </View>
+      </View>
+      <Feather name="chevron-right" size={rw(16)} color={T.border} style={{ alignSelf: "center", marginRight: rw(12) }} />
+    </PressableScale>
+  );
+}
+
+// ── Compact history card ──────────────────────────────────────────────────────
+
+function HistoryGigCard({ item, onPress }: { item: AcceptedGigItem; onPress: () => void }) {
+  const chip = getStatusChip(item, true);
+  const catColor = (CategoryColors as Record<string, string>)[item.category] ?? T.textMuted;
+  const dateLabel = item.event_date ? formatDate(item.event_date) : "—";
+
+  return (
+    <PressableScale style={[gcStyles.card, gcStyles.historyCard]} onPress={onPress}>
+      <View style={[gcStyles.accent, { backgroundColor: catColor, opacity: 0.35 }]} />
+      <View style={gcStyles.content}>
+        <View style={gcStyles.topRow}>
+          <Text style={[gcStyles.title, gcStyles.historyTitle]} numberOfLines={1}>{item.title}</Text>
+          <Text style={gcStyles.historyDate}>{dateLabel}</Text>
+        </View>
+        <View style={gcStyles.bottomRow}>
+          <Text style={gcStyles.sub}>
+            ₹{item.pay_amount.toLocaleString("en-IN")} / {item.pay_type.replace("_", " ")}
+          </Text>
+          <View style={[gcStyles.pill, { backgroundColor: chip.bg }]}>
+            <Text style={[gcStyles.pillText, { color: chip.color }]}>{chip.label}</Text>
+          </View>
+        </View>
+      </View>
+    </PressableScale>
+  );
+}
+
+const gcStyles = StyleSheet.create({
+  card: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    backgroundColor: T.surface,
+    borderRadius: rw(12),
+    borderWidth: 1,
+    borderColor: T.border,
+    overflow: "hidden",
+    minHeight: rw(68),
+  },
+  historyCard: {
+    opacity: 0.85,
+  },
+  accent: {
+    width: rw(4),
+    alignSelf: "stretch",
+  },
+  content: {
+    flex: 1,
+    paddingVertical: rw(12),
+    paddingHorizontal: rw(12),
+    justifyContent: "center",
+    gap: rw(5),
+  },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rw(8),
+  },
+  bottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rw(8),
+  },
+  title: {
+    flex: 1,
+    fontSize: rf(14),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.text,
+  },
+  historyTitle: {
+    color: T.textSub,
+  },
+  timeLabel: {
+    fontSize: rf(12),
+    fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    flexShrink: 0,
+  },
+  historyDate: {
+    fontSize: rf(12),
+    fontFamily: "SpaceGrotesk_400Regular",
+    color: T.textMuted,
+    flexShrink: 0,
+  },
+  sub: {
+    flex: 1,
+    fontSize: rf(12),
+    fontFamily: "SpaceGrotesk_400Regular",
+    color: T.textMuted,
+  },
+  pill: {
+    paddingHorizontal: rw(7),
+    paddingVertical: rw(2),
+    borderRadius: rw(6),
+    flexShrink: 0,
+  },
+  pillText: {
+    fontSize: rf(10),
+    fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+  },
+});
+
+// ── Gig detail bottom sheet ───────────────────────────────────────────────────
+
+function GigDetailSheet({
+  item,
+  onClose,
+  onOtpSuccess,
+  onRateSuccess,
+}: {
+  item: AcceptedGigItem | null;
+  onClose: () => void;
+  onOtpSuccess: (gigId: string) => void;
+  onRateSuccess: (gigId: string) => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const slideAnim = useRef(new Animated.Value(600)).current;
+  const [displayItem, setDisplayItem] = useState<AcceptedGigItem | null>(null);
+  const [otpDigits, setOtpDigits] = useState(["", "", "", ""]);
+  const [otpSubmitting, setOtpSubmitting] = useState(false);
+  const [ratingOpen, setRatingOpen] = useState(false);
+  const otpRef0 = useRef<TextInput>(null);
+  const otpRef1 = useRef<TextInput>(null);
+  const otpRef2 = useRef<TextInput>(null);
+  const otpRef3 = useRef<TextInput>(null);
+  const otpRefs = [otpRef0, otpRef1, otpRef2, otpRef3];
+
+  useEffect(() => {
+    if (item) {
+      setDisplayItem(item);
+      setOtpDigits(["", "", "", ""]);
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 9,
+        tension: 80,
+        useNativeDriver: true,
+      }).start();
+    } else if (displayItem) {
+      Animated.timing(slideAnim, {
+        toValue: 600,
+        duration: 220,
+        useNativeDriver: true,
+      }).start(() => setDisplayItem(null));
+    }
+  }, [item]);
+
+  const handleVerifyOtp = async () => {
+    if (!displayItem?.assignment_id) return;
+    const otp = otpDigits.join("");
+    if (otp.length < 4 || otpDigits.some((d) => d === "")) {
+      Alert.alert("Enter OTP", "Please enter the 4-digit code from the poster.");
+      return;
+    }
+    setOtpSubmitting(true);
+    const result = await verifyOtp(displayItem.assignment_id, otp);
+    setOtpSubmitting(false);
+    if (result.error) {
+      Alert.alert("Invalid OTP", "The code is incorrect. Please check with the host and try again.");
+    } else {
+      onOtpSuccess(displayItem.gig_id);
+      onClose();
+    }
+  };
+
+  const isGigExpired = (() => {
+    if (!displayItem?.event_date) return false;
+    const gigEnd = new Date(displayItem.event_date);
+    const parts = (displayItem.shift_end_time || "23:59").split(":");
+    gigEnd.setHours(Number(parts[0] ?? 23), Number(parts[1] ?? 59), 0, 0);
+    return gigEnd < new Date();
+  })();
+
+  const isUpcomingItem = displayItem &&
+    (!displayItem.assignment_status || displayItem.assignment_status === "assigned") &&
+    !isGigExpired;
+  const canOtp = isUpcomingItem;
+  const canRate = displayItem?.assignment_status === "completed" && !displayItem.has_been_rated;
+  const alreadyRated = displayItem?.assignment_status === "completed" && displayItem.has_been_rated;
+  const isNoShow = displayItem?.assignment_status === "no_show";
+
+  return (
+    <>
+      <Modal
+        visible={!!displayItem}
+        transparent
+        animationType="none"
+        onRequestClose={onClose}
+        statusBarTranslucent
+      >
+        <Pressable style={shStyles.backdrop} onPress={onClose} />
+
+        <Animated.View
+          style={[
+            shStyles.sheet,
+            { paddingBottom: insets.bottom + rw(16), transform: [{ translateY: slideAnim }] },
+          ]}
+        >
+          <View style={shStyles.handle} />
+
+          {displayItem && (
+            <>
+              {/* Header */}
+              <View style={shStyles.header}>
+                <View style={{ flex: 1, gap: rw(2) }}>
+                  <Text style={shStyles.gigTitle}>{displayItem.title}</Text>
+                  {displayItem.company_name && (
+                    <Text style={shStyles.gigCompany}>{displayItem.company_name}</Text>
+                  )}
+                </View>
+                <Pressable style={shStyles.closeBtn} onPress={onClose}>
+                  <Feather name="x" size={20} color={T.textMuted} />
+                </Pressable>
+              </View>
+
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={shStyles.body}
+                keyboardShouldPersistTaps="handled"
+              >
+                {/* Meta details */}
+                <View style={shStyles.metaSection}>
+                  <Pressable
+                    style={shStyles.metaRow}
+                    onPress={() => {
+                      if (displayItem.venue_lat != null && displayItem.venue_lng != null) {
+                        Linking.openURL(
+                          `https://www.google.com/maps/search/?api=1&query=${displayItem.venue_lat},${displayItem.venue_lng}`
+                        );
+                      }
+                    }}
+                    disabled={displayItem.venue_lat == null}
+                  >
+                    <Feather
+                      name="map-pin"
+                      size={14}
+                      color={displayItem.venue_lat != null ? T.primary : T.textMuted}
+                    />
+                    <Text
+                      style={[
+                        shStyles.metaText,
+                        displayItem.venue_lat != null && shStyles.metaLink,
+                      ]}
+                    >
+                      {displayItem.venue_name}, {displayItem.city}
+                    </Text>
+                    {displayItem.venue_lat != null && (
+                      <Feather name="external-link" size={11} color={T.primary} />
+                    )}
+                  </Pressable>
+                  <View style={shStyles.metaRow}>
+                    <Feather name="calendar" size={14} color={T.textMuted} />
+                    <Text style={shStyles.metaText}>
+                      {displayItem.event_date ? formatDate(displayItem.event_date) : "Date TBD"}
+                    </Text>
+                  </View>
+                  <View style={shStyles.metaRow}>
+                    <Feather name="clock" size={14} color={T.textMuted} />
+                    <Text style={shStyles.metaText}>
+                      {displayItem.shift_start_time.slice(0, 5)} – {displayItem.shift_end_time.slice(0, 5)}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Pay + poster row */}
+                <View style={shStyles.payPosterRow}>
+                  <View style={shStyles.posterChip}>
+                    <View style={shStyles.posterAvatar}>
+                      <Text style={shStyles.posterAvatarText}>
+                        {(displayItem.poster.display_name[0] ?? "?").toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={shStyles.posterName}>{displayItem.poster.display_name}</Text>
+                    {displayItem.poster.reputation != null && (
+                      <View style={shStyles.repChip}>
+                        <Feather name="star" size={9} color="#f59e0b" />
+                        <Text style={shStyles.repText}>
+                          {displayItem.poster.reputation.toFixed(1)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={shStyles.payAmount}>
+                    ₹{displayItem.pay_amount.toLocaleString("en-IN")}
+                    <Text style={shStyles.payType}> / {displayItem.pay_type.replace("_", " ")}</Text>
+                  </Text>
+                </View>
+
+                {/* View Gig — upcoming only */}
+                {isUpcomingItem && (
+                  <PressableScale
+                    style={shStyles.viewGigBtn}
+                    onPress={() => { onClose(); router.push(`/(main)/gig/${displayItem!.gig_id}`); }}
+                  >
+                    <Feather name="external-link" size={rw(14)} color={T.textSub} />
+                    <Text style={shStyles.viewGigBtnText}>View Gig</Text>
+                  </PressableScale>
+                )}
+
+                {/* OTP check-in — upcoming only */}
+                {canOtp && (
+                  <View style={shStyles.actionZone}>
+                    <View style={shStyles.actionLabelRow}>
+                      <Feather name="key" size={13} color={T.textSub} />
+                      <Text style={shStyles.actionLabel}>Check-in OTP</Text>
+                    </View>
+                    <View style={shStyles.otpBoxRow}>
+                      {otpDigits.map((digit, i) => (
+                        <TextInput
+                          key={i}
+                          ref={otpRefs[i]}
+                          style={[shStyles.otpBox, digit !== "" && shStyles.otpBoxFilled]}
+                          value={digit}
+                          onChangeText={(t) => {
+                            const d = t.replace(/\D/g, "").slice(-1);
+                            const next = [...otpDigits];
+                            next[i] = d;
+                            setOtpDigits(next);
+                            if (d && i < 3) otpRefs[i + 1]?.current?.focus();
+                          }}
+                          onKeyPress={(e) => {
+                            if (e.nativeEvent.key === "Backspace" && digit === "" && i > 0) {
+                              const next = [...otpDigits];
+                              next[i - 1] = "";
+                              setOtpDigits(next);
+                              otpRefs[i - 1]?.current?.focus();
+                            }
+                          }}
+                          keyboardType="number-pad"
+                          maxLength={1}
+                          selectTextOnFocus
+                          caretHidden
+                          textContentType="oneTimeCode"
+                        />
+                      ))}
+                    </View>
+                    <PressableScale
+                      style={[shStyles.confirmBtn, otpSubmitting && { opacity: 0.6 }]}
+                      onPress={handleVerifyOtp}
+                      disabled={otpSubmitting}
+                    >
+                      {otpSubmitting ? (
+                        <ActivityIndicator size="small" color={T.ctaText} />
+                      ) : (
+                        <Text style={shStyles.confirmText}>Confirm</Text>
+                      )}
+                    </PressableScale>
+                  </View>
+                )}
+
+                {canRate && (
+                  <PressableScale style={shStyles.rateBtn} onPress={() => setRatingOpen(true)}>
+                    <Feather name="star" size={14} color={T.ctaText} />
+                    <Text style={shStyles.rateBtnText}>Rate Host</Text>
+                  </PressableScale>
+                )}
+
+                {alreadyRated && (
+                  <View style={shStyles.stateRow}>
+                    <Feather name="check-circle" size={14} color={T.success} />
+                    <Text style={[shStyles.stateText, { color: T.success }]}>You rated this host</Text>
+                  </View>
+                )}
+
+                {isNoShow && (
+                  <View style={shStyles.stateRow}>
+                    <Feather name="alert-circle" size={14} color={T.error} />
+                    <Text style={[shStyles.stateText, { color: T.error }]}>Marked as no-show</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </>
+          )}
+        </Animated.View>
+      </Modal>
+
+      {displayItem && ratingOpen && (
+        <RatingModal
+          visible={ratingOpen}
+          onClose={() => setRatingOpen(false)}
+          gigId={displayItem.gig_id}
+          rateeId={displayItem.poster.id}
+          ratingType="poster_rating"
+          rateeName={displayItem.poster.display_name}
+          onSuccess={() => {
+            onRateSuccess(displayItem.gig_id);
+            setRatingOpen(false);
+            onClose();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+const shStyles = StyleSheet.create({
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.65)",
+  },
+  sheet: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: T.surface2,
+    borderTopLeftRadius: rw(28),
+    borderTopRightRadius: rw(28),
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: T.borderStrong,
+    paddingHorizontal: rw(24),
+    paddingTop: rw(10),
+    maxHeight: "85%",
+  },
+  handle: {
+    width: rw(36),
+    height: 4,
+    backgroundColor: T.borderStrong,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: rw(20),
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: rw(12),
+    marginBottom: rw(20),
+  },
+  gigTitle: {
+    fontSize: rf(18),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.text,
+  },
+  gigCompany: {
+    fontSize: rf(13),
+    fontFamily: "SpaceGrotesk_400Regular",
+    color: T.textSub,
+  },
+  closeBtn: {
+    padding: rw(4),
+    marginTop: rw(2),
+  },
+  body: {
+    gap: rw(20),
+    paddingBottom: rw(8),
+  },
+  metaSection: {
+    gap: rw(10),
+    backgroundColor: T.bg,
+    borderRadius: rw(12),
+    padding: rw(14),
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rw(8),
+  },
+  metaText: {
+    flex: 1,
+    fontSize: rf(13),
+    fontFamily: "SpaceGrotesk_400Regular",
+    color: T.textSub,
+  },
+  metaLink: {
+    color: T.primary,
+    textDecorationLine: "underline",
+  },
+  payPosterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  posterChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rw(6),
+  },
+  posterAvatar: {
+    width: rw(28),
+    height: rw(28),
+    borderRadius: rw(14),
+    backgroundColor: T.avatarBg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  posterAvatarText: {
+    fontSize: rf(12),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.avatarText,
+  },
+  posterName: {
+    fontSize: rf(13),
+    fontWeight: "500",
+    fontFamily: "SpaceGrotesk_500Medium",
+    color: T.textSub,
+  },
+  repChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rw(2),
+    backgroundColor: "#f59e0b22",
+    borderRadius: rw(4),
+    paddingHorizontal: rw(5),
+    paddingVertical: rw(2),
+  },
+  repText: {
+    fontSize: rf(10),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: "#f59e0b",
+  },
+  payAmount: {
+    fontSize: rf(18),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.text,
+  },
+  payType: {
+    fontSize: rf(13),
+    fontFamily: "SpaceGrotesk_400Regular",
+    color: T.textMuted,
+  },
+  actionZone: {
+    backgroundColor: T.bg,
+    borderRadius: rw(14),
+    padding: rw(16),
+    gap: rw(12),
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  actionLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rw(6),
+  },
+  actionLabel: {
+    fontSize: rf(13),
+    fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: T.textSub,
+  },
+  otpBoxRow: {
+    flexDirection: "row",
+    gap: rw(10),
+  },
+  otpBox: {
+    flex: 1,
+    height: rw(58),
+    backgroundColor: T.surface,
+    borderRadius: rw(12),
+    borderWidth: 1.5,
+    borderColor: T.border,
+    fontSize: rf(26),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.text,
+    textAlign: "center",
+  },
+  otpBoxFilled: {
+    borderColor: T.primary,
+    backgroundColor: T.primary + "15",
+  },
+  confirmBtn: {
+    height: rw(48),
+    backgroundColor: T.ctaBg,
+    borderRadius: rw(10),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  viewGigBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: rw(7),
+    paddingVertical: rw(13),
+    borderRadius: rw(12),
+    borderWidth: 1,
+    borderColor: T.border,
+    backgroundColor: T.surface,
+  },
+  viewGigBtnText: {
+    fontSize: rf(14),
+    fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: T.textSub,
+  },
+  confirmText: {
+    fontSize: rf(14),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.ctaText,
+  },
+  rateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: rw(8),
+    backgroundColor: T.ctaBg,
+    borderRadius: rw(12),
+    paddingVertical: rw(14),
+  },
+  rateBtnText: {
+    fontSize: rf(15),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.ctaText,
+  },
+  stateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: rw(6),
+    paddingVertical: rw(10),
+  },
+  stateText: {
+    fontSize: rf(13),
+    fontWeight: "500",
+    fontFamily: "SpaceGrotesk_500Medium",
+  },
+});
+
 // ── Runner tab ────────────────────────────────────────────────────────────────
 
 function RunnerTab() {
   const [items, setItems] = useState<AcceptedGigItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [ratingTarget, setRatingTarget] = useState<AcceptedGigItem | null>(null);
-  // OTP entry state: gigId → entered OTP text
-  const [otpInputs, setOtpInputs] = useState<Record<string, string>>({});
-  // Which card has its OTP input expanded
-  const [otpExpanded, setOtpExpanded] = useState<string | null>(null);
-  const [otpSubmitting, setOtpSubmitting] = useState<string | null>(null);
+  const [activeSubTab, setActiveSubTab] = useState<"upcoming" | "history">("upcoming");
+  const [selectedGig, setSelectedGig] = useState<AcceptedGigItem | null>(null);
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
+    await finalizeExpiredAssignments();
     const result = await getMyAcceptedGigs();
     if (isRefresh) setRefreshing(false);
     else setLoading(false);
-    if (!result.error) {
-      setItems(result.data.items);
-    }
+    if (!result.error && result.data) setItems(result.data.items);
   }, []);
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  const handleVerifyOtp = async (item: AcceptedGigItem) => {
-    if (!item.assignment_id) return;
-    const otp = (otpInputs[item.gig_id] ?? "").trim();
-    if (otp.length < 4) {
-      Alert.alert("Enter OTP", "Please enter the 4-digit code from the poster.");
-      return;
-    }
-    setOtpSubmitting(item.gig_id);
-    const result = await verifyOtp(item.assignment_id, otp);
-    setOtpSubmitting(null);
-    if (result.error) {
-      Alert.alert("Invalid OTP", "The code is incorrect. Please check with the host and try again.");
-    } else {
-      setItems((prev) =>
-        prev.map((i) =>
-          i.gig_id === item.gig_id ? { ...i, assignment_status: "completed" } : i
-        )
-      );
-      setOtpExpanded(null);
-      setOtpInputs((prev) => { const n = { ...prev }; delete n[item.gig_id]; return n; });
-    }
-  };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  const getStatusChip = (item: AcceptedGigItem) => {
-    if (!item.assignment_status || item.assignment_status === "assigned") {
-      return { label: "Upcoming", color: T.selText, bg: T.selBg };
-    }
-    if (item.assignment_status === "completed") {
-      return { label: "Done", color: T.success, bg: T.success + "25" };
-    }
-    if (item.assignment_status === "no_show") {
-      return { label: "No-Show", color: T.error, bg: T.error + "25" };
-    }
-    return { label: item.assignment_status, color: T.textMuted, bg: T.border };
-  };
+  const upcoming = items
+    .filter((i) => isUpcoming(i, today))
+    .sort((a, b) => {
+      if (!a.event_date) return 1;
+      if (!b.event_date) return -1;
+      return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+    });
 
-  const renderItem = ({ item }: { item: AcceptedGigItem }) => {
-    const chip = getStatusChip(item);
-    const canRate =
-      item.assignment_status === "completed" && !item.has_been_rated;
+  const history = items
+    .filter((i) => !isUpcoming(i, today))
+    .sort((a, b) => {
+      if (!a.event_date) return 1;
+      if (!b.event_date) return -1;
+      return new Date(b.event_date).getTime() - new Date(a.event_date).getTime();
+    });
 
-    return (
-      <View style={styles.runnerCard}>
-        {/* Header row */}
-        <View style={styles.runnerHeader}>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={styles.runnerTitle} numberOfLines={1}>{item.title}</Text>
-            {item.company_name && (
-              <Text style={styles.runnerSub} numberOfLines={1}>{item.company_name}</Text>
-            )}
-          </View>
-          <View style={[styles.statusChip, { backgroundColor: chip.bg }]}>
-            <Text style={[styles.statusChipText, { color: chip.color }]}>{chip.label}</Text>
-          </View>
-        </View>
-
-        {/* Meta */}
-        <View style={styles.runnerMeta}>
-          <Pressable
-            style={styles.metaItem}
-            onPress={() => {
-              if (item.venue_lat != null && item.venue_lng != null) {
-                Linking.openURL(
-                  `https://www.google.com/maps/search/?api=1&query=${item.venue_lat},${item.venue_lng}`
-                );
-              }
-            }}
-            disabled={item.venue_lat == null}
-          >
-            <Feather name="map-pin" size={12} color={item.venue_lat != null ? T.primary : T.textMuted} />
-            <Text style={[styles.metaText, item.venue_lat != null && styles.metaLink]}>
-              {item.venue_name}, {item.city}
-            </Text>
-          </Pressable>
-          <View style={styles.metaItem}>
-            <Feather name="calendar" size={12} color={T.textMuted} />
-            <Text style={styles.metaText}>{formatDate(item.event_date)}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Feather name="clock" size={12} color={T.textMuted} />
-            <Text style={styles.metaText}>
-              {item.shift_start_time.slice(0, 5)} – {item.shift_end_time.slice(0, 5)}
-            </Text>
-          </View>
-        </View>
-
-        {/* Poster + pay */}
-        <View style={styles.runnerFooter}>
-          <View style={styles.posterRow}>
-            <View style={styles.posterAvatar}>
-              <Text style={styles.posterAvatarText}>
-                {item.poster.display_name[0].toUpperCase()}
-              </Text>
-            </View>
-            <Text style={styles.posterName}>{item.poster.display_name}</Text>
-            {item.poster.reputation != null && (
-              <View style={styles.repChip}>
-                <Feather name="star" size={9} color="#f59e0b" />
-                <Text style={styles.repText}>{item.poster.reputation.toFixed(1)}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={styles.pay}>
-            ₹{item.pay_amount.toLocaleString("en-IN")}
-            <Text style={styles.payType}> / {item.pay_type.replace("_", " ")}</Text>
-          </Text>
-        </View>
-
-        {/* OTP entry — upcoming assignments */}
-        {(!item.assignment_status || item.assignment_status === "assigned") && (
-          otpExpanded === item.gig_id ? (
-            <View style={styles.otpEntry}>
-              <TextInput
-                style={styles.otpInput}
-                placeholder="4-digit code"
-                placeholderTextColor={T.textMuted}
-                value={otpInputs[item.gig_id] ?? ""}
-                onChangeText={(t) =>
-                  setOtpInputs((prev) => ({ ...prev, [item.gig_id]: t.replace(/\D/g, "") }))
-                }
-                keyboardType="number-pad"
-                maxLength={4}
-                autoFocus
-              />
-              <Pressable
-                style={[styles.otpConfirmBtn, otpSubmitting === item.gig_id && { opacity: 0.6 }]}
-                onPress={() => handleVerifyOtp(item)}
-                disabled={otpSubmitting === item.gig_id}
-              >
-                {otpSubmitting === item.gig_id ? (
-                  <ActivityIndicator size="small" color={T.ctaText} />
-                ) : (
-                  <Text style={styles.otpConfirmText}>Confirm</Text>
-                )}
-              </Pressable>
-              <Pressable onPress={() => setOtpExpanded(null)} style={styles.otpCancelBtn}>
-                <Feather name="x" size={16} color={T.textMuted} />
-              </Pressable>
-            </View>
-          ) : (
-            <Pressable style={styles.enterOtpBtn} onPress={() => setOtpExpanded(item.gig_id)}>
-              <Feather name="key" size={14} color={T.ctaText} />
-              <Text style={styles.enterOtpText}>Enter OTP</Text>
-            </Pressable>
-          )
-        )}
-
-        {/* Rate poster button */}
-        {canRate && (
-          <Pressable
-            style={styles.rateBtn}
-            onPress={() => setRatingTarget(item)}
-          >
-            <Feather name="star" size={14} color={T.ctaText} />
-            <Text style={styles.rateBtnText}>Rate Host</Text>
-          </Pressable>
-        )}
-        {item.assignment_status === "completed" && item.has_been_rated && (
-          <View style={styles.ratedRow}>
-            <Feather name="check-circle" size={13} color={T.success} />
-            <Text style={styles.ratedText}>You rated this host</Text>
-          </View>
-        )}
-      </View>
-    );
-  };
+  const displayItems = activeSubTab === "upcoming" ? upcoming : history;
 
   return (
     <>
+      {/* Sub-tab bar */}
+      <View style={styles.subTabBar}>
+        <Pressable
+          style={[styles.subTab, activeSubTab === "upcoming" && styles.subTabActive]}
+          onPress={() => setActiveSubTab("upcoming")}
+        >
+          <Text style={[styles.subTabText, activeSubTab === "upcoming" && styles.subTabTextActive]}>
+            Upcoming{upcoming.length > 0 ? ` (${upcoming.length})` : ""}
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.subTab, activeSubTab === "history" && styles.subTabActive]}
+          onPress={() => setActiveSubTab("history")}
+        >
+          <Text style={[styles.subTabText, activeSubTab === "history" && styles.subTabTextActive]}>
+            History{history.length > 0 ? ` (${history.length})` : ""}
+          </Text>
+        </Pressable>
+      </View>
+
       <FlatList
-        data={items}
+        style={{ flex: 1 }}
+        data={displayItems}
         keyExtractor={(item) => item.gig_id}
-        renderItem={renderItem}
+        renderItem={({ item }) =>
+          activeSubTab === "upcoming" ? (
+            <UpcomingGigCard item={item} onPress={() => setSelectedGig(item)} />
+          ) : (
+            <HistoryGigCard item={item} onPress={() => setSelectedGig(item)} />
+          )
+        }
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={T.primary} />
@@ -246,42 +817,44 @@ function RunnerTab() {
             </View>
           ) : (
             <View style={styles.center}>
-              <Feather name="briefcase" size={48} color={T.primary} />
-              <Text style={styles.emptyTitle}>No accepted gigs</Text>
+              <Feather
+                name={activeSubTab === "upcoming" ? "calendar" : "clock"}
+                size={rw(40)}
+                color={T.textMuted}
+              />
+              <Text style={styles.emptyTitle}>
+                {activeSubTab === "upcoming" ? "No upcoming gigs" : "No past gigs yet"}
+              </Text>
               <Text style={styles.emptySubtitle}>
-                Gigs you've been accepted for will appear here.
+                {activeSubTab === "upcoming"
+                  ? "Gigs you're accepted for will appear here."
+                  : "Completed gigs will show up here once done."}
               </Text>
             </View>
           )
         }
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: rw(8) }} />}
       />
 
-      {ratingTarget && (
-        <RatingModal
-          visible={!!ratingTarget}
-          onClose={() => setRatingTarget(null)}
-          gigId={ratingTarget.gig_id}
-          rateeId={ratingTarget.poster.id}
-          ratingType="poster_rating"
-          rateeName={ratingTarget.poster.display_name}
-          onSuccess={() => {
-            setItems((prev) =>
-              prev.map((i) =>
-                i.gig_id === ratingTarget.gig_id
-                  ? { ...i, has_been_rated: true }
-                  : i
-              )
-            );
-            setRatingTarget(null);
-          }}
-        />
-      )}
+      <GigDetailSheet
+        item={selectedGig}
+        onClose={() => setSelectedGig(null)}
+        onOtpSuccess={(gigId) => {
+          setItems((prev) =>
+            prev.map((i) => i.gig_id === gigId ? { ...i, assignment_status: "completed" } : i)
+          );
+        }}
+        onRateSuccess={(gigId) => {
+          setItems((prev) =>
+            prev.map((i) => i.gig_id === gigId ? { ...i, has_been_rated: true } : i)
+          );
+        }}
+      />
     </>
   );
 }
 
-// ── Event card ────────────────────────────────────────────────────────────────
+// ── Event card (Poster tab) ───────────────────────────────────────────────────
 
 function EventCard({ event, onPress }: { event: MyEventSummary; onPress: () => void }) {
   const statusColor =
@@ -289,7 +862,7 @@ function EventCard({ event, onPress }: { event: MyEventSummary; onPress: () => v
     event.status === "completed" ? T.textMuted : T.error;
 
   return (
-    <Pressable style={styles.eventCard} onPress={onPress}>
+    <PressableScale style={styles.eventCard} onPress={onPress}>
       <View style={styles.eventHeader}>
         <View style={styles.eventIconWrap}>
           <Feather name="calendar" size={20} color={T.avatarText} />
@@ -324,11 +897,11 @@ function EventCard({ event, onPress }: { event: MyEventSummary; onPress: () => v
           </Text>
         </View>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
-// ── Host tab ────────────────────────────────────────────────────────────────
+// ── Host tab ──────────────────────────────────────────────────────────────────
 
 function HostTab() {
   const {
@@ -343,9 +916,7 @@ function HostTab() {
     await Promise.all([fetchMyPostedGigs(), fetchMyPostedEvents()]);
   }, []);
 
-  useEffect(() => {
-    loadAll();
-  }, []);
+  useEffect(() => { loadAll(); }, []);
 
   const items: SpaceItem[] = [
     ...myPostedGigs.map((g): SpaceItem => ({ kind: "gig", data: g, created_at: g.created_at })),
@@ -377,9 +948,7 @@ function HostTab() {
       keyExtractor={(item) => `${item.kind}-${item.data.id}`}
       renderItem={renderItem}
       contentContainerStyle={styles.list}
-      refreshControl={
-        <RefreshControl refreshing={isLoading} onRefresh={loadAll} />
-      }
+      refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadAll} />}
       ListEmptyComponent={
         isLoading ? (
           <View style={styles.center}>
@@ -387,7 +956,7 @@ function HostTab() {
           </View>
         ) : (
           <View style={styles.center}>
-            <Feather name="layers" size={48} color={T.primary} />
+            <Feather name="layers" size={rw(40)} color={T.textMuted} />
             <Text style={styles.emptyTitle}>Nothing posted yet</Text>
             <Text style={styles.emptySubtitle}>
               Tap the + to post a gig or create an event.
@@ -402,7 +971,6 @@ function HostTab() {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
-// Set to true when the Host mobile experience is re-enabled.
 const SHOW_HOST_ROLE = false;
 
 export default function SpaceScreen() {
@@ -412,8 +980,8 @@ export default function SpaceScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* Header — role label, no tab switcher */}
       <LinearGradient colors={T.gradDark} style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.headerTitle}>My Space</Text>
         <View style={styles.roleRow}>
           <Feather
             name={isHost ? "layers" : "briefcase"}
@@ -426,7 +994,6 @@ export default function SpaceScreen() {
         </View>
       </LinearGradient>
 
-      {/* Role-pinned content */}
       {isHost ? <HostTab /> : <RunnerTab />}
     </View>
   );
@@ -443,6 +1010,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: rw(20),
     paddingBottom: rw(16),
     justifyContent: "flex-end",
+    gap: rw(4),
+  },
+  headerTitle: {
+    fontSize: rf(24),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.text,
   },
   roleRow: {
     flexDirection: "row",
@@ -458,10 +1032,40 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
 
+  // Sub-tabs
+  subTabBar: {
+    flexDirection: "row",
+    paddingHorizontal: rw(16),
+    paddingTop: rw(14),
+    paddingBottom: rw(10),
+    gap: rw(8),
+  },
+  subTab: {
+    paddingHorizontal: rw(16),
+    paddingVertical: rw(7),
+    borderRadius: rw(20),
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  subTabActive: {
+    backgroundColor: T.selBg,
+    borderColor: T.selBg,
+  },
+  subTabText: {
+    fontSize: rf(13),
+    fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: T.textMuted,
+  },
+  subTabTextActive: {
+    color: T.selText,
+  },
+
   // List
   list: {
     paddingHorizontal: rw(16),
-    paddingTop: rw(12),
+    paddingTop: rw(4),
     paddingBottom: rw(100),
   },
   center: {
@@ -473,208 +1077,17 @@ const styles = StyleSheet.create({
     minHeight: 300,
   },
   emptyTitle: {
-    fontSize: rf(20),
+    fontSize: rf(18),
     fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
   },
   emptySubtitle: {
-    fontSize: rf(15),
+    fontSize: rf(14),
     fontFamily: "SpaceGrotesk_400Regular",
     color: T.textSub,
     textAlign: "center",
-    lineHeight: rf(22),
-  },
-
-  // Runner card
-  runnerCard: {
-    backgroundColor: T.surface,
-    borderRadius: rw(14),
-    padding: rw(16),
-    borderWidth: 1,
-    borderColor: T.border,
-    gap: rw(10),
-  },
-  runnerHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: rw(10),
-  },
-  runnerTitle: {
-    fontSize: rf(15),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
-  },
-  runnerSub: {
-    fontSize: rf(12),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textSub,
-  },
-  statusChip: {
-    paddingHorizontal: rw(8),
-    paddingVertical: rw(3),
-    borderRadius: rw(6),
-  },
-  statusChipText: {
-    fontSize: rf(11),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-  },
-  runnerMeta: {
-    gap: rw(5),
-  },
-  metaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rw(5),
-  },
-  metaText: {
-    fontSize: rf(12),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textSub,
-  },
-  metaLink: {
-    color: T.primary,
-    textDecorationLine: "underline",
-  },
-  runnerFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  posterRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rw(6),
-  },
-  posterAvatar: {
-    width: rw(24),
-    height: rw(24),
-    borderRadius: rw(12),
-    backgroundColor: T.avatarBg,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  posterAvatarText: {
-    fontSize: rf(11),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.avatarText,
-  },
-  posterName: {
-    fontSize: rf(12),
-    fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
-    color: T.textSub,
-  },
-  repChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rw(2),
-    backgroundColor: "#f59e0b22",
-    borderRadius: rw(4),
-    paddingHorizontal: rw(5),
-    paddingVertical: rw(2),
-  },
-  repText: {
-    fontSize: rf(10),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: "#f59e0b",
-  },
-  pay: {
-    fontSize: rf(14),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
-  },
-  payType: {
-    fontSize: rf(12),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textMuted,
-  },
-  // OTP entry
-  enterOtpBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rw(6),
-    alignSelf: "flex-start",
-    paddingHorizontal: rw(12),
-    paddingVertical: rw(8),
-    backgroundColor: T.ctaBg,
-    borderRadius: rw(8),
-    borderWidth: 1,
-    borderColor: T.ctaBg,
-  },
-  enterOtpText: {
-    fontSize: rf(13),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: T.ctaText,
-  },
-  otpEntry: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rw(8),
-  },
-  otpInput: {
-    flex: 1,
-    height: rw(40),
-    backgroundColor: T.bg,
-    borderRadius: rw(8),
-    borderWidth: 1,
-    borderColor: T.border,
-    paddingHorizontal: rw(12),
-    fontSize: rf(18),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
-    letterSpacing: 4,
-  },
-  otpConfirmBtn: {
-    height: rw(40),
-    paddingHorizontal: rw(14),
-    backgroundColor: T.ctaBg,
-    borderRadius: rw(8),
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  otpConfirmText: {
-    fontSize: rf(13),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.ctaText,
-  },
-  otpCancelBtn: {
-    padding: rw(6),
-  },
-
-  rateBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: rw(6),
-    backgroundColor: T.accent,
-    borderRadius: rw(8),
-    paddingVertical: rw(9),
-  },
-  rateBtnText: {
-    fontSize: rf(13),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.ctaText,
-  },
-  ratedRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rw(5),
-  },
-  ratedText: {
-    fontSize: rf(12),
-    fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
-    color: T.success,
+    lineHeight: rf(21),
   },
 
   // Event card (Poster tab)

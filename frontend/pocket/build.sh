@@ -128,7 +128,7 @@ fi
 if [[ "$PROFILE" == "production" ]]; then
   echo ""
   header "Submit to Play Store?"
-  echo "  Track configured: internal (see eas.json)"
+  echo "  Track configured: closed testing / alpha (see eas.json)"
   echo ""
   read -rp "Submit now? [y/N]: " SUBMIT_CHOICE
 
@@ -139,7 +139,7 @@ if [[ "$PROFILE" == "production" ]]; then
     if [[ -n "$ARTIFACT_FILE" ]]; then
       info "Submitting $ARTIFACT_FILE..."
       eas submit --platform android --profile production --path "$ARTIFACT_FILE" --non-interactive
-      success "Submitted to Play Store internal track"
+      success "Submitted to Play Store closed testing (alpha) track"
     else
       warn "No AAB path found — running eas submit without --path (will use latest EAS build)"
       eas submit --platform android --profile production --non-interactive

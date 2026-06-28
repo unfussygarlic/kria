@@ -54,3 +54,7 @@ export function noShowAssignment(assignmentId: string) {
     {}
   );
 }
+
+export function finalizeExpiredAssignments() {
+  return apiPost<{ processed: number }>("/api/v1/assignments/finalize-expired", {});
+}

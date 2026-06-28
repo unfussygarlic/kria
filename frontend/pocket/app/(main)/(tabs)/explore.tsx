@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ActivityIndicator,
   Dimensions,
   Pressable,
   Linking,
@@ -19,10 +18,52 @@ import { SwipeableJobCard } from "@/components/gig/SwipeableJobCard";
 import { Feather } from "@expo/vector-icons";
 import { rf, rw } from "@/constants/responsive";
 import { MatchGigsParams } from "@/lib/api/gigs";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { PressableScale } from "@/components/ui/PressableScale";
 
-const { width: SCREEN_W } = Dimensions.get("window");
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const CARD_W = SCREEN_W * 0.93;
 const PREFETCH_THRESHOLD = 15;
+
+// ── Card skeleton shown while gigs load ───────────────────────────────────────
+function CardSkeleton() {
+  return (
+    <View style={cardSkStyles.card}>
+      <Skeleton width="100%" height={116} borderRadius={0} style={{ borderRadius: 0 }} />
+      <View style={cardSkStyles.body}>
+        <Skeleton width="70%" height={rw(28)} borderRadius={rw(6)} />
+        <Skeleton width="45%" height={rw(16)} borderRadius={rw(4)} style={{ marginTop: rw(8) }} />
+        <Skeleton width="55%" height={rw(32)} borderRadius={rw(6)} style={{ marginTop: rw(14) }} />
+        <View style={cardSkStyles.detailsRow}>
+          <Skeleton width="80%" height={rw(14)} borderRadius={rw(4)} />
+          <Skeleton width="65%" height={rw(14)} borderRadius={rw(4)} />
+          <Skeleton width="75%" height={rw(14)} borderRadius={rw(4)} />
+        </View>
+        <Skeleton width="100%" height={1} borderRadius={0} style={{ marginTop: rw(16), opacity: 0.3 }} />
+        <Skeleton width="30%" height={rw(20)} borderRadius={rw(10)} style={{ marginTop: rw(14), alignSelf: "center" }} />
+      </View>
+    </View>
+  );
+}
+
+const cardSkStyles = StyleSheet.create({
+  card: {
+    backgroundColor: "#1a1919",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+    overflow: "hidden",
+    minHeight: SCREEN_H * 0.62,
+  },
+  body: {
+    padding: rw(20),
+    gap: rw(6),
+  },
+  detailsRow: {
+    gap: rw(10),
+    marginTop: rw(16),
+  },
+});
 
 type LocationState = "loading" | "denied" | "ready";
 
@@ -39,6 +80,7 @@ export default function ExploreScreen() {
     fetchMoreGigs,
     fetchMyApplications,
     applyToGig,
+    prefetchGig,
   } = useGigStore(useShallow((s) => ({
     gigs: s.gigs,
     myApplications: s.myApplications,
@@ -50,6 +92,7 @@ export default function ExploreScreen() {
     fetchMoreGigs: s.fetchMoreGigs,
     fetchMyApplications: s.fetchMyApplications,
     applyToGig: s.applyToGig,
+    prefetchGig: s.prefetchGig,
   })));
   const profile = useAuthStore((s) => s.profile);
 
@@ -125,6 +168,16 @@ export default function ExploreScreen() {
     }
   }, [currentIndex, availableGigs.length, hasMore, isFetchingMore]);
 
+  // ── Prefetch detail data for upcoming cards ───────────────────────────────
+  useEffect(() => {
+    const len = availableGigs.length;
+    if (len === 0) return;
+    [1, 2].forEach((offset) => {
+      const next = availableGigs[(currentIndex + offset) % len];
+      if (next) prefetchGig(next.id);
+    });
+  }, [currentIndex, availableGigs]);
+
   // ── Auto-fetch when available gigs run dry but more exist ─────────────────
   useEffect(() => {
     if (
@@ -174,10 +227,15 @@ export default function ExploreScreen() {
   // ── Location loading ───────────────────────────────────────────────────────
   if (locationState === "loading") {
     return (
-      <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={T.primary} />
-        <Text style={styles.stateTitle}>Finding gigs near you</Text>
-        <Text style={styles.stateSub}>Getting your location…</Text>
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <Skeleton width={rw(90)} height={rw(28)} borderRadius={rw(14)} />
+        </View>
+        <View style={styles.deckArea}>
+          <View style={[styles.deckCenter, { width: CARD_W }]}>
+            <CardSkeleton />
+          </View>
+        </View>
       </View>
     );
   }
@@ -187,15 +245,15 @@ export default function ExploreScreen() {
     return (
       <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
         <View style={styles.iconWrap}>
-          <Feather name="map-pin" size={rw(32)} color={T.primary} />
+          <Feather name="map-pin" size={rw(28)} color={T.primary} />
         </View>
         <Text style={styles.stateTitle}>Location needed</Text>
         <Text style={styles.stateSub}>
-          Explore shows the nearest gigs to you. Enable location access to continue.
+          Explore shows gigs closest to you. Enable location in your device settings to continue.
         </Text>
-        <Pressable style={styles.ctaButton} onPress={() => Linking.openSettings()}>
+        <PressableScale style={styles.ctaButton} onPress={() => Linking.openSettings()}>
           <Text style={styles.ctaText}>Open Settings</Text>
-        </Pressable>
+        </PressableScale>
       </View>
     );
   }
@@ -203,9 +261,15 @@ export default function ExploreScreen() {
   // ── Fetching gigs (first load) ─────────────────────────────────────────────
   if ((isLoading || isFetchingMore) && availableGigs.length === 0) {
     return (
-      <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={T.primary} />
-        <Text style={styles.stateSub}>Loading nearby gigs…</Text>
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <Skeleton width={rw(90)} height={rw(28)} borderRadius={rw(14)} />
+        </View>
+        <View style={styles.deckArea}>
+          <View style={[styles.deckCenter, { width: CARD_W }]}>
+            <CardSkeleton />
+          </View>
+        </View>
       </View>
     );
   }
@@ -223,15 +287,17 @@ export default function ExploreScreen() {
       {/* ── Empty state ── */}
       {availableGigs.length === 0 ? (
         <View style={styles.center}>
-          <Feather name="check-circle" size={52} color={T.primary} />
-          <Text style={styles.stateTitle}>You're all caught up!</Text>
+          <View style={styles.emptyIconRing}>
+            <Feather name="compass" size={rw(30)} color={T.primary} />
+          </View>
+          <Text style={styles.stateTitle}>You're all caught up</Text>
           <Text style={styles.stateSub}>
-            No more gigs nearby right now. Check back soon.
+            No new gigs near you right now. We'll have more soon — check back later.
           </Text>
           {!hasMore && (
-            <Pressable style={styles.ctaButton} onPress={handleRefresh}>
+            <PressableScale style={styles.ctaButton} onPress={handleRefresh}>
               <Text style={styles.ctaText}>Refresh</Text>
-            </Pressable>
+            </PressableScale>
           )}
         </View>
       ) : (
@@ -296,6 +362,17 @@ const styles = StyleSheet.create({
     backgroundColor: T.surface,
     borderWidth: 1,
     borderColor: T.border,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: rw(4),
+  },
+  emptyIconRing: {
+    width: rw(72),
+    height: rw(72),
+    borderRadius: rw(36),
+    backgroundColor: T.primary + "14",
+    borderWidth: 1,
+    borderColor: T.primary + "30",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: rw(4),

@@ -6,7 +6,7 @@
  * No tab switcher — role is set at login.
  */
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -22,6 +22,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { T } from "@/constants/colors";
 import { L } from "@/constants/labels";
+import { scrollRegistry } from "@/lib/scrollRegistry";
 import { getBand } from "@/constants/momentum";
 import { rf, rw } from "@/constants/responsive";
 import { useAuthStore } from "@/stores/authStore";
@@ -33,6 +34,12 @@ export default function ArenaScreen() {
   const insets = useSafeAreaInsets();
   const activeRole = useAuthStore((s) => s.activeRole);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    scrollRegistry.register("arena", () => scrollRef.current?.scrollTo({ y: 0, animated: true }));
+    return () => { scrollRegistry.unregister("arena"); };
+  }, []);
 
   const myMomentum = useMomentumStore((s) => s.myMomentum);
   const myBreakdown = useMomentumStore((s) => s.myBreakdown);
@@ -40,10 +47,8 @@ export default function ArenaScreen() {
   const isLoadingBreakdown = useMomentumStore((s) => s.isLoadingBreakdown);
   const fetchMyMomentum = useMomentumStore((s) => s.fetchMyMomentum);
   const fetchMyBreakdown = useMomentumStore((s) => s.fetchMyBreakdown);
-  const fetchSignalMeta = useMomentumStore((s) => s.fetchSignalMeta);
 
   useEffect(() => {
-    fetchSignalMeta();
     fetchMyMomentum();
     fetchMyBreakdown();
   }, []);
@@ -75,6 +80,7 @@ export default function ArenaScreen() {
       </LinearGradient>
 
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -225,6 +231,7 @@ const howStyles = StyleSheet.create({
   text: {
     flex: 1,
     fontSize: rf(13),
+    fontFamily: "SpaceGrotesk_400Regular",
     color: T.textSub,
     lineHeight: rf(19),
   },
@@ -394,6 +401,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: rf(13),
+    fontFamily: "SpaceGrotesk_400Regular",
     color: T.textMuted,
   },
 });

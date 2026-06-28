@@ -13,6 +13,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useGigStore } from "@/stores/gigStore";
 import { useAuthStore } from "@/stores/authStore";
+import { PressableScale } from "@/components/ui/PressableScale";
 import { T, CategoryColors } from "@/constants/colors";
 import { GigCategories } from "@/constants/config";
 import { Gig } from "@/types/database";
@@ -226,15 +227,15 @@ export default function GigDetailScreen() {
       {/* Sticky footer — always visible, no absolute positioning */}
       <StickyFooter>
         {isOwnGig ? (
-          <Pressable
+          <PressableScale
             style={styles.primaryButton}
             onPress={() => router.push(`/(main)/gig/applicants/${id}`)}
           >
             <Feather name="users" size={20} color={T.ctaText} />
             <Text style={styles.primaryButtonText}>Manage Applicants</Text>
-          </Pressable>
+          </PressableScale>
         ) : (
-          <Pressable
+          <PressableScale
             style={[
               styles.primaryButton,
               (hasApplied || gig.slots_filled >= gig.slots_total) &&
@@ -252,7 +253,7 @@ export default function GigDetailScreen() {
                 ? "Applying..."
                 : "Apply Now"}
             </Text>
-          </Pressable>
+          </PressableScale>
         )}
       </StickyFooter>
     </View>

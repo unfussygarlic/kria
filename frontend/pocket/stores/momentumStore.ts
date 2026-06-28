@@ -10,8 +10,8 @@ import {
   type SignalMeta,
 } from "@/lib/api/momentum";
 
-const MOMENTUM_TTL = 2 * 60 * 1000; // 2 min — score changes rarely mid-session
-const BREAKDOWN_TTL = 2 * 60 * 1000;
+const MOMENTUM_TTL = 10 * 60 * 1000; // 10 min — score changes rarely mid-session
+const BREAKDOWN_TTL = 10 * 60 * 1000;
 
 interface MomentumState {
   myMomentum: MyMomentumData | null;

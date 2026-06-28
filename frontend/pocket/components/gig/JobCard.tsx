@@ -5,6 +5,7 @@
  *  "event"    — compact list card in Event detail (poster view, shows applicants)
  */
 
+import { memo } from "react";
 import { View, Text, StyleSheet, Pressable, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
@@ -59,7 +60,7 @@ export function getCategoryLabel(category: GigCategory): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function JobCard({ gig, variant, applicationCount, posterMomentum, onPress }: JobCardProps) {
+export const JobCard = memo(function JobCard({ gig, variant, applicationCount, posterMomentum, onPress }: JobCardProps) {
   const categoryColor = getCategoryColor(gig.category);
   const spotsLeft = gig.slots_total - gig.slots_filled;
   const isExplore = variant === "explore";
@@ -73,14 +74,18 @@ export function JobCard({ gig, variant, applicationCount, posterMomentum, onPres
       {isExplore && (
         <View style={styles.categoryHeader}>
           <LinearGradient
-            colors={[categoryColor + "99", categoryColor + "33"]}
+            colors={[categoryColor + "CC", categoryColor + "44"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.categoryGradient}
           />
-          {/* Category + boost badges row */}
+          {/* Large category name centred in the header */}
+          <Text style={[styles.categoryHeroLabel, { color: categoryColor }]} numberOfLines={1}>
+            {getCategoryLabel(gig.category).toUpperCase()}
+          </Text>
+          {/* Bottom row: pill + boost + momentum */}
           <View style={styles.categoryBadgesRow}>
-            <View style={[styles.categoryPill, { borderColor: categoryColor + "60" }]}>
+            <View style={[styles.categoryPill, { borderColor: categoryColor + "70" }]}>
               <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
               <Text style={styles.categoryPillText}>{getCategoryLabel(gig.category)}</Text>
             </View>
@@ -221,7 +226,7 @@ export function JobCard({ gig, variant, applicationCount, posterMomentum, onPres
     return <Pressable onPress={onPress}>{content}</Pressable>;
   }
   return content;
-}
+});
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -249,9 +254,20 @@ const styles = StyleSheet.create({
 
   // ── Category header (explore only) ──────────────────────────
   categoryHeader: {
-    height: 72,
+    height: 116,
     justifyContent: "flex-end",
-    padding: 12,
+    padding: 14,
+    paddingTop: 16,
+    gap: 8,
+  },
+  categoryHeroLabel: {
+    fontSize: 22,
+    fontWeight: "800",
+    fontFamily: "SpaceGrotesk_700Bold",
+    letterSpacing: 2,
+    opacity: 0.22,
+    alignSelf: "center",
+    marginBottom: 2,
   },
   categoryGradient: {
     ...StyleSheet.absoluteFillObject,
@@ -280,6 +296,7 @@ const styles = StyleSheet.create({
   categoryPillText: {
     fontSize: 12,
     fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.text,
     letterSpacing: 0.3,
   },
@@ -300,6 +317,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 11,
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: 0.3,
   },
 
@@ -316,6 +334,7 @@ const styles = StyleSheet.create({
   boostText: {
     fontSize: 11,
     fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.momentum,
   },
 
@@ -330,6 +349,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
     lineHeight: 24,
   },
@@ -344,6 +364,7 @@ const styles = StyleSheet.create({
   // ── Company ──────────────────────────────────────────────────
   company: {
     fontSize: 13,
+    fontFamily: "SpaceGrotesk_400Regular",
     color: T.textSub,
     marginTop: 2,
   },
@@ -356,6 +377,7 @@ const styles = StyleSheet.create({
   // ── Description ──────────────────────────────────────────────
   description: {
     fontSize: 14,
+    fontFamily: "SpaceGrotesk_400Regular",
     color: T.textSub,
     lineHeight: 20,
     marginTop: 8,
@@ -373,6 +395,7 @@ const styles = StyleSheet.create({
   payAmount: {
     fontSize: 22,
     fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.success,
   },
   payAmountExplore: {
@@ -401,12 +424,14 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 13,
+    fontFamily: "SpaceGrotesk_400Regular",
     color: T.textSub,
     flex: 1,
   },
   detailTextExplore: {
     fontSize: 15,
     fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.text,
     flex: 0,
     textAlign: "center",
@@ -435,11 +460,13 @@ const styles = StyleSheet.create({
   },
   slotsText: {
     fontSize: 13,
+    fontFamily: "SpaceGrotesk_400Regular",
     color: T.textSub,
   },
   slotsTextExplore: {
     fontSize: 16,
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
   },
   slotsUrgent: {
@@ -455,6 +482,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: T.primary,
     fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
   },
 
   // ── Tags ─────────────────────────────────────────────────────
@@ -483,6 +511,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: T.primary,
     fontWeight: "500",
+    fontFamily: "SpaceGrotesk_500Medium",
   },
   tagGenderText: {
     color: T.textSub,
@@ -506,6 +535,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: T.textSub,
     fontWeight: "500",
+    fontFamily: "SpaceGrotesk_500Medium",
     textTransform: "capitalize",
   },
 });

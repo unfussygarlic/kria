@@ -41,7 +41,9 @@ interface GigState {
   fetchMyPostedGigs: () => Promise<void>;
   fetchMyPostedEvents: () => Promise<void>;
   fetchMyApplications: () => Promise<void>;
+  _gigCache: Map<string, Gig>;
   getGig: (id: string) => Promise<Gig | null>;
+  prefetchGig: (id: string) => void;
   createGig: (gig: Partial<Gig>) => Promise<{ data: Gig | null; error: string | null }>;
   createEvent: (payload: EventCreatePayload) => Promise<{ data: EventResponse | null; error: string | null }>;
   addJobToEvent: (eventId: string, job: JobInEventCreate) => Promise<{ error: string | null }>;
@@ -62,6 +64,7 @@ export const useGigStore = create<GigState>((set, get) => ({
   error: null,
   filters: {},
   seenGigIds: new Set(),
+  _gigCache: new Map(),
   posterScores: {},
 
   fetchGigs: async (filters?: GigFilters, location?: MatchGigsParams, sort: "score" | "distance" = "score") => {
@@ -288,6 +291,9 @@ export const useGigStore = create<GigState>((set, get) => ({
   },
 
   getGig: async (id: string) => {
+    const cached = get()._gigCache.get(id);
+    if (cached) return cached;
+
     const { data, error } = await supabase
       .from("gigs")
       .select("*")
@@ -295,7 +301,20 @@ export const useGigStore = create<GigState>((set, get) => ({
       .single();
 
     if (error) return null;
+    get()._gigCache.set(id, data);
     return data;
+  },
+
+  prefetchGig: (id: string) => {
+    if (get()._gigCache.has(id)) return;
+    supabase
+      .from("gigs")
+      .select("*")
+      .eq("id", id)
+      .single()
+      .then(({ data }) => {
+        if (data) get()._gigCache.set(id, data);
+      });
   },
 
   createGig: async (gig) => {

@@ -1,11 +1,12 @@
-import { memo, useCallback, useRef } from "react";
-import { View } from "react-native";
+import { memo, useCallback, useEffect, useRef } from "react";
+import { Animated, View } from "react-native";
 import { Tabs, router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { T } from "@/constants/colors";
 import { L } from "@/constants/labels";
 import { useAuthStore } from "@/stores/authStore";
+import { scrollRegistry } from "@/lib/scrollRegistry";
 import {
   useFabDial,
   FloatingFab,
@@ -28,7 +29,38 @@ const HOST_FAB_OPTIONS: SpeedDialOption[] = [
   },
 ];
 
-// ── Screen options — built inside components so we can read safe-area insets ──
+// ── Animated tab icon — springs to 1.15× scale when focused ──────────────────
+
+function AnimatedTabIcon({
+  name,
+  size,
+  color,
+  focused,
+}: {
+  name: React.ComponentProps<typeof Feather>["name"];
+  size: number;
+  color: string;
+  focused: boolean;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: focused ? 1.18 : 1,
+      useNativeDriver: true,
+      speed: 40,
+      bounciness: 5,
+    }).start();
+  }, [focused]);
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Feather name={name} size={size} color={color} />
+    </Animated.View>
+  );
+}
+
+// ── Screen options ────────────────────────────────────────────────────────────
 
 function useScreenOptions() {
   const insets = useSafeAreaInsets();
@@ -56,29 +88,35 @@ function useScreenOptions() {
   } as const;
 }
 
+// ── Tab icon factories ────────────────────────────────────────────────────────
+
 const HOME_OPT = {
   title: L.TAB_HOME,
-  tabBarIcon: ({ color, size }: any) => <Feather name="home" size={size} color={color} />,
+  tabBarIcon: ({ color, size, focused }: any) =>
+    <AnimatedTabIcon name="home" size={size} color={color} focused={focused} />,
 };
 const EXPLORE_OPT = {
   title: L.TAB_EXPLORE,
-  tabBarIcon: ({ color, size }: any) => <Feather name="compass" size={size} color={color} />,
+  tabBarIcon: ({ color, size, focused }: any) =>
+    <AnimatedTabIcon name="compass" size={size} color={color} focused={focused} />,
 };
 const JOBS_OPT = {
   title: L.TAB_JOBS,
-  tabBarIcon: ({ color, size }: any) => <Feather name="briefcase" size={size} color={color} />,
+  tabBarIcon: ({ color, size, focused }: any) =>
+    <AnimatedTabIcon name="briefcase" size={size} color={color} focused={focused} />,
 };
 const SPACE_OPT = {
   title: L.TAB_SPACE,
-  tabBarIcon: ({ color, size }: any) => <Feather name="layers" size={size} color={color} />,
+  tabBarIcon: ({ color, size, focused }: any) =>
+    <AnimatedTabIcon name="layers" size={size} color={color} focused={focused} />,
 };
 const ARENA_OPT = {
   title: L.TAB_ARENA,
-  tabBarIcon: ({ color, size }: any) => <Feather name="zap" size={size} color={color} />,
+  tabBarIcon: ({ color, size, focused }: any) =>
+    <AnimatedTabIcon name="zap" size={size} color={color} focused={focused} />,
 };
 const HIDDEN = { href: null } as const;
 
-// An inert spacer so the center slot exists in the tab bar layout.
 const POST_SPACER = () => <View style={{ flex: 1 }} pointerEvents="none" />;
 const POST_OPT = {
   title: "",
@@ -86,20 +124,30 @@ const POST_OPT = {
   tabBarButton: POST_SPACER,
 };
 
-// ── Runner tabs — no FAB ──────────────────────────────────────────────────────
-//
-// memo() with zero props: never re-renders from parent state.
+// ── Scroll-to-top listeners ───────────────────────────────────────────────────
+
+function makeScrollListener(screenName: string) {
+  return ({ navigation }: { navigation: any }) => ({
+    tabPress: () => {
+      if (navigation.isFocused()) {
+        scrollRegistry.scrollToTop(screenName);
+      }
+    },
+  });
+}
+
+// ── Runner tabs ───────────────────────────────────────────────────────────────
 
 const RunnerTabsNavigator = memo(function RunnerTabsNavigator() {
   const screenOptions = useScreenOptions();
   return (
     <Tabs screenOptions={screenOptions}>
-      <Tabs.Screen name="home"        options={HOME_OPT} />
+      <Tabs.Screen name="home"        options={HOME_OPT}    listeners={makeScrollListener("home")} />
       <Tabs.Screen name="explore"     options={EXPLORE_OPT} />
       <Tabs.Screen name="search"      options={JOBS_OPT} />
       <Tabs.Screen name="post"        options={HIDDEN} />
-      <Tabs.Screen name="space"       options={SPACE_OPT} />
-      <Tabs.Screen name="arena"       options={ARENA_OPT} />
+      <Tabs.Screen name="space"       options={SPACE_OPT}   listeners={makeScrollListener("space")} />
+      <Tabs.Screen name="arena"       options={ARENA_OPT}   listeners={makeScrollListener("arena")} />
       <Tabs.Screen name="chat"        options={HIDDEN} />
       <Tabs.Screen name="profile"     options={HIDDEN} />
       <Tabs.Screen name="personality" options={HIDDEN} />
@@ -107,17 +155,17 @@ const RunnerTabsNavigator = memo(function RunnerTabsNavigator() {
   );
 });
 
-// ── Host tabs — with FAB ────────────────────────────────────────────────────
+// ── Host tabs ─────────────────────────────────────────────────────────────────
 
 const HostTabsNavigator = memo(function HostTabsNavigator() {
   const screenOptions = useScreenOptions();
   return (
     <Tabs screenOptions={screenOptions}>
-      <Tabs.Screen name="home"        options={HOME_OPT} />
+      <Tabs.Screen name="home"        options={HOME_OPT}    listeners={makeScrollListener("home")} />
       <Tabs.Screen name="explore"     options={EXPLORE_OPT} />
       <Tabs.Screen name="post"        options={POST_OPT} />
-      <Tabs.Screen name="space"       options={SPACE_OPT} />
-      <Tabs.Screen name="arena"       options={ARENA_OPT} />
+      <Tabs.Screen name="space"       options={SPACE_OPT}   listeners={makeScrollListener("space")} />
+      <Tabs.Screen name="arena"       options={ARENA_OPT}   listeners={makeScrollListener("arena")} />
       <Tabs.Screen name="chat"        options={HIDDEN} />
       <Tabs.Screen name="search"      options={HIDDEN} />
       <Tabs.Screen name="profile"     options={HIDDEN} />
@@ -128,14 +176,13 @@ const HostTabsNavigator = memo(function HostTabsNavigator() {
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 
-// Set to true when the Host mobile experience is re-enabled (use Grid in the meantime).
 const SHOW_HOST_ROLE = false;
 
 export default function TabsLayout() {
   const activeRole = useAuthStore((s) => s.activeRole);
   const isHost = SHOW_HOST_ROLE && activeRole === "host";
 
-  const dial = useFabDial(HOST_FAB_OPTIONS.length);
+  const dial = useFabDial();
 
   const toggleRef = useRef(dial.toggle);
   toggleRef.current = dial.toggle;

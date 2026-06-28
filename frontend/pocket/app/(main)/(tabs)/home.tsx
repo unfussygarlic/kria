@@ -16,6 +16,9 @@ import { GigCategories } from "@/constants/config";
 import { getBand } from "@/constants/momentum";
 import { matchGigs, type MatchedGig } from "@/lib/api/gigs";
 import { rf, rw } from "@/constants/responsive";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { PressableScale } from "@/components/ui/PressableScale";
+import { scrollRegistry } from "@/lib/scrollRegistry";
 import * as Location from "expo-location";
 
 const SHOW_HOST_ROLE = false;
@@ -63,6 +66,49 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+function HeroSkeleton() {
+  return (
+    <View style={heroSkStyles.card}>
+      <View style={heroSkStyles.topRow}>
+        <View style={heroSkStyles.left}>
+          <Skeleton width={rw(90)} height={rw(14)} borderRadius={rw(4)} />
+          <Skeleton width={rw(70)} height={rw(40)} borderRadius={rw(8)} style={{ marginTop: rw(6) }} />
+        </View>
+        <Skeleton width={rw(80)} height={rw(28)} borderRadius={rw(14)} />
+      </View>
+      <Skeleton width="100%" height={rw(6)} borderRadius={rw(3)} style={{ marginTop: rw(20) }} />
+      <Skeleton width="55%" height={rw(12)} borderRadius={rw(4)} style={{ marginTop: rw(8) }} />
+      <View style={heroSkStyles.statsRow}>
+        <Skeleton width={rw(50)} height={rw(28)} borderRadius={rw(6)} />
+        <Skeleton width={rw(50)} height={rw(28)} borderRadius={rw(6)} />
+        <Skeleton width={rw(90)} height={rw(28)} borderRadius={rw(6)} />
+      </View>
+    </View>
+  );
+}
+
+const heroSkStyles = StyleSheet.create({
+  card: {
+    backgroundColor: T.surface,
+    borderRadius: rw(20),
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: rw(20),
+  },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  left: { gap: rw(4) },
+  statsRow: {
+    flexDirection: "row",
+    gap: rw(12),
+    marginTop: rw(20),
+    justifyContent: "space-between",
+  },
+});
+
 const BandHeroCard = memo(function BandHeroCard({ score, gigsDone, streak }: {
   score: number;
   gigsDone: number;
@@ -72,31 +118,80 @@ const BandHeroCard = memo(function BandHeroCard({ score, gigsDone, streak }: {
   const { progress, ptsToNext, next } = getBandProgress(score);
   const isLegend = !next;
 
+  // ── Animated score count-up ───────────────────────────────────────────────
+  const countAnim = useRef(new Animated.Value(0)).current;
+  const [displayScore, setDisplayScore] = useState(0);
+
+  useEffect(() => {
+    countAnim.setValue(0);
+    const listener = countAnim.addListener(({ value }) => {
+      setDisplayScore(Math.round(value));
+    });
+    Animated.timing(countAnim, {
+      toValue: score,
+      duration: 900,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+    return () => countAnim.removeListener(listener);
+  }, [score]);
+
+  // ── Progress bar slide-in ─────────────────────────────────────────────────
+  const barAnim = useRef(new Animated.Value(0)).current;
+  const barWidth = barAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", `${Math.round(progress * 100)}%`],
+  });
+
+  useEffect(() => {
+    barAnim.setValue(0);
+    Animated.timing(barAnim, {
+      toValue: 1,
+      duration: 1000,
+      delay: 300,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [score]);
+
+  // ── Glow pulse ────────────────────────────────────────────────────────────
+  const glowOpacity = useRef(new Animated.Value(0.08)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowOpacity, { toValue: 0.18, duration: 1800, useNativeDriver: true }),
+        Animated.timing(glowOpacity, { toValue: 0.08, duration: 1800, useNativeDriver: true }),
+      ])
+    ).start();
+    return () => glowOpacity.stopAnimation();
+  }, []);
+
   return (
-    <Pressable
+    <PressableScale
+      scale={0.98}
       style={styles.heroCard}
       onPress={() => router.push("/(main)/(tabs)/arena")}
     >
-      {/* Glow blob — top-right quadrant */}
-      <View style={[styles.heroGlow, { backgroundColor: band.color }]} />
+      {/* Pulsing glow blob — top-right quadrant */}
+      <Animated.View style={[styles.heroGlow, { backgroundColor: band.color, opacity: glowOpacity }]} />
 
-      {/* Top row: score + band pill */}
+      {/* Top row: animated score + band pill */}
       <View style={styles.heroTop}>
         <View>
           <Text style={styles.heroScoreLabel}>MOMENTUM</Text>
-          <Text style={[styles.heroScore, { color: band.color }]}>{score}</Text>
+          <Text style={[styles.heroScore, { color: band.color }]}>{displayScore}</Text>
         </View>
-        <View style={[styles.heroBandPill, { backgroundColor: band.color + "20", borderColor: band.color + "40" }]}>
+        <View style={[styles.heroBandPill, { backgroundColor: band.color + "22", borderColor: band.color + "45" }]}>
           <View style={[styles.heroBandDot, { backgroundColor: band.color }]} />
           <Text style={[styles.heroBandLabel, { color: band.color }]}>{band.label}</Text>
         </View>
       </View>
 
-      {/* Progress bar */}
+      {/* Animated progress bar */}
       {!isLegend && (
         <View style={styles.heroProgressSection}>
           <View style={styles.heroProgressTrack}>
-            <View style={[styles.heroProgressFill, { width: `${Math.round(progress * 100)}%` as any, backgroundColor: band.color }]} />
+            <Animated.View style={[styles.heroProgressFill, { width: barWidth, backgroundColor: band.color }]} />
           </View>
           <Text style={styles.heroProgressLabel}>
             {ptsToNext} pts to <Text style={{ color: band.color }}>{next!.label}</Text>
@@ -126,7 +221,7 @@ const BandHeroCard = memo(function BandHeroCard({ score, gigsDone, streak }: {
           <Text style={[styles.heroStatKey, { color: T.textMuted }]}>Full breakdown</Text>
         </View>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 });
 
@@ -138,7 +233,7 @@ function GigStripCard({ gig }: { gig: MatchedGig }) {
   const catColor = CategoryColors[gig.category] ?? T.textMuted;
 
   return (
-    <Pressable
+    <PressableScale
       style={styles.gigCard}
       onPress={() => router.push(`/(main)/gig/${gig.gig_id}` as any)}
     >
@@ -164,7 +259,7 @@ function GigStripCard({ gig }: { gig: MatchedGig }) {
           )}
         </View>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -395,9 +490,9 @@ const BadgeMarquee = memo(function BadgeMarquee({ badges, onGrab, onRelease }: {
     <View style={styles.marqueeSection}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recent badges</Text>
-        <Pressable onPress={() => router.push("/(main)/badges")}>
+        <PressableScale scale={0.97} onPress={() => router.push("/(main)/badges")}>
           <Text style={styles.sectionLink}>See all →</Text>
-        </Pressable>
+        </PressableScale>
       </View>
       <View style={styles.marqueeClip} {...panResponder.panHandlers}>
         <Animated.View style={[styles.marqueeList, { transform: [{ translateX }] }]}>
@@ -405,7 +500,7 @@ const BadgeMarquee = memo(function BadgeMarquee({ badges, onGrab, onRelease }: {
             const color = BADGE_CATEGORY_COLOR[badge.category] ?? T.textMuted;
             const icon  = BADGE_CATEGORY_ICON[badge.category]  ?? "star";
             return (
-              <Pressable
+              <PressableScale
                 key={`${badge.code}-${i}`}
                 style={styles.badgeCard}
                 onPress={() => router.push("/(main)/badges")}
@@ -415,7 +510,7 @@ const BadgeMarquee = memo(function BadgeMarquee({ badges, onGrab, onRelease }: {
                 </View>
                 <Text style={styles.badgeName} numberOfLines={2}>{badge.name}</Text>
                 <Text style={[styles.badgeCat, { color }]}>{badge.category}</Text>
-              </Pressable>
+              </PressableScale>
             );
           })}
         </Animated.View>
@@ -434,7 +529,7 @@ const RecentGigCard = memo(function RecentGigCard({ gig, status }: { gig: any; s
     : null;
 
   return (
-    <Pressable
+    <PressableScale
       style={styles.recentGigCard}
       onPress={() => router.push(`/(main)/gig/${gig.id}` as any)}
     >
@@ -464,7 +559,7 @@ const RecentGigCard = memo(function RecentGigCard({ gig, status }: { gig: any; s
           </View>
         )}
       </View>
-    </Pressable>
+    </PressableScale>
   );
 });
 
@@ -478,9 +573,12 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const profile = useAuthStore((s) => s.profile);
   const activeRole = useAuthStore((s) => s.activeRole);
-  const { myMomentum, fetchMyMomentum } = useMomentumStore();
-  const { myApplications, fetchMyApplications } = useGigStore();
-  const { badges, fetchBadges } = useBadgeStore();
+  const myMomentum = useMomentumStore((s) => s.myMomentum);
+  const fetchMyMomentum = useMomentumStore((s) => s.fetchMyMomentum);
+  const myApplications = useGigStore((s) => s.myApplications);
+  const fetchMyApplications = useGigStore((s) => s.fetchMyApplications);
+  const badges = useBadgeStore((s) => s.badges);
+  const fetchBadges = useBadgeStore((s) => s.fetchBadges);
 
   const [nearbyGigs, setNearbyGigs] = useState<MatchedGig[]>([]);
   const [gigsLoading, setGigsLoading] = useState(true);
@@ -491,6 +589,11 @@ export default function HomeScreen() {
   }, []);
   const onMarqueeRelease = useCallback(() => {
     scrollViewRef.current?.setNativeProps({ scrollEnabled: true });
+  }, []);
+
+  useEffect(() => {
+    scrollRegistry.register("home", () => scrollViewRef.current?.scrollTo({ y: 0, animated: true }));
+    return () => { scrollRegistry.unregister("home"); };
   }, []);
 
   const isHost = SHOW_HOST_ROLE && activeRole === "host";
@@ -565,31 +668,37 @@ export default function HomeScreen() {
           <Text style={styles.topGreeting}>Good {greeting}</Text>
           <Text style={styles.topName}>{firstName}</Text>
         </View>
-        <Pressable
+        <PressableScale
           style={styles.avatarButton}
           onPress={() => router.push("/(main)/(tabs)/profile")}
         >
           <Text style={styles.avatarLetter}>{avatarLetter}</Text>
-        </Pressable>
+        </PressableScale>
       </View>
 
       {/* ── Band hero card ── */}
       <View style={styles.section}>
-        <BandHeroCard score={score} gigsDone={gigsDone} streak={streak} />
+        {myMomentum == null ? (
+          <HeroSkeleton />
+        ) : (
+          <BandHeroCard score={score} gigsDone={gigsDone} streak={streak} />
+        )}
       </View>
 
       {/* ── Hot near you ── */}
       <View style={styles.stripSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Hot near you</Text>
-          <Pressable onPress={() => router.push("/(main)/(tabs)/explore")}>
+          <PressableScale scale={0.97} onPress={() => router.push("/(main)/(tabs)/explore")}>
             <Text style={styles.sectionLink}>See all →</Text>
-          </Pressable>
+          </PressableScale>
         </View>
 
         {gigsLoading ? (
-          <View style={styles.gigsLoader}>
-            <ActivityIndicator size="small" color={T.primary} />
+          <View style={styles.gigsSkeletonRow}>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} width={rw(150)} height={rw(96)} borderRadius={rw(14)} />
+            ))}
           </View>
         ) : nearbyGigs.length === 0 ? (
           <View style={styles.gigsEmpty}>
@@ -609,9 +718,9 @@ export default function HomeScreen() {
         <View style={styles.stripSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent gigs</Text>
-            <Pressable onPress={() => router.push("/(main)/(tabs)/space")}>
+            <PressableScale scale={0.97} onPress={() => router.push("/(main)/(tabs)/space")}>
               <Text style={styles.sectionLink}>See all →</Text>
-            </Pressable>
+            </PressableScale>
           </View>
           <FlatList
             horizontal
@@ -672,6 +781,7 @@ const styles = StyleSheet.create({
   avatarLetter: {
     fontSize: rf(17),
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: T.primary,
   },
 
@@ -993,6 +1103,12 @@ const styles = StyleSheet.create({
     height: rw(210),
     justifyContent: "center",
     alignItems: "center",
+  },
+  gigsSkeletonRow: {
+    flexDirection: "row",
+    gap: rw(10),
+    paddingHorizontal: rw(16),
+    paddingVertical: rw(4),
   },
   gigsEmpty: {
     height: rw(120),

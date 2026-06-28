@@ -15,6 +15,7 @@ import {
   SpaceGrotesk_700Bold,
 } from "@expo-google-fonts/space-grotesk";
 import { useAuthStore } from "@/stores/authStore";
+import { useMomentumStore } from "@/stores/momentumStore";
 import { T } from "@/constants/colors";
 import { registerForPushNotifications } from "@/lib/notifications";
 
@@ -25,6 +26,7 @@ export default function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
   const isLoading = useAuthStore((s) => s.isLoading);
   const session = useAuthStore((s) => s.session);
+  const fetchSignalMeta = useMomentumStore((s) => s.fetchSignalMeta);
   const notificationListener = useRef<Notifications.EventSubscription>();
   const responseListener = useRef<Notifications.EventSubscription>();
 
@@ -43,6 +45,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     initialize();
+    fetchSignalMeta(); // warm once at startup — no need to re-fetch per screen
   }, []);
 
   // Register push token when user logs in (session.user.id as dep ensures

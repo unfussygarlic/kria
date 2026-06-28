@@ -10,7 +10,7 @@
  * Uses PanResponder (Expo Go compatible, no Reanimated needed).
  */
 
-import { useRef, useMemo, useCallback, useEffect } from "react";
+import { memo, useRef, useMemo, useCallback, useEffect } from "react";
 import {
   Animated,
   PanResponder,
@@ -39,7 +39,7 @@ interface SwipeableJobCardProps {
   onPrev: () => void;
 }
 
-export function SwipeableJobCard({
+export const SwipeableJobCard = memo(function SwipeableJobCard({
   gig,
   posterMomentum,
   canApply = true,
@@ -266,7 +266,7 @@ export function SwipeableJobCard({
       </Animated.View>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

@@ -79,7 +79,10 @@ export function MomentumBreakdown({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <Pressable style={styles.backdrop} onPress={onClose} />
+      {/* Layered backdrop — deeper dark + subtle vignette */}
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <View style={styles.backdropInner} pointerEvents="none" />
+      </Pressable>
 
       <Animated.View
         style={[
@@ -219,27 +222,35 @@ function SignalRow({ item, bandColor }: { item: BreakdownItem; bandColor: string
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.65)",
+    justifyContent: "flex-end",
+  },
+  backdropInner: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(14,14,14,0.35)",
   },
   sheet: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: T.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: T.surface2,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: T.borderStrong,
     paddingHorizontal: rw(24),
-    paddingTop: rw(12),
-    maxHeight: "80%",
+    paddingTop: rw(10),
+    maxHeight: "85%",
   },
   handleBar: {
-    width: rw(40),
+    width: rw(36),
     height: 4,
-    backgroundColor: T.border,
+    backgroundColor: T.borderStrong,
     borderRadius: 2,
     alignSelf: "center",
-    marginBottom: rw(16),
+    marginBottom: rw(20),
   },
   header: {
     flexDirection: "row",
