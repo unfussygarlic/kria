@@ -6,6 +6,7 @@ Routes:
   POST /api/v1/applicants/{application_id}/reject         → reject an applicant
   POST /api/v1/assignments/{assignment_id}/verify-otp     → runner enters OTP to mark attended
   POST /api/v1/assignments/{assignment_id}/no-show        → poster marks worker as no-show
+  POST /api/v1/assignments/finalize-expired               → runner self-triggers: mark own expired assigned gigs as no-show
 """
 
 import secrets
@@ -363,12 +364,14 @@ async def accept_applicant(
     existing_otp = existing_otp_row.scalar()
     otp = existing_otp if existing_otp else _generate_otp()
 
-    # 3. Create assignment with OTP
+    # 3. Create assignment with OTP, or patch a pre-existing null-OTP row
     await db.execute(
         text("""
             INSERT INTO gig_assignments (gig_id, worker_id, otp)
             VALUES (:gig_id, :worker_id, :otp)
-            ON CONFLICT DO NOTHING
+            ON CONFLICT (gig_id, worker_id)
+            DO UPDATE SET otp = EXCLUDED.otp
+            WHERE gig_assignments.otp IS NULL
         """),
         {"gig_id": str(app["gig_id"]), "worker_id": str(app["applicant_id"]), "otp": otp},
     )
@@ -521,6 +524,63 @@ async def verify_otp(
         new_status="completed",
         message="OTP verified. Assignment marked as completed.",
     )
+
+
+# ---------------------------------------------------------------------------
+# POST /assignments/finalize-expired  (called by runner on Space tab load)
+# ---------------------------------------------------------------------------
+
+@router.post("/assignments/finalize-expired")
+async def finalize_expired_assignments(
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Idempotent: find all of the current runner's gig assignments that are still
+    'assigned' but whose shift end time has passed (IST), then mark them no_show
+    and trigger the momentum penalty for each.  Called by the mobile app on
+    Space tab load so runners can't game the system by avoiding the app.
+    """
+    rows = await db.execute(
+        text("""
+            SELECT asgn.id, asgn.worker_id, asgn.gig_id
+            FROM gig_assignments asgn
+            JOIN gigs g ON g.id = asgn.gig_id
+            WHERE asgn.worker_id = :uid
+              AND asgn.status = 'assigned'
+              AND g.event_date IS NOT NULL
+              AND (g.event_date::timestamp + g.shift_end_time::time)
+                  < (NOW() AT TIME ZONE 'Asia/Kolkata')
+        """),
+        {"uid": current_user.user_id},
+    )
+    expired = rows.mappings().all()
+
+    if not expired:
+        return {"processed": 0}
+
+    for asgn in expired:
+        await db.execute(
+            text("UPDATE gig_assignments SET status = 'no_show' WHERE id = :asgn_id"),
+            {"asgn_id": str(asgn["id"])},
+        )
+        await db.execute(
+            text("""
+                UPDATE momentum_profiles
+                SET worker_penalty_points = worker_penalty_points + :penalty
+                WHERE user_id = :uid
+            """),
+            {"penalty": WORKER_PENALTIES["no_show"], "uid": str(asgn["worker_id"])},
+        )
+
+    await db.commit()
+
+    for asgn in expired:
+        await recalculate_momentum(
+            str(asgn["worker_id"]), db, event_type="no_show", gig_id=str(asgn["gig_id"])
+        )
+
+    return {"processed": len(expired)}
 
 
 # ---------------------------------------------------------------------------

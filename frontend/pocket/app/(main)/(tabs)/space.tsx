@@ -265,7 +265,13 @@ function GigDetailSheet({
     const result = await verifyOtp(displayItem.assignment_id, otp);
     setOtpSubmitting(false);
     if (result.error) {
-      Alert.alert("Invalid OTP", "The code is incorrect. Please check with the host and try again.");
+      const isWrongCode = result.error.toLowerCase().includes("incorrect");
+      Alert.alert(
+        "Check-in Failed",
+        isWrongCode
+          ? "That code doesn't match. Double-check the 4-digit OTP shown on the Grid."
+          : result.error,
+      );
     } else {
       onOtpSuccess(displayItem.gig_id);
       onClose();
