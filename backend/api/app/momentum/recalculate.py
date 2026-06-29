@@ -11,7 +11,7 @@ Adding a new signal = drop a file in momentum/signals/ and restart. No changes h
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -66,7 +66,7 @@ async def recalculate_momentum(
     # Prevents triple-recalculation when OTP verify + badge check + rating
     # all fire in quick succession for the same gig completion.
     if mp["last_calculated_at"] is not None:
-        seconds_since = (datetime.utcnow() - mp["last_calculated_at"]).total_seconds()
+        seconds_since = (datetime.now(timezone.utc) - mp["last_calculated_at"]).total_seconds()
         if seconds_since < 60:
             logger.debug("Skipping momentum recalc for %s (%.1fs since last)", user_id, seconds_since)
             return
