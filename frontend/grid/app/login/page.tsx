@@ -317,12 +317,24 @@ export default function LoginPage() {
         }
         .grid-shell { display: grid; grid-template-columns: minmax(0,1fr) minmax(340px,440px); min-height: 100vh; }
         .grid-auth-col { position: relative; border-left: 1px solid var(--border-color); background: var(--color-surface-1); }
-        .grid-auth-inner { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 56px; padding: 36px 32px; min-width: 0; }
+        .grid-auth-inner { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 40px; padding: 36px 32px; min-width: 0; }
+        .grid-header, .grid-footer { padding-left: 32px; padding-right: 32px; }
+        .grid-rail { display: block; width: 100px; flex-shrink: 0; padding-left: 24px; }
+        .grid-scene-row { display: flex; }
+        .grid-scene-content { padding: 40px 32px 0 8px; max-width: min(600px, 100%); min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 96px; margin-bottom: 96px; }
         @media (max-width: 1023px) {
           .grid-shell { grid-template-columns: 1fr; }
           .grid-story-col { order: 2; }
           .grid-auth-col { order: 1; border-left: none; border-bottom: 1px solid var(--border-color); }
-          .grid-auth-inner { position: relative; top: auto; height: auto; }
+          .grid-auth-inner { position: relative; top: auto; height: auto; gap: 32px; }
+          .grid-rail { display: none; }
+          .grid-scene-content { padding: 32px 24px 0 24px; gap: 72px; margin-bottom: 72px; }
+          .grid-header, .grid-footer { padding-left: 24px; padding-right: 24px; }
+        }
+        @media (max-width: 480px) {
+          .grid-header, .grid-footer { padding-left: 18px; padding-right: 18px; }
+          .grid-scene-content { padding-left: 18px; padding-right: 18px; gap: 56px; margin-bottom: 56px; }
+          .grid-auth-inner { padding: 24px 18px; }
         }
         .grid-otp-input:focus { border-color: var(--color-primary) !important; }
         .grid-email-input:focus { border-color: var(--color-primary) !important; }
@@ -331,7 +343,7 @@ export default function LoginPage() {
       <div className="grid-shell">
         {/* ── LEFT: scroll story ── */}
         <div className="grid-story-col" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 32px" }}>
+          <div className="grid-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 22, paddingBottom: 22 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 26, height: 26, background: "var(--color-primary)", borderRadius: 6, display: "grid", placeItems: "center" }}>
                 <div style={{ width: 12, height: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
@@ -354,9 +366,9 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div style={{ display: "flex" }}>
+          <div className="grid-scene-row">
             {/* progress rail */}
-            <div style={{ width: 100, flexShrink: 1, minWidth: 44, paddingLeft: 24 }} className="hidden md:block">
+            <div className="grid-rail">
               <div style={{ position: "sticky", top: "34vh", display: "flex", flexDirection: "column", gap: 6 }}>
                 {RAIL_STEPS.map((name, i) => (
                   <div
@@ -382,7 +394,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div style={{ padding: "40px 32px 0 8px", maxWidth: 600, minWidth: 0, display: "flex", flexDirection: "column", gap: 110, marginBottom: 110 }}>
+            <div className="grid-scene-content">
               {/* Scene 0: Intro */}
               <div ref={setSceneRef(0)} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 <h1 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: "clamp(34px,4.2vw,42px)", lineHeight: 1.18, margin: 0, letterSpacing: "-0.01em" }}>
@@ -592,7 +604,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div style={{ marginTop: "auto", borderTop: "1px solid var(--border-subtle)", padding: "20px 32px", display: "flex", gap: 24, alignItems: "center", fontSize: 12.5, color: "var(--color-text-muted)", flexWrap: "wrap" }}>
+          <div className="grid-footer" style={{ marginTop: "auto", borderTop: "1px solid var(--border-subtle)", paddingTop: 20, paddingBottom: 20, display: "flex", gap: 24, alignItems: "center", fontSize: 12.5, color: "var(--color-text-muted)", flexWrap: "wrap" }}>
             <span>© 2026 Kria</span>
             <a href="#">kria.in</a>
             <a href="#">Terms</a>
