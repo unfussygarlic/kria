@@ -792,7 +792,7 @@ export default function LoginPage() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <div style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 22 }}>Sign in to Grid</div>
                     <div style={{ fontSize: 13.5, color: "var(--color-text-sub)", lineHeight: 1.6 }}>
-                      Use your work email. We&apos;ll send a one-time code, so there&apos;s no password to remember.
+                      Enter your email. We&apos;ll send a one-time code, so there&apos;s no password to remember.
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -803,7 +803,7 @@ export default function LoginPage() {
                       autoFocus
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@yourbusiness.in"
+                      placeholder="you@example.com"
                       style={{ background: "var(--color-surface-1)", border: "1px solid var(--border-color)", borderRadius: 10, padding: "14px 16px", fontSize: 15, color: "var(--color-text)", outline: "none" }}
                     />
                     {error && <p style={{ fontSize: 13, color: "var(--color-error)", margin: 0 }}>{error}</p>}
@@ -817,6 +817,17 @@ export default function LoginPage() {
                   </div>
                   <div style={{ fontSize: 12.5, color: "var(--color-text-muted)", lineHeight: 1.6 }}>
                     New to Kria? Same door. We&apos;ll set up your host account after your first sign-in.
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "var(--color-text-muted)", lineHeight: 1.6 }}>
+                    By continuing, you agree to Kria&apos;s{" "}
+                    <a href="https://trykria.com/terms" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-text-sub)", textDecoration: "underline" }}>
+                      Terms of Service
+                    </a>{" "}
+                    and{" "}
+                    <a href="https://trykria.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-text-sub)", textDecoration: "underline" }}>
+                      Privacy Policy
+                    </a>
+                    .
                   </div>
                 </form>
               )}
