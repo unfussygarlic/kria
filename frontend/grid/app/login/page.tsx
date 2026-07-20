@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 
 type Step = "email" | "otp";
 
-const RAIL_STEPS = ["Grid", "Post", "Applicants", "Check-in", "Events", "Start"];
+const RAIL_STEPS = ["Grid", "Why Grid", "Post", "Applicants", "Check-in", "Events", "Start"];
 const RESEND_COOLDOWN = 60;
 const ROLE_TEXT = "Banquet service crew";
 
@@ -18,6 +18,29 @@ const APPLICANTS = [
   { initials: "KN", name: "Kavya Nair", meta: "12 gigs · Navi Mumbai", score: 631, band: "Reliable", bandVar: "--band-reliable" },
 ];
 
+const BAND_LEGEND = [
+  { label: "Newcomer", bandVar: "--band-newcomer" },
+  { label: "Building", bandVar: "--band-building" },
+  { label: "Reliable", bandVar: "--band-reliable" },
+  { label: "Trusted", bandVar: "--band-trusted" },
+  { label: "Elite", bandVar: "--band-elite" },
+  { label: "Legend", bandVar: "--band-legend" },
+];
+
+const WITHOUT_GRID = [
+  "Juggling WhatsApp groups and phone calls for every shift",
+  "No way to check if someone actually shows up on time",
+  "No-shows discovered mid-shift, when it's too late",
+  "Attendance tracked on paper, or not at all",
+];
+
+const WITH_GRID = [
+  "Post a role in minutes, from your phone or laptop",
+  "See a verified performance history before you hire",
+  "A one-time code confirms who's actually on-site",
+  "One dashboard for every gig, shift, and event",
+];
+
 const ROLE_POOL = ["Valet · 3", "Housekeeping · 5", "AV crew · 2"];
 
 /* ── Scroll-reveal helper ─────────────────────────────────────────────── */
@@ -26,7 +49,12 @@ function useReveal() {
   const [visible, setVisible] = useState<Set<string>>(new Set());
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  useEffect(() => {
+  // Created synchronously during render (not inside useEffect) so it already
+  // exists by the time child Reveal components register in their own mount
+  // effects — child effects fire before parent effects, so a parent-side
+  // useEffect here would always lose that race and leave everything at
+  // opacity: 0 forever.
+  if (!observerRef.current && typeof window !== "undefined") {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         setVisible((prev) => {
@@ -44,6 +72,9 @@ function useReveal() {
       },
       { threshold: 0.15, rootMargin: "0px 0px -10% 0px" }
     );
+  }
+
+  useEffect(() => {
     return () => observerRef.current?.disconnect();
   }, []);
 
@@ -250,7 +281,7 @@ export default function LoginPage() {
   const [typedRole, setTypedRole] = useState("");
   const typingStarted = useRef(false);
   useEffect(() => {
-    if (!visible.has("scene-1") || typingStarted.current) return;
+    if (!visible.has("scene-2") || typingStarted.current) return;
     typingStarted.current = true;
     let i = 0;
     const t = setInterval(() => {
@@ -319,7 +350,8 @@ export default function LoginPage() {
         .grid-auth-col { position: relative; border-left: 1px solid var(--border-color); background: var(--color-surface-1); }
         .grid-auth-inner { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 40px; padding: 36px 40px; min-width: 0; max-width: 460px; margin: 0 auto; }
         .grid-header, .grid-footer { padding-left: 32px; padding-right: 32px; }
-        .grid-rail { display: block; width: 100px; flex-shrink: 0; padding-left: 24px; }
+        .grid-rail { display: block; width: 100px; flex-shrink: 0; padding-left: 24px; box-sizing: border-box; overflow: hidden; }
+        .grid-rail span { white-space: nowrap; }
         .grid-scene-row { display: flex; }
         .grid-scene-content { padding: 40px 32px 0 8px; max-width: min(600px, 100%); min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 96px; margin-bottom: 96px; }
         .grid-story-inner { width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; flex: 1; }
@@ -408,15 +440,58 @@ export default function LoginPage() {
                 <p style={{ fontSize: 17, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0 }}>
                   Grid is Kria&apos;s hiring dashboard for businesses. Restaurants, event companies, retail stores, warehouses. Post the role, review workers with a verified performance history, hire in minutes, and confirm attendance on-site. No staffing agency, no middlemen.
                 </p>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--color-text-muted)", fontSize: 13, fontWeight: 500 }}>
-                  <span>See how it works</span>
-                  <span style={{ fontSize: 15 }}>↓</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => goToScene(2)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--color-primary)", color: "var(--color-text-inv)", border: "none", borderRadius: 999, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    See how it works
+                    <span style={{ fontSize: 14 }}>↓</span>
+                  </button>
+                  <a
+                    href="mailto:support@trykria.com"
+                    style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--border-color)", borderRadius: 999, padding: "10px 18px", fontSize: 13, fontWeight: 700, color: "var(--color-text)" }}
+                  >
+                    Talk to us
+                  </a>
                 </div>
               </div>
 
-              {/* Scene 1: Post a gig */}
+              {/* Scene 1: Why Grid (before / after) */}
               <div ref={setSceneRef(1)}>
                 <Reveal id="scene-1" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                  <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
+                    You&apos;re probably doing this the hard way
+                  </h2>
+                  <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0 }}>
+                    Most businesses fill short-term shifts through phone calls, referrals, and hope. Here&apos;s what changes with Grid.
+                  </p>
+                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                    <div style={{ flex: "1 1 260px", minWidth: 240, background: "var(--color-surface-1)", border: "1px solid var(--border-color)", borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)" }}>Without Grid</div>
+                      {WITHOUT_GRID.map((line) => (
+                        <div key={line} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                          <span style={{ color: "var(--color-error)", fontSize: 13, fontWeight: 700, lineHeight: 1.5 }}>✕</span>
+                          <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--color-text-sub)" }}>{line}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ flex: "1 1 260px", minWidth: 240, background: "var(--color-surface-1)", border: "1px solid var(--color-primary)", borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)" }}>With Grid</div>
+                      {WITH_GRID.map((line) => (
+                        <div key={line} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                          <span style={{ color: "var(--color-primary)", fontSize: 13, fontWeight: 700, lineHeight: 1.5 }}>✓</span>
+                          <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--color-text)" }}>{line}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Reveal>
+              </div>
+
+              {/* Scene 2: Post a gig */}
+              <div ref={setSceneRef(2)}>
+                <Reveal id="scene-2" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                   <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
                     Start with the work, not the paperwork
                   </h2>
@@ -467,15 +542,23 @@ export default function LoginPage() {
                 </Reveal>
               </div>
 
-              {/* Scene 2: Applicants */}
-              <div ref={setSceneRef(2)}>
-                <Reveal id="scene-2" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              {/* Scene 3: Applicants */}
+              <div ref={setSceneRef(3)}>
+                <Reveal id="scene-3" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                   <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
                     See who actually shows up
                   </h2>
                   <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0 }}>
                     Every Runner carries a Momentum score built from finished gigs. Did they turn up, were they on time, would the last host hire them again. Go ahead, hire someone.
                   </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", fontSize: 11, color: "var(--color-text-muted)" }}>
+                    {BAND_LEGEND.map((b) => (
+                      <div key={b.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <span style={{ width: 7, height: 7, borderRadius: "50%", background: `var(${b.bandVar})`, flexShrink: 0 }} />
+                        {b.label}
+                      </div>
+                    ))}
+                  </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 480 }}>
                     {APPLICANTS.map((a, i) => {
                       const hired = !!accepted[a.name];
@@ -532,9 +615,9 @@ export default function LoginPage() {
                 </Reveal>
               </div>
 
-              {/* Scene 3: Check-in */}
-              <div ref={setSceneRef(3)}>
-                <Reveal id="scene-3" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              {/* Scene 4: Check-in */}
+              <div ref={setSceneRef(4)}>
+                <Reveal id="scene-4" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                   <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
                     Attendance handles itself
                   </h2>
@@ -562,9 +645,9 @@ export default function LoginPage() {
                 </Reveal>
               </div>
 
-              {/* Scene 4: Events */}
-              <div ref={setSceneRef(4)}>
-                <Reveal id="scene-4" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              {/* Scene 5: Events */}
+              <div ref={setSceneRef(5)}>
+                <Reveal id="scene-5" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                   <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
                     One listing can hold a whole event
                   </h2>
@@ -595,12 +678,74 @@ export default function LoginPage() {
                 </Reveal>
               </div>
 
-              {/* Scene 5: Close */}
-              <div ref={setSceneRef(5)}>
-                <Reveal id="scene-5" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* Scene 6: Close */}
+              <div ref={setSceneRef(6)}>
+                <Reveal id="scene-6" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                   <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
-                    That&apos;s Grid.
+                    This is what you&apos;ll be using
                   </h2>
+                  <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0, maxWidth: 480 }}>
+                    One dashboard for every gig, applicant, and shift. Here&apos;s a look at it.
+                  </p>
+
+                  {/* Dashboard mockup */}
+                  <div style={{ border: "1px solid var(--border-color)", borderRadius: 14, overflow: "hidden", maxWidth: 520, background: "var(--color-surface-1)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--border-subtle)", background: "var(--color-surface-2)" }}>
+                      {["#ff7351", "#ffeb9c", "#8097ff"].map((c) => (
+                        <span key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c, opacity: 0.6 }} />
+                      ))}
+                      <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                        <span style={{ fontSize: 11, color: "var(--color-text-muted)", background: "var(--color-surface-3)", borderRadius: 999, padding: "3px 12px" }}>
+                          grid.trykria.com/dashboard
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex" }}>
+                      <div style={{ width: 108, flexShrink: 0, borderRight: "1px solid var(--border-subtle)", padding: "14px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+                        {["Dashboard", "Gigs", "Events", "Applications"].map((label, i) => (
+                          <div
+                            key={label}
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: "6px 8px",
+                              borderRadius: 6,
+                              background: i === 0 ? "var(--color-primary)" : "transparent",
+                              color: i === 0 ? "var(--color-text-inv)" : "var(--color-text-muted)",
+                            }}
+                          >
+                            {label}
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          {[
+                            { label: "Active gigs", val: "4" },
+                            { label: "Applicants", val: "18" },
+                            { label: "This week", val: "6 shifts" },
+                          ].map((s) => (
+                            <div key={s.label} style={{ flex: 1, minWidth: 0, background: "var(--color-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "8px 10px" }}>
+                              <div style={{ fontSize: 15, fontWeight: 700 }}>{s.val}</div>
+                              <div style={{ fontSize: 9.5, color: "var(--color-text-muted)" }}>{s.label}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {[
+                            { title: "Banquet crew", status: "Filling", color: "var(--color-amber)" },
+                            { title: "Warehouse loaders", status: "Live", color: "var(--color-primary)" },
+                          ].map((g) => (
+                            <div key={g.title} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--color-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "8px 10px" }}>
+                              <span style={{ fontSize: 11.5, fontWeight: 600 }}>{g.title}</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: g.color }}>{g.status}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0, maxWidth: 480 }}>
                     It&apos;s free to start and there&apos;s nothing to install. Sign in on the right with your email and your first gig can be live today.
                   </p>
@@ -611,10 +756,10 @@ export default function LoginPage() {
 
           <div className="grid-footer" style={{ marginTop: "auto", borderTop: "1px solid var(--border-subtle)", paddingTop: 20, paddingBottom: 20, display: "flex", gap: 24, alignItems: "center", fontSize: 12.5, color: "var(--color-text-muted)", flexWrap: "wrap" }}>
             <span>© 2026 Kria</span>
-            <a href="#">kria.in</a>
-            <a href="#">Terms</a>
-            <a href="#">Privacy</a>
-            <a href="#">Contact</a>
+            <a href="https://trykria.com" target="_blank" rel="noopener noreferrer">trykria.com</a>
+            <a href="https://trykria.com/terms" target="_blank" rel="noopener noreferrer">Terms</a>
+            <a href="https://trykria.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
+            <a href="mailto:support@trykria.com">Contact</a>
           </div>
         </div>
         </div>
