@@ -349,11 +349,12 @@ export default function LoginPage() {
         .grid-shell { display: grid; grid-template-columns: minmax(0,1fr) minmax(340px,480px); min-height: 100vh; }
         .grid-auth-col { position: relative; border-left: 1px solid var(--border-color); background: var(--color-surface-1); }
         .grid-auth-inner { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 40px; padding: 36px 40px; min-width: 0; max-width: 460px; margin: 0 auto; }
-        .grid-header, .grid-footer { padding-left: 32px; padding-right: 32px; }
-        .grid-rail { display: block; width: 100px; flex-shrink: 0; padding-left: 24px; box-sizing: border-box; overflow: hidden; }
+        .grid-header, .grid-footer { display: flex; align-items: center; padding-left: 32px; padding-right: 32px; flex-shrink: 0; }
+        .grid-rail { display: block; width: 120px; flex-shrink: 0; padding-left: 32px; box-sizing: border-box; }
         .grid-rail span { white-space: nowrap; }
-        .grid-scene-row { display: flex; }
-        .grid-scene-content { padding: 40px 32px 0 8px; max-width: min(600px, 100%); min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 96px; margin-bottom: 96px; }
+        .grid-rail-sticky { position: sticky; top: 34vh; }
+        .grid-scene-row { display: flex; flex: 1; }
+        .grid-scene-content { padding: 40px 32px 0 40px; max-width: min(600px, 100%); min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 96px; margin-bottom: 96px; }
         .grid-story-inner { width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; flex: 1; }
         @media (max-width: 1023px) {
           .grid-shell { grid-template-columns: 1fr; }
@@ -368,6 +369,7 @@ export default function LoginPage() {
           .grid-header, .grid-footer { padding-left: 18px; padding-right: 18px; }
           .grid-scene-content { padding-left: 18px; padding-right: 18px; gap: 56px; margin-bottom: 56px; }
           .grid-auth-inner { padding: 24px 18px; }
+          .grid-mockup-sidebar { display: none; }
         }
         .grid-otp-input:focus { border-color: var(--color-primary) !important; }
         .grid-email-input:focus { border-color: var(--color-primary) !important; }
@@ -376,8 +378,7 @@ export default function LoginPage() {
       <div className="grid-shell">
         {/* ── LEFT: scroll story ── */}
         <div className="grid-story-col" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <div className="grid-story-inner">
-          <div className="grid-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 22, paddingBottom: 22 }}>
+          <div className="grid-header" style={{ justifyContent: "space-between", paddingTop: 22, paddingBottom: 22 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 26, height: 26, background: "var(--color-primary)", borderRadius: 6, display: "grid", placeItems: "center" }}>
                 <div style={{ width: 12, height: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
@@ -400,10 +401,11 @@ export default function LoginPage() {
             </button>
           </div>
 
+        <div className="grid-story-inner">
           <div className="grid-scene-row">
             {/* progress rail */}
             <div className="grid-rail">
-              <div style={{ position: "sticky", top: "34vh", display: "flex", flexDirection: "column", gap: 6 }}>
+              <div className="grid-rail-sticky" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {RAIL_STEPS.map((name, i) => (
                   <div
                     key={name}
@@ -701,7 +703,7 @@ export default function LoginPage() {
                       </div>
                     </div>
                     <div style={{ display: "flex" }}>
-                      <div style={{ width: 108, flexShrink: 0, borderRight: "1px solid var(--border-subtle)", padding: "14px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div className="grid-mockup-sidebar" style={{ width: 108, flexShrink: 0, borderRight: "1px solid var(--border-subtle)", padding: "14px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
                         {["Dashboard", "Gigs", "Events", "Applications"].map((label, i) => (
                           <div
                             key={label}
@@ -753,15 +755,15 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="grid-footer" style={{ marginTop: "auto", borderTop: "1px solid var(--border-subtle)", paddingTop: 20, paddingBottom: 20, display: "flex", gap: 24, alignItems: "center", fontSize: 12.5, color: "var(--color-text-muted)", flexWrap: "wrap" }}>
+          <div className="grid-footer" style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 20, paddingBottom: 20, gap: 24, fontSize: 12.5, color: "var(--color-text-muted)", flexWrap: "wrap" }}>
             <span>© 2026 Kria</span>
             <a href="https://trykria.com" target="_blank" rel="noopener noreferrer">trykria.com</a>
             <a href="https://trykria.com/terms" target="_blank" rel="noopener noreferrer">Terms</a>
             <a href="https://trykria.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
             <a href="mailto:support@trykria.com">Contact</a>
           </div>
-        </div>
         </div>
 
         {/* ── RIGHT: sticky sign-in ── */}
