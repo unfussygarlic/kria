@@ -315,18 +315,19 @@ export default function LoginPage() {
           70% { box-shadow: 0 0 0 8px rgba(212,255,0,0) }
           100% { box-shadow: 0 0 0 0 rgba(212,255,0,0) }
         }
-        .grid-shell { display: grid; grid-template-columns: minmax(0,1fr) minmax(340px,440px); min-height: 100vh; }
+        .grid-shell { display: grid; grid-template-columns: minmax(0,1fr) minmax(340px,480px); min-height: 100vh; }
         .grid-auth-col { position: relative; border-left: 1px solid var(--border-color); background: var(--color-surface-1); }
-        .grid-auth-inner { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 40px; padding: 36px 32px; min-width: 0; }
+        .grid-auth-inner { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 40px; padding: 36px 40px; min-width: 0; max-width: 460px; margin: 0 auto; }
         .grid-header, .grid-footer { padding-left: 32px; padding-right: 32px; }
         .grid-rail { display: block; width: 100px; flex-shrink: 0; padding-left: 24px; }
         .grid-scene-row { display: flex; }
         .grid-scene-content { padding: 40px 32px 0 8px; max-width: min(600px, 100%); min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 96px; margin-bottom: 96px; }
+        .grid-story-inner { width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; flex: 1; }
         @media (max-width: 1023px) {
           .grid-shell { grid-template-columns: 1fr; }
           .grid-story-col { order: 2; }
           .grid-auth-col { order: 1; border-left: none; border-bottom: 1px solid var(--border-color); }
-          .grid-auth-inner { position: relative; top: auto; height: auto; gap: 32px; }
+          .grid-auth-inner { position: relative; top: auto; height: auto; gap: 32px; max-width: 520px; }
           .grid-rail { display: none; }
           .grid-scene-content { padding: 32px 24px 0 24px; gap: 72px; margin-bottom: 72px; }
           .grid-header, .grid-footer { padding-left: 24px; padding-right: 24px; }
@@ -343,6 +344,7 @@ export default function LoginPage() {
       <div className="grid-shell">
         {/* ── LEFT: scroll story ── */}
         <div className="grid-story-col" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <div className="grid-story-inner">
           <div className="grid-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 22, paddingBottom: 22 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 26, height: 26, background: "var(--color-primary)", borderRadius: 6, display: "grid", placeItems: "center" }}>
@@ -397,14 +399,17 @@ export default function LoginPage() {
             <div className="grid-scene-content">
               {/* Scene 0: Intro */}
               <div ref={setSceneRef(0)} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-primary)" }}>
+                  Staffing platform for businesses
+                </div>
                 <h1 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: "clamp(34px,4.2vw,42px)", lineHeight: 1.18, margin: 0, letterSpacing: "-0.01em" }}>
-                  Post a gig. Good people show up.
+                  Hire verified shift &amp; gig staff across India.
                 </h1>
                 <p style={{ fontSize: 17, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0 }}>
-                  Grid is where hosts on Kria hire short-term workers. Restaurants, event teams, stores, warehouses. You describe the work, Runners nearby apply, and you pick from people with a track record you can actually see.
+                  Grid is Kria&apos;s hiring dashboard for businesses. Restaurants, event companies, retail stores, warehouses. Post the role, review workers with a verified performance history, hire in minutes, and confirm attendance on-site. No staffing agency, no middlemen.
                 </p>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--color-text-muted)", fontSize: 13, fontWeight: 500 }}>
-                  <span>Keep scrolling, the page tells the story</span>
+                  <span>See how it works</span>
                   <span style={{ fontSize: 15 }}>↓</span>
                 </div>
               </div>
@@ -611,6 +616,7 @@ export default function LoginPage() {
             <a href="#">Privacy</a>
             <a href="#">Contact</a>
           </div>
+        </div>
         </div>
 
         {/* ── RIGHT: sticky sign-in ── */}
