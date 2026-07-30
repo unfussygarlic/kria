@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
-import { matchGigs, MatchGigsParams } from "@/lib/api/gigs";
+import { matchGigs, MatchGigsParams, generateGigCover } from "@/lib/api/gigs";
 import {
   createEvent as apiCreateEvent,
   addJobToEvent as apiAddJobToEvent,
@@ -334,6 +334,14 @@ export const useGigStore = create<GigState>((set, get) => ({
     if (error) {
       return { data: null, error: error.message };
     }
+
+    // Auto-generate cover art (template-based), fire-and-forget — mirrors
+    // Grid's post-creation call in gigs/new/page.tsx. No photo yet (no UI
+    // for it in this hidden Host flow), so every gig gets a template-only
+    // cover immediately.
+    generateGigCover(data.id).catch(() => {
+      // Non-fatal — gig is already created either way, cover can be regenerated later.
+    });
 
     // Bust TTL then refresh so we always see the new gig immediately
     set({ _postedFetchedAt: 0 });

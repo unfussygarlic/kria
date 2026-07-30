@@ -6,7 +6,7 @@
  */
 
 import { memo } from "react";
-import { View, Text, StyleSheet, Pressable, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Pressable, Dimensions, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { MomentumBadge } from "@/components/momentum/MomentumBadge";
@@ -65,7 +65,34 @@ export const JobCard = memo(function JobCard({ gig, variant, applicationCount, p
   const spotsLeft = gig.slots_total - gig.slots_filled;
   const isExplore = variant === "explore";
 
-  const content = (
+  // Explore cards with generated cover art use the cover as the entire card
+  // face (per the "make the cover a proper card" redesign) instead of the
+  // hand-built layout below. Static gig facts (title/pay/venue/host) are
+  // baked into the art at render time; anything that can change after the
+  // gig is posted (spots left, boost, live poster momentum) stays as a
+  // React Native overlay on top so it's never stale. Gigs without a cover
+  // (pre-feature, or generation failed) fall through to the original
+  // hand-built card unchanged.
+  const content = isExplore && gig.cover_image_url ? (
+    <View style={[styles.card, styles.cardExploreCover]} pointerEvents="none">
+      <Image source={{ uri: gig.cover_image_url }} style={styles.coverImage} resizeMode="cover" />
+      <View style={styles.coverBadgeStack}>
+        {posterMomentum !== undefined && <MomentumBadge score={posterMomentum} variant="chip" />}
+        {gig.momentum_boost > 0 && (
+          <View style={styles.boostBadge}>
+            <Feather name="zap" size={11} color={T.momentum} />
+            <Text style={styles.boostText}>Boosted</Text>
+          </View>
+        )}
+        <View style={[styles.coverSlotsChip, spotsLeft <= 3 && styles.coverSlotsChipUrgent]}>
+          <Feather name="users" size={13} color={spotsLeft <= 3 ? "#fff" : T.text} />
+          <Text style={styles.coverSlotsText}>
+            {spotsLeft} {spotsLeft === 1 ? "spot" : "spots"} left
+          </Text>
+        </View>
+      </View>
+    </View>
+  ) : (
     <View
       style={[styles.card, isExplore ? styles.cardExplore : styles.cardCompact]}
       pointerEvents={isExplore ? "none" : "auto"}
@@ -113,6 +140,12 @@ export const JobCard = memo(function JobCard({ gig, variant, applicationCount, p
               <Feather name="zap" size={11} color={T.momentum} />
               <Text style={styles.boostText}>Boosted</Text>
             </View>
+          )}
+          {/* marginLeft: "auto" pushes this to the row's far end without
+              disturbing the badges' own layout — stays in-flow, no absolute
+              positioning, so it can't overlap the title text below. */}
+          {gig.cover_image_square_url && (
+            <Image source={{ uri: gig.cover_image_square_url }} style={styles.thumbnail} />
           )}
         </View>
       )}
@@ -252,6 +285,46 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
 
+  // ── Explore variant, cover-art card (gig.cover_image_url present) ──
+  cardExploreCover: {
+    borderRadius: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  coverImage: {
+    width: "100%",
+    aspectRatio: 4 / 5,
+    backgroundColor: T.surface2,
+  },
+  coverBadgeStack: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    gap: 8,
+    alignItems: "flex-end",
+  },
+  coverSlotsChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: "rgba(19,19,19,0.75)",
+  },
+  coverSlotsChipUrgent: {
+    backgroundColor: T.tertiary,
+  },
+  coverSlotsText: {
+    fontSize: 12,
+    fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: T.text,
+  },
+
   // ── Category header (explore only) ──────────────────────────
   categoryHeader: {
     height: 116,
@@ -307,6 +380,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     marginBottom: 10,
+  },
+  thumbnail: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    marginLeft: "auto",
+    backgroundColor: T.surface2,
   },
   categoryBadge: {
     paddingHorizontal: 10,

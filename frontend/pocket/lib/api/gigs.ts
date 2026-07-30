@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, apiPostFormData } from "./client";
 
 export interface MatchGigsParams {
   latitude?: number;
@@ -31,6 +31,21 @@ interface MatchGigsResponse {
 
 export async function matchGigs(params: MatchGigsParams = {}) {
   return apiPost<MatchGigsResponse>("/api/v1/gigs/match", params);
+}
+
+export interface CoverResponse {
+  cover_image_url: string;
+  cover_image_square_url: string;
+}
+
+/** Generates the gig's auto cover art. Call right after creating the gig. Photo is optional. */
+export function generateGigCover(id: string, photo?: { uri: string; name: string; type: string }) {
+  const form = new FormData();
+  if (photo) {
+    // React Native FormData file shape — not a real web File, hence the cast.
+    form.append("photo", photo as unknown as Blob);
+  }
+  return apiPostFormData<CoverResponse>(`/api/v1/gigs/${id}/cover`, form);
 }
 
 export interface AcceptedGigPoster {
