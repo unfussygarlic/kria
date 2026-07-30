@@ -22,17 +22,17 @@
 - [Landing Page](apps/landing-page/overview.md) — trykria.com, i18n, inline styles, gotchas
 
 ## Features
-- [Momentum](features/momentum.md) — 0–1000 scale, 6 bands, profile completion bonus, skill graph, signals, backend module, formula
+- [Momentum](features/momentum.md) — 0–1000 scale, 6 bands, profile completion bonus, skill graph, signals, backend module, formula; Grid-vs-Pocket stale-score bug fixed 2026-07-31 (needs deploy)
 - [Badges](features/badges.md) — 18 badges (milestone/streak/identity), backend service, award hooks, home marquee
 - [Identity Verification](features/identity_verification.md) — multi-ID, Inspector pipeline, badge system, VerificationCamera, error codes, gotchas
-- [Gigs & Check-in](features/gigs.md) — lifecycle, OTP flow, applicants, geocoding wizard, venue Maps links
+- [Gigs & Check-in](features/gigs.md) — lifecycle, OTP flow, applicants, geocoding wizard, venue Maps links; expired-gig filtering fixed 2026-07-31 (needs deploy)
 - [Recommendations](features/recommendations.md) — matching engine, geocoding, GPS, scoring weights, Maps deep link
 - [Events](features/events.md) — events table, creation wizard, host/runner split
 - [Chat](features/chat.md) — hidden feature, tables, real-time bug, do-not-install list
 - [Email Notifications](features/email.md) — Resend, 3 email types, webhook architecture, unsubscribe, env vars, pending Supabase webhook setup
 - [SMS Notifications](features/sms_notifications.md) — Fast2SMS via GoTrue hook, sms_notifications/ module, template registry, how to add new templates
 - [Help & Support](features/help_support.md) — Grid /support page, FAQ accordion, 7-category query form + My Tickets tab (GET /support/my-tickets, email fallback), Resend notifications, Admin Dashboard integration
-- [Gig Cover Images](features/gig_cover_images.md) — template-based cover art; square variant is its own composition (not a crop, twice-fixed); needs redeploy for this round; remaining: photo-upload UI, Explore card, OG tags
+- [Gig Cover Images](features/gig_cover_images.md) — template-based cover art (venue now included); Grid deployed on EC2; Pocket Explore card redesigned to use the cover as the full card face (badges overlaid live) but unverified visually
 - [Gig Cover Asset Pipeline](features/gig_cover_asset_pipeline.md) — Claude-authored (not Stitch) generator for the 6 category-group covers, `~/envs/covers` venv, regeneration scripts
 
 ## Project

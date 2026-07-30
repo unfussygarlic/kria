@@ -57,17 +57,22 @@ useEffect(() => {
 
 ## Tab Navigators
 
-### RunnerTabsNavigator (current — always rendered)
-Tabs: **Home | Explore | My Space | Arena**
+### RunnerTabsNavigator (current — always rendered) — corrected 2026-07-31, was stale/missing the Jobs tab
+Tabs: **Home | Explore | Jobs | My Space | Arena**
 
 ```tsx
-<Tabs.Screen name="home"    options={HOME_OPT} />
-<Tabs.Screen name="explore" options={EXPLORE_OPT} />
-<Tabs.Screen name="post"    options={HIDDEN} />   // hidden
-<Tabs.Screen name="space"   options={SPACE_OPT} />
-<Tabs.Screen name="arena"   options={ARENA_OPT} />
-<Tabs.Screen name="chat"    options={HIDDEN} />   // hidden
+<Tabs.Screen name="home"        options={HOME_OPT}    />
+<Tabs.Screen name="explore"     options={EXPLORE_OPT} />
+<Tabs.Screen name="search"      options={JOBS_OPT}    />  // "Jobs" tab — VISIBLE, not hidden (was documented wrong here)
+<Tabs.Screen name="post"        options={HIDDEN} />   // hidden
+<Tabs.Screen name="space"       options={SPACE_OPT}   />
+<Tabs.Screen name="arena"       options={ARENA_OPT}   />
+<Tabs.Screen name="chat"        options={HIDDEN} />   // hidden
+<Tabs.Screen name="profile"     options={HIDDEN} />   // hidden, accessed via avatar button
+<Tabs.Screen name="personality" options={HIDDEN} />   // hidden, legacy
 ```
+
+`search.tsx` renders `<SearchTab />` (`components/explore/SearchTab.tsx`), a distinct browse/filter surface backed by `GET /api/v1/search` — separate from the Explore swipe deck (`POST /gigs/match`). Both need to independently exclude expired gigs; see [[gigs]] "Expired Gigs" for a bug this caused when `search.py` didn't.
 
 ### HostTabsNavigator (unreachable while SHOW_HOST_ROLE=false)
 Tabs: **Home | Explore | + (FAB) | My Space | Arena**  

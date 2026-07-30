@@ -110,8 +110,9 @@ def _render(
     category: str,
     title: str,
     pay_label: str,
-    host_name: str,
+    venue: str,
     city: str,
+    host_name: str,
     photo_bytes: bytes | None,
 ) -> bytes:
     group = group_for_category(category)
@@ -158,12 +159,19 @@ def _render(
     pay_font = _font(_FONT_BOLD_PATH, layout.pay_font_size)
     draw.text((layout.text_zone_x, layout.pay_y), pay_label, font=pay_font, fill=group.color, anchor="lm")
 
-    # Host + city
+    # Venue + city (location line)
     meta_font = _font(_FONT_SEMIBOLD_PATH, layout.meta_font_size)
-    meta_text = f"{host_name} · {city}" if host_name and city else (host_name or city or "")
-    meta_lines = _wrap_text(draw, meta_text, meta_font, max_text_width, max_lines=1)
-    if meta_lines:
-        draw.text((layout.text_zone_x, layout.host_city_y), meta_lines[0], font=meta_font, fill=(255, 255, 255, 200), anchor="lm")
+    venue_text = f"{venue} · {city}" if venue and city else (venue or city or "")
+    venue_lines = _wrap_text(draw, venue_text, meta_font, max_text_width, max_lines=1)
+    if venue_lines:
+        draw.text((layout.text_zone_x, layout.venue_y), venue_lines[0], font=meta_font, fill=(255, 255, 255, 220), anchor="lm")
+
+    # Host name (dimmer — secondary to venue/location)
+    if host_name:
+        host_font = _font(_FONT_SEMIBOLD_PATH, layout.meta_font_size - 4)
+        host_lines = _wrap_text(draw, host_name, host_font, max_text_width, max_lines=1)
+        if host_lines:
+            draw.text((layout.text_zone_x, layout.host_y), host_lines[0], font=host_font, fill=(255, 255, 255, 150), anchor="lm")
 
     out = io.BytesIO()
     composite.convert("RGB").save(out, format="PNG", optimize=True)
@@ -174,21 +182,23 @@ def generate_cover(
     category: str,
     title: str,
     pay_label: str,
-    host_name: str,
+    venue: str,
     city: str,
+    host_name: str,
     photo_bytes: bytes | None = None,
 ) -> bytes:
     """Renders the primary 4:5 gig cover (1080x1350) and returns PNG bytes."""
-    return _render(PORTRAIT, category, title, pay_label, host_name, city, photo_bytes)
+    return _render(PORTRAIT, category, title, pay_label, venue, city, host_name, photo_bytes)
 
 
 def generate_square_cover(
     category: str,
     title: str,
     pay_label: str,
-    host_name: str,
+    venue: str,
     city: str,
+    host_name: str,
     photo_bytes: bytes | None = None,
 ) -> bytes:
     """Renders the square 1:1 gig cover (1080x1080) and returns PNG bytes."""
-    return _render(SQUARE, category, title, pay_label, host_name, city, photo_bytes)
+    return _render(SQUARE, category, title, pay_label, venue, city, host_name, photo_bytes)

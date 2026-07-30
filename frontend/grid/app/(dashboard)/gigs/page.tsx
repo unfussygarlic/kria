@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Search, TrendingUp, CheckCircle, Zap, Pause, Play } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { pauseGig, unpauseGig } from "@/lib/api/gigs";
-import { GigStatusBadge, PausedBadge } from "@/components/ui/Badge";
+import { GigStatusBadge, PausedBadge, ExpiredBadge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import type { Gig, GigStatus } from "@/types";
 
@@ -26,6 +26,17 @@ function formatPay(amount: number, type: string) {
   if (type === "hourly") return `${f}/hr`;
   if (type === "per_day") return `${f}/day`;
   return f;
+}
+
+// Expired = the gig's (or multi-day gig's) last date has passed while it's
+// still sitting in an unresolved status — a stale gig the host should
+// notice, not a completed/cancelled one that's just historical.
+function isExpired(gig: Gig): boolean {
+  if (gig.status !== "open" && gig.status !== "in_progress") return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const lastDate = new Date(gig.event_end_date || gig.event_date);
+  return lastDate < today;
 }
 
 export default function GigsPage() {
@@ -149,11 +160,13 @@ export default function GigsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filtered.map((gig) => (
+              {filtered.map((gig) => {
+                const expired = isExpired(gig);
+                return (
                 <tr
                   key={gig.id}
                   onClick={() => router.push(`/gigs/${gig.id}`)}
-                  className={`cursor-pointer hover:bg-white/[0.02] transition-all ${gig.is_paused ? "opacity-60" : ""}`}
+                  className={`cursor-pointer hover:bg-white/[0.02] transition-all ${gig.is_paused || expired ? "opacity-60" : ""}`}
                 >
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-3">
@@ -195,6 +208,7 @@ export default function GigsPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <GigStatusBadge status={gig.status} />
                       {gig.is_paused && <PausedBadge />}
+                      {expired && <ExpiredBadge />}
                     </div>
                   </td>
                   <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
@@ -213,7 +227,8 @@ export default function GigsPage() {
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

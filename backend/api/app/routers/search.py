@@ -73,8 +73,11 @@ async def _search_gigs(
     db: AsyncSession,
 ) -> list[dict]:
     # Build WHERE clauses dynamically to keep the query planner happy
-    # (avoids coercing indexed columns through OR-heavy conditions)
-    filters = ["g.status = 'open'", "g.poster_id != :user_id"]
+    # (avoids coercing indexed columns through OR-heavy conditions).
+    # event_date >= CURRENT_DATE is unconditional (not just when date_start
+    # is passed) — runners should never see expired gigs in search results,
+    # matching the filter recommendations/matching.py already applies.
+    filters = ["g.status = 'open'", "g.poster_id != :user_id", "g.event_date >= CURRENT_DATE"]
     params: dict = {"user_id": user_id, "limit": limit + 1, "offset": (page - 1) * limit}
 
     if q:
@@ -134,6 +137,9 @@ async def _search_events(
         "e.status IN ('open', 'draft')",
         # Only return events that have at least one open gig
         "EXISTS (SELECT 1 FROM gigs WHERE event_id = e.id AND status = 'open')",
+        # Not expired — multi-day events stay listed until their end_date passes,
+        # not just their start date (unconditional, like the gigs filter above).
+        "(COALESCE(e.event_end_date, e.event_date) >= CURRENT_DATE)",
     ]
     params: dict = {"limit": limit + 1, "offset": (page - 1) * limit}
 

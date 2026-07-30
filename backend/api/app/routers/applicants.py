@@ -9,9 +9,10 @@ Routes:
   POST /api/v1/assignments/finalize-expired               → runner self-triggers: mark own expired assigned gigs as no-show
 """
 
+import json
 import secrets
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
@@ -32,6 +33,47 @@ from app.models.applicant import (
 )
 from app.momentum.recalculate import recalculate_momentum
 from app.momentum.config import WORKER_PENALTIES
+from app.momentum.calculator import compute_worker_score
+
+# ---------------------------------------------------------------------------
+# Live momentum score
+# ---------------------------------------------------------------------------
+#
+# Do NOT display momentum_profiles.worker_score directly — it's a persisted
+# column that only updates when recalculate_momentum() fires (rating
+# submitted / gig completed / no-show, debounced 60s), so it silently goes
+# stale the moment a runner edits their profile (verifies ID, adds a
+# bio/skills/languages/work history) without a fresh gig event to trigger a
+# recalc. GET /momentum/me and /momentum/user/{id} in momentum/router.py
+# already compute live for this exact reason — this mirrors that so Grid's
+# applicant lists always match what the runner sees of their own score in
+# Pocket. See memory/features/momentum.md for the full incident writeup.
+_PROFILE_SIGNAL_COLS = ("id_verified", "skills", "bio", "languages", "work_experience", "education_entries")
+
+
+def _live_momentum_score(row) -> int | None:
+    """Computes the runner's current momentum score from a row that already
+    joins momentum_profiles (signal_scores, worker_penalty_points,
+    worker_gig_count) and the profile-signal columns listed above."""
+    if row.get("mp_user_id") is None:
+        return None
+    raw_signals = row.get("signal_scores")
+    if raw_signals is None:
+        signal_scores: dict[str, float | None] = {}
+    elif isinstance(raw_signals, str):
+        signal_scores = json.loads(raw_signals)
+    else:
+        signal_scores = dict(raw_signals)
+
+    profile_fields: dict[str, Any] = {k: row.get(k) for k in _PROFILE_SIGNAL_COLS}
+    s = compute_worker_score(
+        signal_scores,
+        int(row.get("worker_penalty_points") or 0),
+        int(row.get("worker_gig_count") or 0),
+        profile_fields,
+    )
+    return s.score
+
 
 # ---------------------------------------------------------------------------
 # OTP helpers
@@ -94,7 +136,10 @@ async def list_all_applicants(
                 asgn.status          AS assignment_status,
                 asgn.otp             AS assignment_otp,
                 (r.id IS NOT NULL)   AS has_been_rated,
-                mp.worker_score      AS momentum_score,
+                mp.user_id           AS mp_user_id,
+                mp.signal_scores,
+                mp.worker_penalty_points,
+                mp.worker_gig_count,
                 g.id                 AS gig_id,
                 g.title              AS gig_title,
                 g.event_date         AS gig_date,
@@ -153,7 +198,7 @@ async def list_all_applicants(
             assignment_status=row["assignment_status"],
             assignment_otp=row["assignment_otp"],
             has_been_rated=bool(row["has_been_rated"]),
-            momentum_score=int(row["momentum_score"]) if row["momentum_score"] is not None else None,
+            momentum_score=_live_momentum_score(row),
             gig_id=str(row["gig_id"]),
             gig_title=row["gig_title"],
             gig_date=str(row["gig_date"]),
@@ -198,9 +243,12 @@ async def list_applicants(
     if str(gig["poster_id"]) != current_user.user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your gig.")
 
+    # Momentum sort can't happen in SQL anymore — mp.worker_score is the
+    # stale persisted column (see _live_momentum_score docstring above).
+    # Fetch in a stable order and sort by the live-computed score in Python.
     sort_clause = {
-        "momentum_desc": "COALESCE(mp.worker_score, 0) DESC, ga.applied_at ASC",
-        "momentum_asc":  "COALESCE(mp.worker_score, 0) ASC,  ga.applied_at ASC",
+        "momentum_desc": "ga.applied_at ASC",
+        "momentum_asc":  "ga.applied_at ASC",
         "newest":        "ga.applied_at DESC",
         "oldest":        "ga.applied_at ASC",
     }[sort]
@@ -234,7 +282,10 @@ async def list_applicants(
                 asgn.status     AS assignment_status,
                 asgn.otp        AS assignment_otp,
                 (r.id IS NOT NULL) AS has_been_rated,
-                mp.worker_score AS momentum_score
+                mp.user_id      AS mp_user_id,
+                mp.signal_scores,
+                mp.worker_penalty_points,
+                mp.worker_gig_count
             FROM gig_applications ga
             JOIN profiles p ON p.id = ga.applicant_id
             LEFT JOIN gig_assignments asgn
@@ -283,10 +334,13 @@ async def list_applicants(
             assignment_status=row["assignment_status"],
             assignment_otp=row["assignment_otp"],
             has_been_rated=bool(row["has_been_rated"]),
-            momentum_score=int(row["momentum_score"]) if row["momentum_score"] is not None else None,
+            momentum_score=_live_momentum_score(row),
         )
         for row in data
     ]
+
+    if sort in ("momentum_desc", "momentum_asc"):
+        applicants.sort(key=lambda a: a.momentum_score or 0, reverse=(sort == "momentum_desc"))
 
     return ApplicantListResponse(
         gig_id=gig_id,

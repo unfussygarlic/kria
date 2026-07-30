@@ -316,6 +316,27 @@ Profile signals live in `config.py` PROFILE_SIGNALS (not the plugin system). The
 2. `_is_filled()` in `calculator.py` handles bool/list/str — no changes unless new type
 3. `MAX_PROFILE_POINTS` auto-recomputes; make sure total stays ≤ 99 (to keep new users in Newcomer band)
 
+## Known Bug — Grid showed stale/wrong scores vs Pocket (fixed 2026-07-31, needs deploy)
+
+**Report:** testers said momentum score "not showing properly, recurring, on Grid and Pocket."
+
+**Root cause (verified against live EC2 DB, not just code reading):** `GET /momentum/me` and `GET /momentum/user/{id}` (and their `/breakdown` variants) already compute the score **live** on every request — `signal_scores` from the DB column, but `profile_fields` fetched *fresh* from `profiles` every time (see `router.py` `_fetch_profile`/`_fetch_profile_fields`). But `backend/api/app/routers/applicants.py`'s two applicant-list endpoints (`GET /applicants` and `GET /gigs/{id}/applicants` — Grid's applicant lists/modal) instead read `momentum_profiles.worker_score` directly via `LEFT JOIN momentum_profiles mp`. That column is a **persisted snapshot**, only updated when `recalculate_momentum()` fires — i.e. on a rating, a gig completion, or a no-show, debounced 60s. It does **not** update when a runner edits their profile (verifies ID, adds a bio/skills/languages/work history) with no gig event to trigger a recalc. Net effect: a runner's own Arena screen (Pocket, live) and their card in a host's Applicants list (Grid, stale column) can show two different numbers for the same person at the same moment — the exact "not showing properly" symptom, and it explains "recurring" (true for every applicant until their next gig event).
+
+Confirmed via direct DB queries during investigation:
+- `momentum_profiles.worker_score` was `0` for literally every one of 19 profiles in the live DB, including active testers.
+- `momentum_events` (append-only audit log, written on every successful `recalculate_momentum()` run) had **zero rows ever** — meaning it had never once run to completion for anyone, until manually invoked during this investigation.
+- Manually running `recalculate_momentum()` for a real worker with 1 completed gig + 2 no-shows computed real non-zero signal values (`show_rate=0.333`, `on_time_rate=1.0`, etc.) but the final persisted score was still `0` — correct in that specific case, not a bug: `CREDIBILITY_THRESHOLD=10` means 1 gig only gives 10% credibility, and the no-show penalty (subtracted *after* credibility-scaling shrinks the positive side) fully wipes out the tiny positive contribution. This is a separate, working-as-designed edge case, not the systemic bug.
+
+**Fix:** `applicants.py` no longer selects `mp.worker_score`. Both list queries now select `mp.user_id, mp.signal_scores, mp.worker_penalty_points, mp.worker_gig_count` plus the profile-signal columns they already joined (`p.id_verified, p.skills, p.bio, p.languages, p.work_experience, p.education_entries`), and a new `_live_momentum_score(row)` helper computes the score in Python via `compute_worker_score()` — the exact same function `/momentum/me`/`/momentum/user/{id}` use. Grid now always matches what the runner sees in Pocket, because both compute from the same live inputs.
+
+Side effect: `GET /gigs/{gig_id}/applicants?sort=momentum_desc` could no longer sort in SQL (was `ORDER BY mp.worker_score DESC`, now meaningless since that column isn't the displayed value). Fixed by fetching in a stable order and sorting the assembled list in Python by the computed score.
+
+**Not fixed / separate, lower-priority issues found during this investigation, left alone:**
+- `momentum_profiles.poster_score` (a *different* field, meant to show a host's trust score to runners on gig cards) is read by `app/recommendations/engine.py` but nothing anywhere computes or writes it — always 0. This conflicts with the product rule "Momentum is exclusively a Runner metric" (see [[product-overview]]) — arguably the right fix is to stop showing a "poster momentum" badge at all and use `poster_reputation` (the real, already-correct /5 rating) instead, not to build out poster-score computation. Flagging, not fixing — this wasn't what was reported.
+- `on_profile_created` trigger (migration `0024`) inserts into `momentum_wallets`, a table unrelated to `momentum_profiles` — looks like leftover/renamed code from an earlier "wallet" concept. Harmless (the *correct* trigger, `profiles_create_momentum` from migration `0008`, still exists and still fires — verified live, 19/19 profiles have a `momentum_profiles` row), but worth cleaning up someday so it isn't confusing.
+
+**Deploy note:** like every backend change this session, needs `docker-compose up --build kria-api` on EC2 — not deployed as of this writing.
+
 ## Host Rating (NOT Momentum)
 
 Hosts receive a `/10` rating from Runners. Simple average from `ratings` table (`rating_type = 'poster_rating'`, `score` 1–10). Not stored in `momentum_profiles`. Not shown in Momentum UI.

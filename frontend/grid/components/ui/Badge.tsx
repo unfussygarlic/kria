@@ -47,3 +47,12 @@ export function PausedBadge() {
     </span>
   );
 }
+
+export function ExpiredBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-white/10 text-text-muted">
+      <span className="w-1.5 h-1.5 rounded-full bg-text-muted" />
+      Expired
+    </span>
+  );
+}

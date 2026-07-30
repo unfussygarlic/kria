@@ -103,15 +103,10 @@ GROUP BY g.id ORDER BY g.event_date ASC
 ```python
 sort: Literal["momentum_desc","momentum_asc","newest","oldest"] = Query(default="momentum_desc")
 filter_status: Literal["pending","accepted","all"] = Query(default="all", alias="status")
-
-sort_clause = {
-    "momentum_desc": "COALESCE(mp.worker_score, 0) DESC, ga.applied_at ASC",
-    "momentum_asc":  "COALESCE(mp.worker_score, 0) ASC,  ga.applied_at ASC",
-    "newest":        "ga.applied_at DESC",
-    "oldest":        "ga.applied_at ASC",
-}[sort]
 # WHERE ... AND (:filter_status = 'all' OR ga.status::text = :filter_status)
 ```
+
+**Momentum sort no longer happens in SQL** (fixed 2026-07-31 — see [[momentum]] "Known Bug — Grid showed stale/wrong scores vs Pocket"). `mp.worker_score` is a stale persisted column; the query now fetches in a stable `applied_at` order and the endpoint sorts the assembled list in Python by a live-computed score (`_live_momentum_score()`, same formula `/momentum/me` uses). Same fix applied to `GET /applicants` (the cross-gig applicant list).
 
 ## Venue Maps Links (Mobile)
 
@@ -133,3 +128,15 @@ backend: ScoredGig.poster_score
   → explore.tsx passes posterScores[gig.id] as posterMomentum prop
   → SwipeableJobCard → JobCard renders MomentumBadge chip
 ```
+
+**Known dead field, not fixed:** `momentum_profiles.poster_score` (read by `matching.py` above) is never computed/written by anything in the codebase — always 0, so this badge always shows "Newcomer" regardless of the host's actual reliability. Found during the 2026-07-31 momentum investigation (see [[momentum]]); flagged there as arguably the wrong fix target anyway, since "Momentum" is meant to be Runner-only per product rules — `poster_reputation` (the real, already-correct /5 rating) is probably what this badge should show instead. Left alone since it wasn't what was reported.
+
+## Expired Gigs — not filtered out everywhere (fixed 2026-07-31, needs deploy)
+
+**Report:** testers saw expired (past-date) gigs in Pocket; asked for Grid to visually flag them too.
+
+Investigation found the Explore swipe deck (`POST /gigs/match` → `matching.py`) already correctly filters `event_date >= CURRENT_DATE` — not the bug. The actual leak: Pocket's **"Jobs" tab** (`app/(main)/(tabs)/search.tsx` → `SearchTab.tsx` → `GET /api/v1/search`) is a separate, currently-*visible* tab in `RunnerTabsNavigator` (memory previously said this tab was hidden — stale; verified live in `_layout.tsx`: `search` uses `JOBS_OPT`, not `HIDDEN`, in the Runner navigator). `backend/api/app/routers/search.py`'s `_search_gigs`/`_search_events` only filtered by date when the user explicitly picked a date range — by default (no filter selected), expired gigs and events were included.
+
+**Fix:** `search.py` now adds `g.event_date >= CURRENT_DATE` unconditionally to `_search_gigs`'s base filters (matching `matching.py`'s existing convention), and `(COALESCE(e.event_end_date, e.event_date) >= CURRENT_DATE)` unconditionally to `_search_events` (multi-day events stay listed until their *end* date passes, not their start date). No frontend change needed — `SearchTab.tsx` just calls this endpoint.
+
+**Grid:** `gigs/page.tsx` list had no expired-gig treatment at all. Added `isExpired(gig)` helper — true when `status` is still `open`/`in_progress` (not `completed`/`cancelled`, which aren't "stale," they're resolved) and `(event_end_date ?? event_date) < today`. Expired rows get `opacity-60` (same treatment as `is_paused`) plus a new `ExpiredBadge` (`components/ui/Badge.tsx`, styled like the existing `PausedBadge`) next to the status badge. Only the list page — gig detail page has no equivalent treatment yet (not requested, possible follow-up).

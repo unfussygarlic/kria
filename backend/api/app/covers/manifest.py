@@ -28,7 +28,8 @@ class Layout:
     title_line_height: int
     title_max_lines: int
     pay_y: int
-    host_city_y: int
+    venue_y: int
+    host_y: int
     title_font_size: int
     pay_font_size: int
     meta_font_size: int
@@ -40,8 +41,8 @@ PORTRAIT = Layout(
     photo_slot=(118, 100, 843, 850), photo_slot_radius=20,
     chip=(118, 50, 180, 40),
     text_zone_x=118, text_zone_right=962,
-    title_y=990, title_line_height=60, title_max_lines=2,
-    pay_y=1090, host_city_y=1160,
+    title_y=970, title_line_height=58, title_max_lines=2,
+    pay_y=1090, venue_y=1160, host_y=1210,
     title_font_size=52, pay_font_size=42, meta_font_size=28,
 )
 
@@ -53,7 +54,7 @@ SQUARE = Layout(
     chip=(118, 40, 180, 36),
     text_zone_x=118, text_zone_right=962,
     title_y=670, title_line_height=56, title_max_lines=2,
-    pay_y=780, host_city_y=850,
+    pay_y=780, venue_y=830, host_y=875,
     title_font_size=52, pay_font_size=42, meta_font_size=28,
 )
 

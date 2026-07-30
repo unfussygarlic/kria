@@ -354,7 +354,7 @@ async def generate_gig_cover(
     """
     row = await db.execute(
         text("""
-            SELECT g.poster_id, g.category, g.title, g.pay_amount, g.pay_type::text, g.city,
+            SELECT g.poster_id, g.category, g.title, g.pay_amount, g.pay_type::text, g.city, g.venue_name,
                    COALESCE(g.company_name, p.display_name) AS host_name
             FROM gigs g
             JOIN profiles p ON p.id = g.poster_id
@@ -380,8 +380,9 @@ async def generate_gig_cover(
         category=gig["category"],
         title=gig["title"],
         pay_label=_format_pay(gig["pay_amount"], gig["pay_type"]),
-        host_name=gig["host_name"] or "",
+        venue=gig["venue_name"] or "",
         city=gig["city"] or "",
+        host_name=gig["host_name"] or "",
         photo_bytes=photo_bytes,
     )
     cover_png = generate_cover(**cover_kwargs)
