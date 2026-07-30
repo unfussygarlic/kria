@@ -156,10 +156,23 @@ export default function GigsPage() {
                   className={`cursor-pointer hover:bg-white/[0.02] transition-all ${gig.is_paused ? "opacity-60" : ""}`}
                 >
                   <td className="px-6 py-5">
-                    <p className="text-sm font-semibold text-text">{gig.title}</p>
-                    <p className="text-[10px] text-text-muted mt-0.5 uppercase tracking-wide">
-                      {gig.city} · {gig.category.replace(/_/g, " ")}
-                    </p>
+                    <div className="flex items-center gap-3">
+                      {gig.cover_image_square_url ? (
+                        <img
+                          src={gig.cover_image_square_url}
+                          alt=""
+                          className="w-11 h-11 rounded-lg object-cover flex-shrink-0 border border-white/10"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-lg bg-surface-2 border border-white/10 flex-shrink-0" />
+                      )}
+                      <div>
+                        <p className="text-sm font-semibold text-text">{gig.title}</p>
+                        <p className="text-[10px] text-text-muted mt-0.5 uppercase tracking-wide">
+                          {gig.city} · {gig.category.replace(/_/g, " ")}
+                        </p>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-5 text-sm text-text-sub hidden md:table-cell">
                     {formatDate(gig.event_date)}

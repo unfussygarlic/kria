@@ -153,6 +153,13 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
         {/* Left column: gig info */}
         <div className="lg:col-span-5 space-y-4">
 
+          {/* Cover art */}
+          {gig.cover_image_url && (
+            <div className="rounded-xl overflow-hidden border border-white/10 bg-surface-1">
+              <img src={gig.cover_image_url} alt="" className="w-full h-72 object-cover" />
+            </div>
+          )}
+
           {/* Details card */}
           <div className="bg-surface-1 border border-white/10 rounded-xl p-6 space-y-4">
             <h2 className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Gig Details</h2>

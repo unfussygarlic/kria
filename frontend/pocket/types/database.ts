@@ -170,6 +170,8 @@ export interface Database {
           venue_lat: number | null;
           venue_lng: number | null;
           venue_formatted_address: string | null;
+          cover_image_url: string | null;
+          cover_image_square_url: string | null;
           created_at: string;
           updated_at: string;
           application_deadline: string | null;

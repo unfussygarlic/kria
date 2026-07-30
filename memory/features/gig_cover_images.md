@@ -1,4 +1,4 @@
-# Gig Cover Images (Built — end-to-end for the no-photo path)
+# Gig Cover Images (Built + verified in production, no-photo path — deployed on EC2)
 
 ## Concept
 
@@ -37,18 +37,24 @@ Geometry (photo slot, chip, text zone Y positions) is **identical across all 6 g
 - `frontend/grid/lib/api/client.ts` — added `apiPostForm()` (multipart helper; the other three helpers are JSON-only).
 - `frontend/grid/lib/api/gigs.ts` — `generateGigCover(id, photo?)`.
 - `frontend/grid/app/(dashboard)/gigs/new/page.tsx` — calls `generateGigCover(data.id)` fire-and-forget right after insert + the location update. No photo passed yet (no UI for it), so every gig gets a template-only cover immediately with zero host effort.
+- `frontend/grid/types/index.ts` — `Gig.cover_image_url` / `cover_image_square_url` added.
+- **Rendered:** Grid gigs list (`gigs/page.tsx`) — small square thumbnail per row (`cover_image_square_url`, falls back to an empty surface block if null). Grid gig detail (`gigs/[id]/page.tsx`) — full portrait cover card at the top of the left column (`cover_image_url`, only rendered if present).
+- **Pocket:** `types/database.ts` `gigs.Row` — `cover_image_url` / `cover_image_square_url` added (flows through automatically since Explore fetches full rows via `supabase.from("gigs").select("*")`, not the trimmed `ScoredGig`/`MatchedGig` matching-endpoint model — no backend model change needed there). Rendered on the gig detail screen (`app/(main)/gig/[id].tsx`) as a 4:5 hero image above the category badge.
+- **Deliberately not touched:** the Explore swipe-deck card (`JobCard.tsx` "explore" variant) and the compact "space"/"event" list variant. The explore card's category header is a fixed 72px strip — too short for the portrait 4:5 art to read well without a redesign, and the compact variant is a text-only row shared across several screens with a documented history of fragile flex/layout bugs (see [[apps/mobile/patterns]] `PressableScale` gotcha) that isn't safe to restructure blind (no way to visually verify RN changes in this environment). Left as a deliberate follow-up, not an oversight.
 
 ## Verified
 
-Compositor tested directly (no Docker — pure Pillow/cairosvg logic) with and without a photo, and the square crop. Confirmed: photo pastes into the rounded slot correctly, frame overlays on top, text wraps/ellipsizes, chip auto-shrinks to fit, square crop keeps the readable text zone. Not yet tested through the actual FastAPI endpoint / Supabase Storage round-trip (needs the Docker rebuild + the `gig-covers` bucket to exist first).
+- Compositor unit-tested directly (Pillow/cairosvg, no Docker) with and without a photo, plus the square crop — chip auto-shrink and bottom-crop fixes both confirmed visually before shipping.
+- **Full production round-trip verified on EC2** (`kria-backend` host) after deploy: Pillow installed in the running `kria-api` container, Alembic at `0031 (head)`, `gigs.cover_image_url`/`cover_image_square_url` columns present, `gig-covers` bucket exists and is public, and a live `generate_cover → upload_cover` call inside the container produced a real image reachable at its public Supabase Storage URL (checked visually, then deleted the test object).
+- Grid (`tsc --noEmit`) and Pocket (`tsc --noEmit`) both checked after the rendering changes — no new errors introduced (Pocket has substantial pre-existing unrelated type errors across the app; none reference `cover_image` or anything touched here).
+- **Not yet verified:** the actual `POST /gigs/{id}/cover` HTTP endpoint end-to-end through Grid's UI (only the underlying compositor/storage functions were smoke-tested directly in the container) — i.e. haven't posted a real gig through Grid and watched the cover appear.
 
 ## Next Steps
 
-1. **Create the `gig-covers` bucket** in Supabase Studio (public) — nothing works end-to-end without this.
-2. **Rebuild kria-api** (`docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build kria-api`) to pick up Pillow, then smoke-test `POST /gigs/{id}/cover` for real (currently only unit-tested the compositor in isolation).
-3. Run migration `0031` (auto-runs on backend startup, or `alembic upgrade head` manually).
-4. **Photo upload UI** — a step/panel in Grid's wizard (and eventually the hidden Pocket host flow) to let hosts pick a photo before/after posting, calling `generateGigCover(id, photoFile)`. Not built yet — current wiring only produces the template-only cover.
-5. Surface `cover_image_url` somewhere it's actually seen — Grid's gig list/detail cards and Pocket's Explore feed don't render it yet (this whole feature is invisible in the UI until that's wired).
-6. OG meta tags for gig links (WhatsApp sharing) using `cover_image_square_url` — not wired.
+1. Post a real gig through Grid and confirm the cover appears on the list thumbnail and detail page (closes the loop on the one untested hop — the actual HTTP endpoint call from the browser).
+2. **Photo upload UI** — a step/panel in Grid's wizard (and eventually the hidden Pocket host flow) to let hosts pick a photo before/after posting, calling `generateGigCover(id, photoFile)`. Backend already supports it; no UI yet.
+3. Render the cover on Pocket's Explore swipe card and the compact list card — needs a small design pass first (see "Deliberately not touched" above), not just a drop-in.
+4. OG meta tags for gig links (WhatsApp sharing) using `cover_image_square_url` — not wired.
+5. Regenerate covers for gigs created before this feature shipped (`cover_image_url` will be `null` for them) — either a backfill script or just leave them without a cover.
 
 See also: [[gigs]] (category taxonomy + wizard steps), [[gig_cover_asset_pipeline]] (how the art assets were made/can be regenerated).

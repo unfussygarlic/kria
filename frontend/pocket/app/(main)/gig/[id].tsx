@@ -8,6 +8,7 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -85,6 +86,11 @@ export default function GigDetailScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* Cover art */}
+        {gig.cover_image_url && (
+          <Image source={{ uri: gig.cover_image_url }} style={styles.cover} resizeMode="cover" />
+        )}
+
         {/* Category Badge */}
         <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
           <Text style={styles.categoryText}>{categoryInfo?.label}</Text>
@@ -277,6 +283,13 @@ const styles = StyleSheet.create({
   content: {
     padding: rw(16),
     paddingBottom: rw(24),
+  },
+  cover: {
+    width: "100%",
+    aspectRatio: 4 / 5,
+    borderRadius: rw(16),
+    marginBottom: rw(16),
+    backgroundColor: T.surface2,
   },
   categoryBadge: {
     alignSelf: "flex-start",

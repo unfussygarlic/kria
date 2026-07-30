@@ -32,7 +32,7 @@
 - [Email Notifications](features/email.md) — Resend, 3 email types, webhook architecture, unsubscribe, env vars, pending Supabase webhook setup
 - [SMS Notifications](features/sms_notifications.md) — Fast2SMS via GoTrue hook, sms_notifications/ module, template registry, how to add new templates
 - [Help & Support](features/help_support.md) — Grid /support page, FAQ accordion, 7-category query form + My Tickets tab (GET /support/my-tickets, email fallback), Resend notifications, Admin Dashboard integration
-- [Gig Cover Images](features/gig_cover_images.md) — template-based cover art, built end-to-end for no-photo path (manifest/compositor/storage/migration 0031/Grid wiring); remaining: Supabase bucket creation, Docker rebuild, photo-upload UI
+- [Gig Cover Images](features/gig_cover_images.md) — template-based cover art, deployed + verified on EC2, rendered in Grid list/detail + Pocket gig detail; remaining: photo-upload UI, Explore card, OG tags
 - [Gig Cover Asset Pipeline](features/gig_cover_asset_pipeline.md) — Claude-authored (not Stitch) generator for the 6 category-group covers, `~/envs/covers` venv, regeneration scripts
 
 ## Project

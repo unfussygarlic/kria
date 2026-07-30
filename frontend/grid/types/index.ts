@@ -136,6 +136,8 @@ export interface Gig {
   status: GigStatus;
   is_paused: boolean;
   momentum_boost: number;
+  cover_image_url: string | null;
+  cover_image_square_url: string | null;
   created_at: string;
   updated_at: string;
 }
