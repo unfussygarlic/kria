@@ -20,7 +20,7 @@ grid/
 │   ├── globals.css              # Tailwind v4 + Solar Flare @theme + skill graph CSS vars
 │   ├── layout.tsx               # Space Grotesk font, bg-bg text-text
 │   ├── page.tsx                 # redirect("/dashboard")
-│   ├── login/page.tsx           # Email OTP auth (2-step: email → OTP, auto-submit at 6 digits, 60s resend)
+│   ├── login/page.tsx           # Scroll-story landing page + sticky email-OTP sign-in card (redesigned 2026-07-20)
 │   ├── onboarding/page.tsx      # New host onboarding (2-step: name → city/state with skip)
 │   └── (dashboard)/
 │       ├── layout.tsx           # Auth guard + Sidebar
@@ -69,7 +69,7 @@ grid/
 | Path | Page |
 |------|------|
 | `/` | → redirect to `/dashboard` |
-| `/login` | Email OTP sign in (email → 6-digit code) |
+| `/login` | Scroll-story landing page (what Grid is, for employers) + sticky email-OTP sign-in card |
 | `/onboarding` | New host onboarding (name + optional city/state) |
 | `/dashboard` | Stats: Active Gigs, Total Events, Slots Filled, Total Posted |
 | `/gigs` | Gig list (status filter tabs + search) |
@@ -82,6 +82,56 @@ grid/
 | `/analytics` | Analytics Center — KPI cards, funnel, category perf, monthly activity, city distribution, heatmap |
 | `/profile` | Edit display_name + bio, reputation bar, stats |
 | `/support` | Help & Support — FAQ accordion + query form + My Tickets tab |
+
+## Login / Landing Page (`/login`) — Scroll-Story Redesign (2026-07-20)
+
+Grid previously had no real landing page — `/login` was a generic split-screen sign-in form. It was rebuilt as a combined marketing landing page + sign-in, imported from a Claude Design `.dc.html` prototype (via the `DesignSync` MCP tool: `list_files`/`get_file` against a `claude.ai/design` project, then hand-translated into real React/Next.js — the `.dc.html` template syntax, `support.js` runtime, `sc-for`/`sc-if` placeholders etc. are a design-tool-only format, not shippable code) and iterated heavily afterward. All in `frontend/grid/app/login/page.tsx` (single file, ~800 lines, all inline styles + one `<style>` block for responsive/keyframe CSS — no Tailwind used here, unlike the rest of Grid).
+
+### Layout
+
+Two-column CSS Grid (`.grid-shell`): left = scrollable story column, right = sticky sign-in panel (`minmax(340px,480px)` wide, `position: sticky; top: 0; height: 100vh`).
+
+- **Header** (`.grid-header`) and **footer** (`.grid-footer`) are full-width children of the story column — logo flush left, theme toggle flush right, spanning the true column edges.
+- **Only the scroll-story article** (progress rail + scene text) is wrapped in `.grid-story-inner` (`max-width: 900px; margin: 0 auto`) so it reads at a comfortable width without hugging the left edge on wide screens, while header/footer stay edge-to-edge.
+- **Progress rail** (left nav: Grid / Why Grid / Post / Applicants / Check-in / Events / Start) uses `position: sticky` on an inner div (`.grid-rail-sticky`, `top: 34vh`) — **never add `overflow: hidden` to `.grid-rail`**, it silently breaks the sticky child (overflow ≠ visible on an ancestor becomes the sticky containing block; since that ancestor doesn't itself scroll, stickiness becomes a no-op). Use `white-space: nowrap` on rail labels instead if text-overflow protection is needed.
+- Below 1024px the grid collapses to one column (auth card first via `order`, story below) and the rail hides entirely — this breakpoint must stay in sync between the grid collapse and the rail visibility, or the rail floats oddly next to a now-single-column layout.
+
+### Scroll-reveal system
+
+`useReveal()` hook + `<Reveal>` wrapper — `IntersectionObserver`-driven fade/slide-in for scene content, keyed by `data-reveal-id` set via a `register(el, id)` callback.
+
+**Known trap:** the `IntersectionObserver` must be constructed *synchronously during render* (`if (!observerRef.current) observerRef.current = new IntersectionObserver(...)`), NOT inside the parent's `useEffect`. Child `Reveal` components register themselves in their own mount `useEffect`, and React fires child effects *before* parent effects — so a parent-side `useEffect` to create the observer always loses that race, leaving every `register()` call silently no-op and all scene content stuck at `opacity: 0` forever. This bit us once already; don't reintroduce it.
+
+### Scenes (in order, 0–6, matching `RAIL_STEPS`)
+
+| # | Scene | Content |
+|---|-------|---------|
+| 0 | Intro | Eyebrow + headline ("Hire verified shift & gig staff across India.") + plain-language explainer + two CTAs: "See how it works" (scroll-jump) and "Talk to us" (`mailto:support@trykria.com`) |
+| 1 | Why Grid | "Without Grid" vs "With Grid" two-column comparison (WhatsApp groups/no-shows vs verified history/OTP check-in) |
+| 2 | Post a gig | Interactive demo: role field types itself, Publish button toggles state (decorative, not wired to real data) |
+| 3 | Applicants | 3 sample applicant cards with Momentum band colors + Accept toggle; 6-band legend (`--band-newcomer` → `--band-legend`) shown above the list so the score colors are explained |
+| 4 | Check-in | 4-digit OTP boxes animate in + "Priya checked in" note |
+| 5 | Events | Sample event card with role chips + "+ Add a role" (decorative) |
+| 6 | Close | Stylized browser-chrome mockup of the real Grid dashboard (sidebar nav, stat cards, live gig rows) + final sign-up nudge |
+
+Scenes 2–6 are pure illustration/demo state (local `useState`, not backed by the real API) — intentional, since this page renders before any auth session exists.
+
+### Sign-in card (right panel)
+
+Same underlying auth logic as before (`supabase.auth.signInWithOtp`/`verifyOtp`, `first_name` discriminator → `/dashboard` vs `/onboarding`, 60s resend cooldown) — only the presentation changed:
+- OTP entry is now 6 individual auto-advancing digit boxes (matches the Pocket app's OTP box pattern) instead of one text input.
+- Email placeholder is `you@example.com` (was `you@yourbusiness.in` — wrongly implied a business-domain-only email).
+- Copy under the form: *"By continuing, you agree to Kria's Terms of Service and Privacy Policy"*, linking to the real `https://trykria.com/terms` and `https://trykria.com/privacy` pages (these already exist in `landing-page/app/terms` and `landing-page/app/privacy`).
+- Also above: "Live across 8 cities" pulse header with a rotating city name + live IST clock (decorative).
+- An earlier version had a rotating "activity feed" ticker (fake events like "A cafe in Pune hired 3 baristas") in this panel — **removed**, it was distracting next to the actual sign-in action. Don't re-add without a real events feed.
+
+### Footer
+
+Real links only — no placeholders: `https://trykria.com`, `https://trykria.com/terms`, `https://trykria.com/privacy`, `mailto:support@trykria.com`. (`kria.in` was a wrong domain used in an early draft — the real domain is `trykria.com`.)
+
+### Copy positioning
+
+Grid's landing copy leads with plain verbs for a non-technical Indian-employer audience ("Hire verified shift & gig staff across India") rather than cleverness, based on how WorkIndia/Apna/Gig4U/Equal pitch employers — verified/fast/no-middlemen framing tests better than abstract taglines for this audience.
 
 ## Applications Page (`/applications`) — "Command Center" Design
 

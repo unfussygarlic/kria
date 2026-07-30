@@ -15,7 +15,7 @@
 - [Mobile: Screens](apps/mobile/screens.md) — screen-by-screen UX decisions (incl. verify-identity multi-ID flow)
 - [Mobile: Animations](apps/mobile/animations.md) — PanResponder, Animated API, NativeWind conflict
 - [Mobile: Patterns](apps/mobile/patterns.md) — reusable components, stores, code gotchas
-- [Grid (Host Dashboard)](apps/grid/overview.md) — routes, sidebar order, TopBar dropdown (incl. Help & Support), auth flow, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, force-dynamic pattern, CSS vars
+- [Grid (Host Dashboard)](apps/grid/overview.md) — routes, sidebar order, TopBar dropdown (incl. Help & Support), auth flow, scroll-story `/login` landing page, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, force-dynamic pattern, CSS vars
 - [Admin Dashboard: Plan](apps/admin/plan.md) — architecture, auth (is_admin flag), all 8 sections, backend work, 3 phases
 - [Admin Dashboard: Design](apps/admin/design.md) — Dark Ops aesthetic, icon rail nav, bento overview, band-DNA user table, kanban queue, split ticket panel, radar health rings
 - [Admin Dashboard: Progress](apps/admin/progress.md) — Phase 1 complete ✅; Phase 2 (verification FastAPI endpoints, gigs page) next
@@ -32,6 +32,8 @@
 - [Email Notifications](features/email.md) — Resend, 3 email types, webhook architecture, unsubscribe, env vars, pending Supabase webhook setup
 - [SMS Notifications](features/sms_notifications.md) — Fast2SMS via GoTrue hook, sms_notifications/ module, template registry, how to add new templates
 - [Help & Support](features/help_support.md) — Grid /support page, FAQ accordion, 7-category query form + My Tickets tab (GET /support/my-tickets, email fallback), Resend notifications, Admin Dashboard integration
+- [Gig Cover Images](features/gig_cover_images.md) — template-based cover art, built end-to-end for no-photo path (manifest/compositor/storage/migration 0031/Grid wiring); remaining: Supabase bucket creation, Docker rebuild, photo-upload UI
+- [Gig Cover Asset Pipeline](features/gig_cover_asset_pipeline.md) — Claude-authored (not Stitch) generator for the 6 category-group covers, `~/envs/covers` venv, regeneration scripts
 
 ## Project
 - [Demo Seed](project/demo_seed.md) — Priya Mehta demo account, 15 gigs, 15 runners, all UUIDs

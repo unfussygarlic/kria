@@ -1,12 +1,14 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.middleware import CurrentUser
+from app.covers.compositor import generate_cover, to_square_crop
+from app.covers.storage import upload_cover
 from app.db.session import get_db
 from app.models.gig import GigMatchRequest, GigMatchResponse
 from app.recommendations.engine import match_gigs_for_worker
@@ -315,3 +317,82 @@ async def match_gigs(
     - Recency:        10%
     """
     return await match_gigs_for_worker(db, current_user.user_id, request)
+
+
+# ── Cover image ──────────────────────────────────────────────────────────────
+
+_COVER_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_COVER_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def _format_pay(amount: float, pay_type: str) -> str:
+    label = f"₹{amount:,.0f}"
+    if pay_type == "hourly":
+        return f"{label}/hr"
+    if pay_type == "per_day":
+        return f"{label}/day"
+    return label
+
+
+class CoverResponse(BaseModel):
+    cover_image_url: str
+    cover_image_square_url: str
+
+
+@router.post("/{gig_id}/cover", response_model=CoverResponse)
+async def generate_gig_cover(
+    gig_id: str,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+    photo: Optional[UploadFile] = File(None, description="Optional host photo for the cover's photo slot"),
+) -> CoverResponse:
+    """
+    Generates (or regenerates) a gig's cover image from its own data — call
+    right after creating the gig (mirrors the pattern used for
+    PATCH /{gig_id}/location). Template-based, not AI — see
+    memory/features/gig_cover_images.md.
+    """
+    row = await db.execute(
+        text("""
+            SELECT g.poster_id, g.category, g.title, g.pay_amount, g.pay_type::text, g.city,
+                   COALESCE(g.company_name, p.display_name) AS host_name
+            FROM gigs g
+            JOIN profiles p ON p.id = g.poster_id
+            WHERE g.id = :id
+        """),
+        {"id": gig_id},
+    )
+    gig = row.mappings().first()
+    if not gig:
+        raise HTTPException(status_code=404, detail="Gig not found.")
+    if str(gig["poster_id"]) != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not your gig.")
+
+    photo_bytes: Optional[bytes] = None
+    if photo is not None:
+        if photo.content_type not in _COVER_ALLOWED_TYPES:
+            raise HTTPException(status_code=422, detail="photo: must be JPEG, PNG, or WebP")
+        photo_bytes = await photo.read()
+        if len(photo_bytes) > _COVER_MAX_BYTES:
+            raise HTTPException(status_code=422, detail="photo: file too large (max 10 MB)")
+
+    cover_png = generate_cover(
+        category=gig["category"],
+        title=gig["title"],
+        pay_label=_format_pay(gig["pay_amount"], gig["pay_type"]),
+        host_name=gig["host_name"] or "",
+        city=gig["city"] or "",
+        photo_bytes=photo_bytes,
+    )
+    square_png = to_square_crop(cover_png)
+
+    cover_url = await upload_cover(gig_id, "cover.png", cover_png)
+    square_url = await upload_cover(gig_id, "cover-square.png", square_png)
+
+    await db.execute(
+        text("UPDATE gigs SET cover_image_url = :url, cover_image_square_url = :square_url WHERE id = :id"),
+        {"url": cover_url, "square_url": square_url, "id": gig_id},
+    )
+    await db.commit()
+
+    return CoverResponse(cover_image_url=cover_url, cover_image_square_url=square_url)

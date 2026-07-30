@@ -6,6 +6,38 @@ type: project
 
 # Changelog
 
+## 2026-07-20 — Grid Login Page Redesign (Scroll-Story Landing)
+
+### Grid: `/login` rebuilt as landing page + sign-in
+
+Grid had no marketing landing page — `/login` was a generic split-screen sign-in form with zero explanation of what Grid does. Rebuilt from scratch as a scroll-story landing page with a sticky sign-in panel. Full design writeup in `memory/apps/grid/overview.md` under "Login / Landing Page".
+
+**Origin:** Design was prototyped in Claude Design (`claude.ai/design`) and imported via the `DesignSync` MCP tool (`get_project`/`list_files`/`get_file` — read-only here, no `finalize_plan`/`write_files` needed since this was a one-way pull into the codebase, not a synced component library). The `.dc.html` source uses a design-tool-only template syntax (`x-dc`, `sc-for`, `sc-if`, a `support.js` runtime) — hand-translated into plain React/Next.js, not shippable as-is.
+
+**Structure:** Two-column CSS Grid — scrollable story column (header, progress rail, 7 scenes, footer) + sticky right-side sign-in card. All inline styles + one `<style>` block (no Tailwind, unlike rest of Grid).
+
+**Bugs found and fixed during iteration (all now documented as gotchas in `apps/grid/overview.md`):**
+1. **Scroll-reveal content stuck invisible** — `IntersectionObserver` was created inside the parent's `useEffect`, but child `Reveal` components register in their own mount effect, which fires *before* the parent's (React fires child effects before parent effects). Every registration silently no-op'd. Fixed by constructing the observer synchronously during render instead.
+2. **Sticky rail nav not sticking** — an `overflow: hidden` safety-guard added to the rail column (meant to prevent label text overflow) inadvertently became the sticky containing block for its child, breaking `position: sticky` entirely. Removed; used `white-space: nowrap` instead.
+3. **Progress rail floated over blank content on laptop widths** — rail visibility toggled at Tailwind's `md` (768px) while the two-column layout only collapsed at 1023px, so any window in that range showed a single-column mobile layout with the rail still rendered beside it. Unified both to the same 1024px breakpoint.
+4. **Big empty gap on wide screens** — scene content had a fixed `max-width` anchored to the left, so excess width on large monitors piled up entirely on the right. Fixed by wrapping the article (not the header/footer) in a centered `max-width: 900px` container.
+
+**Content additions (design review pass):**
+- "Why Grid" before/after scene (WhatsApp groups/no-shows vs. verified history/OTP check-in)
+- Stylized browser-chrome mockup of the real dashboard in the closing scene (no live screenshot — chose illustration over running the dev server with seeded data)
+- 6-band Momentum trust-score legend inline in the Applicants scene
+- Two real secondary CTAs ("See how it works" scroll-jump, "Talk to us" → `mailto:support@trykria.com`) replacing a passive scroll hint
+- Real footer links (`trykria.com`, `/terms`, `/privacy`, `mailto:support@trykria.com`) replacing `#` placeholders and a wrong `kria.in` domain
+- Removed a rotating fake "activity feed" ticker from the sign-in panel — read as distracting/gimmicky next to the actual sign-in action
+- Terms/Privacy acceptance notice added under the sign-in form, linking to the real pages in `landing-page/app/terms` and `landing-page/app/privacy`
+- Email placeholder changed from `you@yourbusiness.in` → `you@example.com` (any email works, not just business domains)
+
+**Copy direction:** researched how India-focused gig/blue-collar hiring platforms (WorkIndia, Apna, Gig4U, Equal) pitch employers — plain verbs ("hire", "verified", "fast", "no middlemen") outperform abstract taglines for this non-technical employer audience. Headline changed from "Post a gig. Good people show up." to "Hire verified shift & gig staff across India."
+
+**Deliberately skipped:** a real social-proof/stats section — no real usage numbers exist pre-launch, and fabricating them was ruled out.
+
+---
+
 ## 2026-06-21 — Admin Dashboard Phase 1 Complete + Help & Support + Supabase Key Updates
 
 ### Admin Dashboard — Phase 1 shipped

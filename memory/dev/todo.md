@@ -75,6 +75,7 @@ Audited 2026-05-30. Fix in priority order.
 | ~~SVG logo integration (mobile)~~ | ~~`frontend/pocket/assets/`~~ | ✅ Done 2026-06-20 — `logo.svg` converted to PNG assets (icon, adaptive-icon, splash) via ImageMagick; `KriaLogo.tsx` inline SVG component added to Grid |
 | Date picker text invisible (iOS) | `frontend/pocket/app/(main)/event/create.tsx` | Bug from earlier session, not fixed |
 | Host role in mobile | all `SHOW_HOST_ROLE` flags | Future: set to `true` and re-enable mobile Host experience |
+| Grid `/login`: add real social-proof section | `frontend/grid/app/login/page.tsx` | Deliberately skipped in the 2026-07-20 redesign — no real usage numbers/testimonials exist pre-launch. Add a stat strip or host quote once real data exists; do not fabricate numbers. |
 
 ## SVG Logo Details
 

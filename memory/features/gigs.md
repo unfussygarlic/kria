@@ -18,7 +18,7 @@ Via `supabase.from("gigs").insert(...)` directly. No FastAPI needed.
 
 ## Gig Creation (Grid — 4-step wizard)
 
-1. **Category** — emoji grid (14 categories)
+1. **Category** — emoji-grouped role picker (NOT a flat 14-category list — see Categories below)
 2. **Basic Info** — title, company, description, slots, pay amount + type
 3. **Schedule** — venue, city, date, shift start/end, report time
    - "Fetch Location" button appears when venue + city are filled
@@ -29,13 +29,25 @@ Via `supabase.from("gigs").insert(...)` directly. No FastAPI needed.
 On submit:
 1. `supabase.from("gigs").insert({...}).select().single()` — creates gig row
 2. If geocoded: `PATCH /api/v1/gigs/{id}/location` — sets `location_point` (PostGIS), `venue_lat`, `venue_lng`, `venue_formatted_address`
-3. Redirect to `/gigs/${gig.id}`
+3. `POST /api/v1/gigs/{id}/cover` (fire-and-forget) — generates auto cover art, see [[gig_cover_images]]
+4. Redirect to `/gigs/${gig.id}`
 
-**Key files:** `grid/app/(dashboard)/gigs/new/page.tsx`, `grid/lib/api/recommendations.ts`
+**Key files:** `frontend/grid/app/(dashboard)/gigs/new/page.tsx`, `frontend/grid/lib/api/recommendations.ts`, `frontend/grid/lib/api/gigs.ts`
 
-## Categories
+## Categories (corrected 2026-07-30 — previous "14 categories" list here was stale/wrong)
 
-14 categories: Events/Hospitality, Retail, Promotions, Delivery, Security, Housekeeping, F&B, Healthcare Support, Logistics, Admin/Office, IT Support, Tutoring, Fitness/Sports, Other.
+`gigs.category` is a specific role (`GigCategory` type, `frontend/grid/types/index.ts`), grouped in the wizard UI into 6 groups (`ROLE_GROUPS` in `gigs/new/page.tsx`):
+
+| Group (emoji) | Roles (`category` DB values) |
+|---|---|
+| 🎪 Event & Promotion | `event_registration`, `usher`, `booth_staff`, `promoter`, `sampling_promoter`, `lead_collection`, `event_helper` |
+| 🍽️ Hospitality | `hospitality_staff`, `guest_management`, `front_desk` |
+| 💻 Technical Support | `event_tech_support`, `sound_light_assistant` |
+| 📸 Media & Content | `photographer`, `videographer`, `social_media_creator` |
+| 🎤 Stage & Hosting | `emcee` |
+| 🔧 Other | `other` |
+
+Kria is an **event-staffing** marketplace specifically, not a general gig marketplace (no delivery/retail/security/etc. categories exist). This 6-group taxonomy is also what `backend/api/app/covers/manifest.py` maps cover-image templates onto — keep both in sync if the wizard's groups change.
 
 ## OTP Check-in Flow
 

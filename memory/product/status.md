@@ -6,7 +6,7 @@ type: project
 
 # Kria — Current Product Status
 
-Last updated: 2026-06-21
+Last updated: 2026-07-20
 
 ## Mobile App (Runners)
 
@@ -43,6 +43,7 @@ Last updated: 2026-06-21
   - **Applications inbox** — global view of all applicants with full profile modal, SkillGraph, signal legend, profile completion chips
   - Analytics Center, Profile
   - Dark/light theme toggle
+  - **`/login` scroll-story landing page** (redesigned 2026-07-20) — explains what Grid does for employers before asking them to sign in; combined marketing page + sticky sign-in card. See `apps/grid/overview.md` "Login / Landing Page" section. No real social-proof/stats section yet — deliberately deferred until real usage numbers exist post-launch.
 
 ## Landing Page
 

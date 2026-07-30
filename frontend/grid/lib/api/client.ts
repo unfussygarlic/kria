@@ -55,6 +55,27 @@ export async function apiPost<T>(path: string, body: unknown): Promise<ApiResult
   }
 }
 
+export async function apiPostForm<T>(path: string, form: FormData): Promise<ApiResult<T>> {
+  const auth = await getAuthHeader();
+  if (!auth) return { data: null, error: "Not authenticated" };
+
+  try {
+    // No Content-Type header — the browser sets the multipart boundary automatically.
+    const res = await fetch(`${API_URL}${path}`, {
+      method: "POST",
+      headers: { Authorization: auth },
+      body: form,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+      return { data: null, error: extractError(err.detail, res.status) };
+    }
+    return { data: (await res.json()) as T, error: null };
+  } catch {
+    return { data: null, error: "Network error" };
+  }
+}
+
 export async function apiPatch<T>(path: string, body: unknown): Promise<ApiResult<T>> {
   const auth = await getAuthHeader();
   if (!auth) return { data: null, error: "Not authenticated" };

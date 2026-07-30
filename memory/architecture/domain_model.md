@@ -55,10 +55,11 @@ Posted by a Host.
   - `venue_formatted_address` TEXT nullable — Google Maps resolved address string
   - Set together via `PATCH /api/v1/gigs/{id}/location` after geocoding in Grid wizard
 
-### `gigs` — additional columns (migration 0027, 0028)
+### `gigs` — additional columns (migration 0027, 0028, 0031)
 - `is_paused BOOLEAN NOT NULL DEFAULT FALSE` — orthogonal to status; only pauseable when status is `open` or `in_progress`; paused gigs excluded from runner recommendations feed
 - `first_application_notified BOOLEAN NOT NULL DEFAULT FALSE` — prevents duplicate first-application emails
 - `last_burst_email_at TIMESTAMPTZ` — cooldown tracker for burst emails
+- `cover_image_url TEXT`, `cover_image_square_url TEXT` — auto-generated template-based cover art (migration 0031). Set by `POST /api/v1/gigs/{id}/cover`, called by Grid right after gig creation. See [[gig_cover_images]].
 
 ### `email_unsubscribes`
 Per-user, per-category unsubscribe registry (migration 0028).

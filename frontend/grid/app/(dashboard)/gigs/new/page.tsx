@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Info, MapPin, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { geocodeVenue, updateGigLocation } from "@/lib/api/recommendations";
+import { generateGigCover } from "@/lib/api/gigs";
 import type { GigCategory, PayType, GenderPreference } from "@/types";
 
 const ROLE_GROUPS: {
@@ -186,6 +187,13 @@ export default function NewGigPage() {
     if (form.venue_lat !== null && form.venue_lng !== null) {
       await updateGigLocation(data.id, form.venue_lat, form.venue_lng, form.geocoded_address);
     }
+
+    // Auto-generate cover art (template-based). No photo yet — that's a
+    // future "customize cover" step; this call still renders a clean
+    // template-only cover so every gig has one immediately.
+    generateGigCover(data.id).catch(() => {
+      // Non-fatal — gig is already created either way, cover can be regenerated later.
+    });
 
     setSubmitting(false);
     router.replace(`/gigs/${data.id}`);
