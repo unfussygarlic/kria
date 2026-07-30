@@ -1,15 +1,17 @@
 """
-Generates the 6 gig-category-group cover backgrounds (matches Grid's actual
-gig wizard ROLE_GROUPS, not the earlier 14-category draft): organic gradient
-blobs + a simple friendly icon, on the dark ink brand base. Rasterizes to PNG
-at 1080x1350 alongside the foreground frame SVGs.
+Generates the 6 gig-category-group cover backgrounds: organic gradient
+blobs + a simple friendly icon, on the dark ink brand base. Two independent
+canvas profiles — portrait (1080x1350, the primary card) and square
+(1080x1080, its own composition for OG/WhatsApp previews and small
+thumbnails — NOT a crop of the portrait one, see memory/features/
+gig_cover_images.md for why). Rasterizes to PNG alongside the foreground
+frame SVGs.
 
 Run inside the ~/envs/covers virtualenv (cairosvg + pillow).
 """
 import os
 import cairosvg
 
-W, H = 1080, 1350
 INK = "#0e0e0e"
 
 # slug matches app.covers.manifest — mirrors frontend/grid ROLE_GROUPS
@@ -23,7 +25,28 @@ CATEGORIES = [
     ("other",               "#8097ff", "dots",        6),
 ]
 
-CX, CY = 540, 460  # icon center — upper-middle, leaves lower third clear
+# Each profile is a fully independent composition — different canvas size,
+# different icon position, different amount of space reserved for text.
+PROFILES = {
+    "portrait": {
+        "filename": "background.png",
+        "W": 1080, "H": 1350,
+        "CX": 540, "CY": 460,
+        "icon_scale": 1.35,
+        "fade_start_frac": 0.62,   # bottom ~38% fades to ink (text zone)
+        "seed_offset": 0,
+    },
+    "square": {
+        "filename": "background_square.png",
+        "W": 1080, "H": 1080,
+        "CX": 540, "CY": 400,
+        "icon_scale": 1.15,
+        "fade_start_frac": 0.56,   # bottom ~44% fades to ink (text zone) — a
+                                    # square canvas has less total height, so
+                                    # the text zone needs a bigger share of it
+        "seed_offset": 100,        # different blob layout than the portrait version
+    },
+}
 
 
 def icon_paths(key: str, color: str) -> str:
@@ -155,16 +178,17 @@ def icon_paths(key: str, color: str) -> str:
     return ""
 
 
-def blob_defs_and_shapes(color: str, seed: int) -> tuple[str, str]:
-    """Two/three soft blurred radial-gradient blobs, mostly upper 2/3."""
+def blob_defs_and_shapes(color: str, seed: int, w: int, h: int) -> tuple[str, str]:
+    """Three soft blurred radial-gradient blobs, positioned proportionally
+    to the canvas so the same logic works for both portrait and square."""
     import random
     rnd = random.Random(seed)
     defs = []
     shapes = []
     positions = [
-        (rnd.randint(150, 350), rnd.randint(200, 400), rnd.randint(260, 340)),
-        (rnd.randint(700, 950), rnd.randint(150, 350), rnd.randint(220, 300)),
-        (rnd.randint(350, 750), rnd.randint(550, 750), rnd.randint(240, 320)),
+        (rnd.uniform(0.14, 0.32) * w, rnd.uniform(0.15, 0.30) * h, rnd.uniform(0.24, 0.31) * w),
+        (rnd.uniform(0.65, 0.88) * w, rnd.uniform(0.11, 0.26) * h, rnd.uniform(0.20, 0.28) * w),
+        (rnd.uniform(0.32, 0.70) * w, rnd.uniform(0.40, 0.56) * h, rnd.uniform(0.22, 0.30) * w),
     ]
     for i, (bx, by, br) in enumerate(positions):
         gid = f"blob{seed}_{i}"
@@ -173,28 +197,32 @@ def blob_defs_and_shapes(color: str, seed: int) -> tuple[str, str]:
           <stop offset="0%" stop-color="{color}" stop-opacity="0.32"/>
           <stop offset="100%" stop-color="{color}" stop-opacity="0"/>
         </radialGradient>''')
-        shapes.append(f'<circle cx="{bx}" cy="{by}" r="{br}" fill="url(#{gid})"/>')
+        shapes.append(f'<circle cx="{bx:.0f}" cy="{by:.0f}" r="{br:.0f}" fill="url(#{gid})"/>')
     return "".join(defs), "".join(shapes)
 
 
-def build_svg(slug: str, color: str, icon_key: str, seed: int) -> str:
-    blob_defs, blob_shapes = blob_defs_and_shapes(color, seed)
+def build_svg(color: str, icon_key: str, seed: int, profile: dict) -> str:
+    w, h = profile["W"], profile["H"]
+    cx, cy = profile["CX"], profile["CY"]
+    blob_seed = seed + profile["seed_offset"]
+    blob_defs, blob_shapes = blob_defs_and_shapes(color, blob_seed, w, h)
     icon = icon_paths(icon_key, color)
-    return f'''<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg">
+    fade_y = int(h * profile["fade_start_frac"])
+    return f'''<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     {blob_defs}
-    <linearGradient id="bottomFade_{seed}" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="bottomFade_{blob_seed}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="{INK}" stop-opacity="0"/>
       <stop offset="100%" stop-color="{INK}" stop-opacity="0.9"/>
     </linearGradient>
   </defs>
-  <rect width="{W}" height="{H}" fill="{INK}"/>
+  <rect width="{w}" height="{h}" fill="{INK}"/>
   {blob_shapes}
-  <circle cx="{CX}" cy="{CY}" r="150" fill="{color}" opacity="0.10"/>
-  <g transform="translate({CX},{CY}) scale(1.35)">
+  <circle cx="{cx}" cy="{cy}" r="150" fill="{color}" opacity="0.10"/>
+  <g transform="translate({cx},{cy}) scale({profile['icon_scale']})">
     {icon}
   </g>
-  <rect x="0" y="{int(H*0.62)}" width="{W}" height="{int(H*0.38)}" fill="url(#bottomFade_{seed})"/>
+  <rect x="0" y="{fade_y}" width="{w}" height="{h - fade_y}" fill="url(#bottomFade_{blob_seed})"/>
 </svg>'''
 
 
@@ -203,10 +231,12 @@ if __name__ == "__main__":
     for slug, color, icon_key, seed in CATEGORIES:
         folder = os.path.join(out_root, slug)
         os.makedirs(folder, exist_ok=True)
-        svg = build_svg(slug, color, icon_key, seed)
-        svg_path = os.path.join(folder, "background.svg")
-        png_path = os.path.join(folder, "background.png")
-        with open(svg_path, "w") as f:
-            f.write(svg)
-        cairosvg.svg2png(url=svg_path, write_to=png_path, output_width=W, output_height=H)
-        print("wrote", png_path)
+        for profile_name, profile in PROFILES.items():
+            svg = build_svg(color, icon_key, seed, profile)
+            base = os.path.splitext(profile["filename"])[0]
+            svg_path = os.path.join(folder, f"{base}.svg")
+            png_path = os.path.join(folder, profile["filename"])
+            with open(svg_path, "w") as f:
+                f.write(svg)
+            cairosvg.svg2png(url=svg_path, write_to=png_path, output_width=profile["W"], output_height=profile["H"])
+            print("wrote", png_path)

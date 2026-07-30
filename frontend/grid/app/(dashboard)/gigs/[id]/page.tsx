@@ -153,10 +153,11 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
         {/* Left column: gig info */}
         <div className="lg:col-span-5 space-y-4">
 
-          {/* Cover art */}
+          {/* Cover art — aspect-[4/5] matches the source image (1080x1350); a
+              fixed height here would force object-cover to crop top+bottom */}
           {gig.cover_image_url && (
             <div className="rounded-xl overflow-hidden border border-white/10 bg-surface-1">
-              <img src={gig.cover_image_url} alt="" className="w-full h-72 object-cover" />
+              <img src={gig.cover_image_url} alt="" className="w-full aspect-[4/5] object-cover" />
             </div>
           )}
 

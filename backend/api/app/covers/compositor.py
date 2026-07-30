@@ -5,26 +5,17 @@ Render order: background (category art, full-bleed) -> host photo (if any,
 cropped/masked into the photo slot; background art shows through the slot
 untouched if no photo) -> foreground (frame/border/chip, transparent PNG)
 -> text (title/pay/host name/city, drawn here — never baked into the art).
+
+Two independent layouts (manifest.PORTRAIT, manifest.SQUARE) share this same
+render function — the square variant is its own composition, not a crop of
+the portrait one (see memory/features/gig_cover_images.md for why).
 """
 import io
 import os
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-from app.covers.manifest import (
-    CANVAS_H,
-    CANVAS_W,
-    CHIP,
-    GROUPS,
-    HOST_CITY_Y,
-    PAY_Y,
-    PHOTO_SLOT,
-    PHOTO_SLOT_RADIUS,
-    TEXT_ZONE_RIGHT,
-    TEXT_ZONE_X,
-    TITLE_Y,
-    group_for_category,
-)
+from app.covers.manifest import PORTRAIT, SQUARE, Layout, group_for_category
 
 _ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 _FONTS_DIR = os.path.join(_ASSETS_DIR, "fonts")
@@ -60,12 +51,12 @@ def _rounded_mask(size: tuple[int, int], radius: int) -> Image.Image:
     return mask
 
 
-def _paste_photo(base: Image.Image, photo_bytes: bytes) -> None:
+def _paste_photo(base: Image.Image, photo_bytes: bytes, layout: Layout) -> None:
     """Cover-fit crops the photo to the slot and pastes it (rounded mask) in place."""
     photo = Image.open(io.BytesIO(photo_bytes))
     photo = ImageOps.exif_transpose(photo).convert("RGB")
 
-    slot_x, slot_y, slot_w, slot_h = PHOTO_SLOT
+    slot_x, slot_y, slot_w, slot_h = layout.photo_slot
     src_w, src_h = photo.size
     target_ratio = slot_w / slot_h
     src_ratio = src_w / src_h
@@ -82,7 +73,7 @@ def _paste_photo(base: Image.Image, photo_bytes: bytes) -> None:
         photo = photo.crop((0, top, src_w, top + new_h))
 
     photo = photo.resize((slot_w, slot_h), Image.LANCZOS).convert("RGBA")
-    mask = _rounded_mask((slot_w, slot_h), PHOTO_SLOT_RADIUS)
+    mask = _rounded_mask((slot_w, slot_h), layout.photo_slot_radius)
     base.paste(photo, (slot_x, slot_y), mask)
 
 
@@ -114,29 +105,29 @@ def _wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFon
     return lines
 
 
-def generate_cover(
+def _render(
+    layout: Layout,
     category: str,
     title: str,
     pay_label: str,
     host_name: str,
     city: str,
-    photo_bytes: bytes | None = None,
+    photo_bytes: bytes | None,
 ) -> bytes:
-    """Renders a gig cover PNG (1080x1350) and returns the encoded bytes."""
     group = group_for_category(category)
 
-    base = _load_layer(group.slug, "background.png")
+    base = _load_layer(group.slug, layout.background_file)
     if photo_bytes:
-        _paste_photo(base, photo_bytes)
+        _paste_photo(base, photo_bytes, layout)
 
-    foreground = _load_layer(group.slug, "foreground.png")
+    foreground = _load_layer(group.slug, layout.foreground_file)
     composite = Image.alpha_composite(base, foreground)
 
     draw = ImageDraw.Draw(composite)
-    max_text_width = TEXT_ZONE_RIGHT - TEXT_ZONE_X
+    max_text_width = layout.text_zone_right - layout.text_zone_x
 
     # Category chip label — shrink to fit the fixed-width pill (labels vary in length)
-    chip_x, chip_y, chip_w, chip_h = CHIP
+    chip_x, chip_y, chip_w, chip_h = layout.chip
     chip_padding = 16
     chip_color = _readable_text_color(group.color)
     chip_label = group.label.upper()
@@ -155,44 +146,49 @@ def generate_cover(
         anchor="lm",
     )
 
-    # Title (up to 2 lines)
-    title_font = _font(_FONT_BOLD_PATH, 52)
-    title_lines = _wrap_text(draw, title, title_font, max_text_width, max_lines=2)
-    line_height = 60
-    y = TITLE_Y
+    # Title (up to layout.title_max_lines lines)
+    title_font = _font(_FONT_BOLD_PATH, layout.title_font_size)
+    title_lines = _wrap_text(draw, title, title_font, max_text_width, max_lines=layout.title_max_lines)
+    y = layout.title_y
     for line in title_lines:
-        draw.text((TEXT_ZONE_X, y), line, font=title_font, fill=(255, 255, 255, 255), anchor="lm")
-        y += line_height
+        draw.text((layout.text_zone_x, y), line, font=title_font, fill=(255, 255, 255, 255), anchor="lm")
+        y += layout.title_line_height
 
     # Pay
-    pay_font = _font(_FONT_BOLD_PATH, 42)
-    draw.text((TEXT_ZONE_X, PAY_Y), pay_label, font=pay_font, fill=group.color, anchor="lm")
+    pay_font = _font(_FONT_BOLD_PATH, layout.pay_font_size)
+    draw.text((layout.text_zone_x, layout.pay_y), pay_label, font=pay_font, fill=group.color, anchor="lm")
 
     # Host + city
-    meta_font = _font(_FONT_SEMIBOLD_PATH, 28)
+    meta_font = _font(_FONT_SEMIBOLD_PATH, layout.meta_font_size)
     meta_text = f"{host_name} · {city}" if host_name and city else (host_name or city or "")
     meta_lines = _wrap_text(draw, meta_text, meta_font, max_text_width, max_lines=1)
     if meta_lines:
-        draw.text((TEXT_ZONE_X, HOST_CITY_Y), meta_lines[0], font=meta_font, fill=(255, 255, 255, 200), anchor="lm")
+        draw.text((layout.text_zone_x, layout.host_city_y), meta_lines[0], font=meta_font, fill=(255, 255, 255, 200), anchor="lm")
 
     out = io.BytesIO()
     composite.convert("RGB").save(out, format="PNG", optimize=True)
     return out.getvalue()
 
 
-def to_square_crop(png_bytes: bytes) -> bytes:
-    """
-    Crops the 1080x1350 cover to 1080x1080 for OG/WhatsApp link previews.
-    Keeps the BOTTOM of the canvas, not the top — the title/pay/host text
-    zone lives at the bottom (see manifest.TITLE_Y etc.) and matters far
-    more in a link-preview thumbnail than the top photo/icon area.
-    """
-    image = Image.open(io.BytesIO(png_bytes)).convert("RGB")
-    w, h = image.size
-    side = min(w, h)
-    left = (w - side) // 2
-    top = h - side
-    cropped = image.crop((left, top, left + side, top + side))
-    out = io.BytesIO()
-    cropped.save(out, format="PNG", optimize=True)
-    return out.getvalue()
+def generate_cover(
+    category: str,
+    title: str,
+    pay_label: str,
+    host_name: str,
+    city: str,
+    photo_bytes: bytes | None = None,
+) -> bytes:
+    """Renders the primary 4:5 gig cover (1080x1350) and returns PNG bytes."""
+    return _render(PORTRAIT, category, title, pay_label, host_name, city, photo_bytes)
+
+
+def generate_square_cover(
+    category: str,
+    title: str,
+    pay_label: str,
+    host_name: str,
+    city: str,
+    photo_bytes: bytes | None = None,
+) -> bytes:
+    """Renders the square 1:1 gig cover (1080x1080) and returns PNG bytes."""
+    return _render(SQUARE, category, title, pay_label, host_name, city, photo_bytes)

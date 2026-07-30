@@ -1,0 +1,33 @@
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    
+        <radialGradient id="blob103_0" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#8097ff" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="#8097ff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="blob103_1" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#8097ff" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="#8097ff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="blob103_2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#8097ff" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="#8097ff" stop-opacity="0"/>
+        </radialGradient>
+    <linearGradient id="bottomFade_103" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e0e0e" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#0e0e0e" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="#0e0e0e"/>
+  <circle cx="342" cy="236" r="314" fill="url(#blob103_0)"/><circle cx="885" cy="154" r="223" fill="url(#blob103_1)"/><circle cx="593" cy="453" r="271" fill="url(#blob103_2)"/>
+  <circle cx="540" cy="400" r="150" fill="#8097ff" opacity="0.10"/>
+  <g transform="translate(540,400) scale(1.15)">
+    
+        <rect x="-55" y="-40" width="110" height="72" rx="10" fill="none" stroke="#8097ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="-20" y1="50" x2="20" y2="50" fill="none" stroke="#8097ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="0" y1="32" x2="0" y2="50" fill="none" stroke="#8097ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M -20 -5 L -5 12 L 25 -20" fill="none" stroke="#8097ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        
+  </g>
+  <rect x="0" y="604" width="1080" height="476" fill="url(#bottomFade_103)"/>
+</svg>

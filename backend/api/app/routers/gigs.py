@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.middleware import CurrentUser
-from app.covers.compositor import generate_cover, to_square_crop
+from app.covers.compositor import generate_cover, generate_square_cover
 from app.covers.storage import upload_cover
 from app.db.session import get_db
 from app.models.gig import GigMatchRequest, GigMatchResponse
@@ -376,7 +376,7 @@ async def generate_gig_cover(
         if len(photo_bytes) > _COVER_MAX_BYTES:
             raise HTTPException(status_code=422, detail="photo: file too large (max 10 MB)")
 
-    cover_png = generate_cover(
+    cover_kwargs = dict(
         category=gig["category"],
         title=gig["title"],
         pay_label=_format_pay(gig["pay_amount"], gig["pay_type"]),
@@ -384,7 +384,8 @@ async def generate_gig_cover(
         city=gig["city"] or "",
         photo_bytes=photo_bytes,
     )
-    square_png = to_square_crop(cover_png)
+    cover_png = generate_cover(**cover_kwargs)
+    square_png = generate_square_cover(**cover_kwargs)
 
     cover_url = await upload_cover(gig_id, "cover.png", cover_png)
     square_url = await upload_cover(gig_id, "cover-square.png", square_png)

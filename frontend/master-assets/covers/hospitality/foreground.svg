@@ -1,9 +1,9 @@
 <svg width="1080" height="1350" viewBox="0 0 1080 1350" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="118.8" y="100" width="842.4" height="850" rx="20" fill="none" stroke="#ff7351" stroke-width="2"/>
   <path d="M118.8 150V100H168.8" stroke="#ff7351" stroke-width="3"/>
-  <path d="M911.2 150V100H861.2" stroke="#ff7351" stroke-width="3"/>
+  <path d="M961.1999999999999 150V100H911.1999999999999" stroke="#ff7351" stroke-width="3"/>
   <path d="M118.8 900V950H168.8" stroke="#ff7351" stroke-width="3"/>
-  <path d="M911.2 900V950H861.2" stroke="#ff7351" stroke-width="3"/>
-  <rect x="118.8" y="50" width="180" height="40" rx="20" fill="#ff7351"/>
-  <path d="M961.2 950L981.2 930V970L961.2 950Z" fill="#ff7351"/>
+  <path d="M961.1999999999999 900V950H911.1999999999999" stroke="#ff7351" stroke-width="3"/>
+  <rect x="118.8" y="50" width="180" height="40" rx="20.0" fill="#ff7351"/>
+  <path d="M981.1999999999999 950L1001.1999999999999 930V970L981.1999999999999 950Z" fill="#ff7351"/>
 </svg>

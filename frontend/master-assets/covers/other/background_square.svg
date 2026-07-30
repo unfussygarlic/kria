@@ -1,0 +1,28 @@
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    
+        <radialGradient id="blob106_0" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#8097ff" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="#8097ff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="blob106_1" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#8097ff" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="#8097ff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="blob106_2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#8097ff" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="#8097ff" stop-opacity="0"/>
+        </radialGradient>
+    <linearGradient id="bottomFade_106" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e0e0e" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#0e0e0e" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="#0e0e0e"/>
+  <circle cx="289" cy="308" r="260" fill="url(#blob106_0)"/><circle cx="936" cy="252" r="221" fill="url(#blob106_1)"/><circle cx="677" cy="571" r="254" fill="url(#blob106_2)"/>
+  <circle cx="540" cy="400" r="150" fill="#8097ff" opacity="0.10"/>
+  <g transform="translate(540,400) scale(1.15)">
+    <circle cx="-40" cy="-20" r="10" fill="#8097ff"/><circle cx="0" cy="30" r="10" fill="#8097ff"/><circle cx="40" cy="-20" r="10" fill="#8097ff"/><circle cx="0" cy="-55" r="10" fill="#8097ff"/>
+  </g>
+  <rect x="0" y="604" width="1080" height="476" fill="url(#bottomFade_106)"/>
+</svg>

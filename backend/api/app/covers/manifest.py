@@ -1,33 +1,61 @@
 """
 Static layout + category mapping for gig cover images.
 
-Geometry is identical across every group template (only accent color and
-motif differ), so this is one shared layout, not a per-category manifest.
-Coordinates below are the exact values baked into the foreground SVGs
-(see frontend/master-assets/generate_foregrounds.py) — keep in sync if the
-templates are regenerated with a different frame.
+Two independent layouts — "portrait" (the primary 4:5 card) and "square"
+(1080x1080, its own composition for OG/WhatsApp previews and thumbnails —
+NOT a crop of the portrait one; see memory/features/gig_cover_images.md for
+why). Geometry is identical across every category within a given layout
+(only accent color and icon motif differ), so this is two shared layouts,
+not a manifest per category. Coordinates below are the exact values baked
+into the foreground SVGs — see frontend/master-assets/generate_foregrounds.py
+— keep in sync if the templates are regenerated with a different frame.
 """
 from dataclasses import dataclass
 
-CANVAS_W = 1080
-CANVAS_H = 1350
 
-# Photo slot — where an uploaded host photo is pasted, and where the
-# background's own art shows through when no photo is supplied.
-PHOTO_SLOT = (118, 100, 843, 850)  # x, y, w, h
-PHOTO_SLOT_RADIUS = 20
+@dataclass(frozen=True)
+class Layout:
+    canvas_w: int
+    canvas_h: int
+    background_file: str
+    foreground_file: str
+    photo_slot: tuple[int, int, int, int]  # x, y, w, h
+    photo_slot_radius: int
+    chip: tuple[int, int, int, int]  # x, y, w, h
+    text_zone_x: int
+    text_zone_right: int
+    title_y: int
+    title_line_height: int
+    title_max_lines: int
+    pay_y: int
+    host_city_y: int
+    title_font_size: int
+    pay_font_size: int
+    meta_font_size: int
 
-# Category label pill (top-left, foreground layer already draws the filled
-# pill shape — we only draw the label text on top of it).
-CHIP = (118, 50, 180, 40)  # x, y, w, h
 
-# Text zone — lower third, below the frame. Kept clear/dark in every
-# background (bottom fade gradient starts at 62% of canvas height).
-TEXT_ZONE_X = 118
-TEXT_ZONE_RIGHT = 962
-TITLE_Y = 990
-PAY_Y = 1090
-HOST_CITY_Y = 1160
+PORTRAIT = Layout(
+    canvas_w=1080, canvas_h=1350,
+    background_file="background.png", foreground_file="foreground.png",
+    photo_slot=(118, 100, 843, 850), photo_slot_radius=20,
+    chip=(118, 50, 180, 40),
+    text_zone_x=118, text_zone_right=962,
+    title_y=990, title_line_height=60, title_max_lines=2,
+    pay_y=1090, host_city_y=1160,
+    title_font_size=52, pay_font_size=42, meta_font_size=28,
+)
+
+# Own composition, not a crop of PORTRAIT — see module docstring.
+SQUARE = Layout(
+    canvas_w=1080, canvas_h=1080,
+    background_file="background_square.png", foreground_file="foreground_square.png",
+    photo_slot=(118, 86, 844, 540), photo_slot_radius=20,
+    chip=(118, 40, 180, 36),
+    text_zone_x=118, text_zone_right=962,
+    title_y=670, title_line_height=56, title_max_lines=2,
+    pay_y=780, host_city_y=850,
+    title_font_size=52, pay_font_size=42, meta_font_size=28,
+)
 
 WHITE = (255, 255, 255, 255)
 BLACK = (0, 0, 0, 255)

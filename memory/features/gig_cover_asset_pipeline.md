@@ -6,14 +6,16 @@ Companion to [[gig_cover_images]]. Supersedes the earlier Stitch handoff — the
 
 ## What Exists (`frontend/master-assets/`)
 
-- `covers/{slug}/background.png` — 6 category groups, 1080×1350, dark ink base with 3 soft blurred radial-gradient color blobs (group accent color) + one simple flat icon centered upper-middle inside a soft tinted circle. Bottom ~38% has a fade-to-ink gradient to keep the text zone clean. No baked text.
-- `covers/{slug}/foreground.png` — 6 groups, 1080×1350, transparent PNG. Thin rounded-rect border/photo-slot frame (78% width, upper two-thirds, coords: x=118.8 y=100 w=842.4 h=850 rx=20) + corner tick accents + an empty category-label pill (top-left, 118.8/50/180/40) + small triangle mark (bottom-right), all in the group's accent color.
-- `covers/{slug}/background.svg`, `covers/{slug}/foreground.svg` — SVG sources (editable, regenerate via scripts below).
-- `generate_backgrounds.py` — regenerates all 6 backgrounds from code. Edit `CATEGORIES` (slug/color/icon key) or `icon_paths()` to change a motif, then rerun.
-- `generate_foregrounds.py` — regenerates all 6 foreground frames (imports `CATEGORIES` from `generate_backgrounds.py` so slug/color always stay in sync). Same parametric SVG for every group — only accent color changes.
+Two independent canvas profiles per category — **portrait** (1080×1350, primary card) and **square** (1080×1080) — see [[gig_cover_images]] "Square is its own render" for why the square one is a real second composition, not a crop of the portrait. Both scripts generate both profiles in one run.
+
+- `covers/{slug}/background.png` (portrait) / `background_square.png` (square) — dark ink base with 3 soft blurred radial-gradient color blobs (group accent color) + one simple flat icon centered inside a soft tinted circle. Bottom of the canvas fades to ink to keep the text zone clean. No baked text. `generate_backgrounds.py` `PROFILES` dict controls canvas size, icon center, icon scale, and fade-start fraction per profile.
+- `covers/{slug}/foreground.png` (portrait) / `foreground_square.png` (square) — transparent PNG. Thin rounded-rect border/photo-slot frame + corner tick accents + an empty category-label pill (top-left) + small triangle mark (bottom-right), all in the group's accent color. `generate_foregrounds.py` `FOREGROUND_PROFILES` dict controls the slot/chip rects per profile — portrait slot `(118.8, 100, 842.4, 850)`, square slot `(118, 86, 844, 540)` (shorter, since the square canvas has less total height and needs proportionally more of it left for text).
+- `covers/{slug}/*.svg` — SVG sources for all 4 files per category (editable, regenerate via scripts below).
+- `generate_backgrounds.py` — regenerates all 6 categories × 2 profiles = 12 backgrounds. Edit `CATEGORIES` (slug/color/icon key), `PROFILES` (canvas/layout per profile), or `icon_paths()` (motif) to change something, then rerun.
+- `generate_foregrounds.py` — regenerates all 6 × 2 = 12 foreground frames (imports `CATEGORIES` from `generate_backgrounds.py` so slug/color stay in sync). Same parametric SVG per profile — only accent color changes between categories within a profile.
 - `field_manual_system/DESIGN.md` — Stitch's own generated style guide from Round 1. **Not used** — kept only as a reference artifact of what was rejected (brutalist/technical aesthetic, Archivo Narrow/JetBrains Mono fonts, 0px corners). Do not follow this doc's direction.
 
-The final assets also live at `backend/api/app/covers/assets/{slug}/` (copied in, plus `fonts/` with `SpaceGrotesk_700Bold.ttf`/`600SemiBold.ttf` pulled from `frontend/pocket/node_modules/@expo-google-fonts/space-grotesk/`) — that's the copy the backend actually reads. If you regenerate assets here, re-copy them into the backend location too.
+The final assets also live at `backend/api/app/covers/assets/{slug}/` — 4 PNGs per category now (portrait + square × background + foreground), plus `fonts/` with `SpaceGrotesk_700Bold.ttf`/`600SemiBold.ttf` pulled from `frontend/pocket/node_modules/@expo-google-fonts/space-grotesk/` — that's the copy the backend actually reads. If you regenerate assets here, re-copy them into the backend location too (see command below).
 
 ## Category Group → Color → Icon Mapping
 
@@ -45,12 +47,13 @@ Use this env (not the host Python, not the `kriya_kria-api_1` Docker container �
 ```bash
 cd frontend/master-assets
 source ~/envs/covers/bin/activate
-python3 generate_backgrounds.py      # backgrounds
-python3 generate_foregrounds.py      # foregrounds (imports CATEGORIES from generate_backgrounds.py)
+python3 generate_backgrounds.py      # backgrounds, both profiles
+python3 generate_foregrounds.py      # foregrounds, both profiles (imports CATEGORIES from generate_backgrounds.py)
 
 # then re-copy into the backend:
 for slug in event-promotion hospitality technical-support media-content stage-hosting other; do
-  cp covers/$slug/background.png covers/$slug/foreground.png \
+  cp covers/$slug/background.png covers/$slug/background_square.png \
+     covers/$slug/foreground.png covers/$slug/foreground_square.png \
      ../../backend/api/app/covers/assets/$slug/
 done
 ```

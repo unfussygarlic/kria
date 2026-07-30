@@ -1,0 +1,35 @@
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    
+        <radialGradient id="blob102_0" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ff7351" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="#ff7351" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="blob102_1" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ff7351" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="#ff7351" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="blob102_2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ff7351" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="#ff7351" stop-opacity="0"/>
+        </radialGradient>
+    <linearGradient id="bottomFade_102" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e0e0e" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#0e0e0e" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="#0e0e0e"/>
+  <circle cx="180" cy="262" r="272" fill="url(#blob102_0)"/><circle cx="879" cy="217" r="249" fill="url(#blob102_1)"/><circle cx="599" cy="530" r="241" fill="url(#blob102_2)"/>
+  <circle cx="540" cy="400" r="150" fill="#ff7351" opacity="0.10"/>
+  <g transform="translate(540,400) scale(1.15)">
+    
+        <circle cx="0" cy="0" r="45" fill="none" stroke="#ff7351" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="0" cy="0" r="22" fill="none" stroke="#ff7351" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="-70" y1="-45" x2="-70" y2="45" fill="none" stroke="#ff7351" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="-78" y1="-45" x2="-78" y2="-10" fill="none" stroke="#ff7351" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="-62" y1="-45" x2="-62" y2="-10" fill="none" stroke="#ff7351" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M 70 -45 L 70 0 Q 70 12 60 12 L 60 45" fill="none" stroke="#ff7351" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        
+  </g>
+  <rect x="0" y="604" width="1080" height="476" fill="url(#bottomFade_102)"/>
+</svg>
