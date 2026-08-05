@@ -9,7 +9,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { listApplicants, acceptApplicant, rejectApplicant, markNoShow } from "@/lib/api/applicants";
 import { pauseGig, unpauseGig } from "@/lib/api/gigs";
-import { GigStatusBadge, AppStatusBadge, AsgnStatusBadge, PausedBadge } from "@/components/ui/Badge";
+import { GigStatusBadge, AppStatusBadge, AsgnStatusBadge, PausedBadge, ExpiredBadge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { MomentumChip } from "@/components/ui/MomentumChip";
 import { ApplicantProfileModal } from "@/components/applicants/ApplicantProfileModal";
@@ -22,6 +22,14 @@ function formatTime(t: string) { return t.slice(0, 5); }
 function formatPay(amount: number, type: string) {
   const f = `₹${amount.toLocaleString("en-IN")}`;
   return type === "hourly" ? `${f}/hr` : type === "per_day" ? `${f}/day` : f;
+}
+
+function isExpired(gig: Gig): boolean {
+  if (gig.status !== "open" && gig.status !== "in_progress") return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const lastDate = new Date(gig.event_end_date || gig.event_date);
+  return lastDate < today;
 }
 
 
@@ -97,6 +105,7 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
 
   if (loading || !gig) return <PageLoader />;
 
+  const expired = isExpired(gig);
   const pending  = applicants.filter((a) => a.status === "pending");
   const accepted = applicants.filter((a) => a.status === "accepted");
   const displayed = activeTab === "pending" ? pending : activeTab === "accepted" ? accepted : applicants;
@@ -117,13 +126,19 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
         <div>
           <div className="flex items-center gap-3 mb-1 flex-wrap">
             <h1 className="pg-title">{gig.title}</h1>
-            <GigStatusBadge status={gig.status} />
-            {gig.is_paused && <PausedBadge />}
+            {expired ? (
+              <ExpiredBadge />
+            ) : (
+              <>
+                <GigStatusBadge status={gig.status} />
+                {gig.is_paused && <PausedBadge />}
+              </>
+            )}
           </div>
           {gig.company_name && <p className="text-sm text-text-muted">{gig.company_name}</p>}
         </div>
         <div className="flex items-start gap-3">
-          {(gig.status === "open" || gig.status === "in_progress") && (
+          {(gig.status === "open" || gig.status === "in_progress") && !expired && (
             <button
               onClick={handleTogglePause}
               disabled={pauseLoading}

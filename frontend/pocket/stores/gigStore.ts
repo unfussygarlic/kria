@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
-import { matchGigs, MatchGigsParams, generateGigCover } from "@/lib/api/gigs";
+import { matchGigs, MatchGigsParams, generateGigCover, HostSummary } from "@/lib/api/gigs";
 import {
   createEvent as apiCreateEvent,
   addJobToEvent as apiAddJobToEvent,
@@ -32,6 +32,7 @@ interface GigState {
   filters: GigFilters;
   seenGigIds: Set<string>;    // Track all gig IDs shown to user
   posterScores: Record<string, number>; // gigId → poster's momentum score
+  hosts: Record<string, HostSummary>;   // posterId → host summary (avatar, verified, rating)
   _applicationsFetchedAt: number;
   _postedFetchedAt: number;
 
@@ -44,6 +45,7 @@ interface GigState {
   _gigCache: Map<string, Gig>;
   getGig: (id: string) => Promise<Gig | null>;
   prefetchGig: (id: string) => void;
+  fetchHost: (posterId: string) => Promise<void>;
   createGig: (gig: Partial<Gig>) => Promise<{ data: Gig | null; error: string | null }>;
   createEvent: (payload: EventCreatePayload) => Promise<{ data: EventResponse | null; error: string | null }>;
   addJobToEvent: (eventId: string, job: JobInEventCreate) => Promise<{ error: string | null }>;
@@ -66,6 +68,7 @@ export const useGigStore = create<GigState>((set, get) => ({
   seenGigIds: new Set(),
   _gigCache: new Map(),
   posterScores: {},
+  hosts: {},
 
   fetchGigs: async (filters?: GigFilters, location?: MatchGigsParams, sort: "score" | "distance" = "score") => {
     set({ isLoading: true, error: null, seenGigIds: new Set() });
@@ -91,9 +94,13 @@ export const useGigStore = create<GigState>((set, get) => ({
 
       // Build posterScores map: gigId → poster momentum score
       const posterScores: Record<string, number> = {};
+      const hosts: Record<string, HostSummary> = {};
       for (const mg of matchedGigs) {
         if (mg.poster_score != null) {
           posterScores[mg.gig_id] = mg.poster_score;
+        }
+        if (mg.host) {
+          hosts[mg.poster_id] = mg.host;
         }
       }
 
@@ -144,7 +151,14 @@ export const useGigStore = create<GigState>((set, get) => ({
       // Track all seen IDs
       const seenGigIds = new Set(gigs.map((g) => g.id));
 
-      set({ gigs, seenGigIds, hasMore, posterScores, isLoading: false });
+      set((state) => ({
+        gigs,
+        seenGigIds,
+        hasMore,
+        posterScores,
+        hosts: { ...state.hosts, ...hosts },
+        isLoading: false,
+      }));
     } catch {
       set({ error: "Failed to fetch gigs", isLoading: false });
     }
@@ -176,11 +190,15 @@ export const useGigStore = create<GigState>((set, get) => ({
       const gigIds: string[] = matchedGigs.map((g) => g.gig_id);
       const hasMore = matchResult.data?.has_more ?? false;
 
-      // Collect new poster scores
+      // Collect new poster scores + host summaries
       const newPosterScores: Record<string, number> = {};
+      const newHosts: Record<string, HostSummary> = {};
       for (const mg of matchedGigs) {
         if (mg.poster_score != null) {
           newPosterScores[mg.gig_id] = mg.poster_score;
+        }
+        if (mg.host) {
+          newHosts[mg.poster_id] = mg.host;
         }
       }
 
@@ -222,6 +240,7 @@ export const useGigStore = create<GigState>((set, get) => ({
         seenGigIds: updatedSeenIds,
         hasMore,
         posterScores: { ...state.posterScores, ...newPosterScores },
+        hosts: { ...state.hosts, ...newHosts },
         isFetchingMore: false,
       }));
     } catch {
@@ -292,7 +311,13 @@ export const useGigStore = create<GigState>((set, get) => ({
 
   getGig: async (id: string) => {
     const cached = get()._gigCache.get(id);
-    if (cached) return cached;
+    if (cached) {
+      // Kick off a host summary fetch in the background if we don't have it.
+      if (!get().hosts[cached.poster_id]) {
+        get().fetchHost?.(cached.poster_id);
+      }
+      return cached;
+    }
 
     const { data, error } = await supabase
       .from("gigs")
@@ -302,7 +327,31 @@ export const useGigStore = create<GigState>((set, get) => ({
 
     if (error) return null;
     get()._gigCache.set(id, data);
+    // Populate host summary for the trust chip on gig detail.
+    if (data.poster_id) get().fetchHost?.(data.poster_id);
     return data;
+  },
+
+  fetchHost: async (posterId: string) => {
+    if (get().hosts[posterId]) return;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, display_name, avatar_url, is_verified, poster_reputation")
+      .eq("id", posterId)
+      .single();
+    if (error || !data) return;
+    set((state) => ({
+      hosts: {
+        ...state.hosts,
+        [posterId]: {
+          id: data.id,
+          display_name: data.display_name ?? "",
+          avatar_url: data.avatar_url,
+          is_verified: Boolean(data.is_verified),
+          poster_reputation: data.poster_reputation ?? null,
+        },
+      },
+    }));
   },
 
   prefetchGig: (id: string) => {

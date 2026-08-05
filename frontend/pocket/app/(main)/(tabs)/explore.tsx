@@ -15,6 +15,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { Gig } from "@/types/database";
 import { T } from "@/constants/colors";
 import { SwipeableJobCard } from "@/components/gig/SwipeableJobCard";
+import { JobCard } from "@/components/gig/JobCard";
 import { Feather } from "@expo/vector-icons";
 import { rf, rw } from "@/constants/responsive";
 import { MatchGigsParams } from "@/lib/api/gigs";
@@ -76,6 +77,7 @@ export default function ExploreScreen() {
     hasMore,
     isFetchingMore,
     posterScores,
+    hosts,
     fetchGigs,
     fetchMoreGigs,
     fetchMyApplications,
@@ -88,6 +90,7 @@ export default function ExploreScreen() {
     hasMore: s.hasMore,
     isFetchingMore: s.isFetchingMore,
     posterScores: s.posterScores,
+    hosts: s.hosts,
     fetchGigs: s.fetchGigs,
     fetchMoreGigs: s.fetchMoreGigs,
     fetchMyApplications: s.fetchMyApplications,
@@ -303,10 +306,34 @@ export default function ExploreScreen() {
       ) : (
         <View style={styles.deckArea}>
           <View style={[styles.deckCenter, { width: CARD_W }]}>
+            {/* Peek: card N+2 (deepest, smallest) */}
+            {availableGigs[currentIndex + 2] && (
+              <View style={styles.peekCardBack} pointerEvents="none">
+                <JobCard
+                  gig={availableGigs[currentIndex + 2]!}
+                  variant="explore"
+                  posterMomentum={posterScores[availableGigs[currentIndex + 2]!.id]}
+                  host={hosts[availableGigs[currentIndex + 2]!.poster_id]}
+                />
+              </View>
+            )}
+            {/* Peek: card N+1 (middle) */}
+            {availableGigs[currentIndex + 1] && (
+              <View style={styles.peekCardMid} pointerEvents="none">
+                <JobCard
+                  gig={availableGigs[currentIndex + 1]!}
+                  variant="explore"
+                  posterMomentum={posterScores[availableGigs[currentIndex + 1]!.id]}
+                  host={hosts[availableGigs[currentIndex + 1]!.poster_id]}
+                />
+              </View>
+            )}
+            {/* Front: swipeable current card */}
             <SwipeableJobCard
               key={availableGigs[currentIndex]?.id}
               gig={availableGigs[currentIndex]}
               posterMomentum={posterScores[availableGigs[currentIndex]?.id]}
+              host={hosts[availableGigs[currentIndex]?.poster_id]}
               canApply={true}
               onApply={handleApply}
               onNext={handleNext}
@@ -440,6 +467,23 @@ const styles = StyleSheet.create({
   },
   deckCenter: {
     alignItems: "stretch",
+    position: "relative",
+  },
+  peekCardBack: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    opacity: 0.35,
+    transform: [{ scale: 0.92 }, { translateY: 24 }],
+  },
+  peekCardMid: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    opacity: 0.65,
+    transform: [{ scale: 0.96 }, { translateY: 12 }],
   },
 
   // Swipe hints

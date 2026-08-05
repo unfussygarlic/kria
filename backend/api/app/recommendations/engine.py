@@ -15,7 +15,7 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.gig import GigMatchRequest, GigMatchResponse, GigRow, ScoredGig
+from app.models.gig import GigMatchRequest, GigMatchResponse, GigRow, HostSummary, ScoredGig
 from app.recommendations.geo import haversine_km
 
 
@@ -123,7 +123,8 @@ def score_gig(
 
 async def _fetch_open_gigs(db: AsyncSession, excluded_ids: set) -> list[GigRow]:
     """Fetch open future gigs, excluding already-seen IDs in SQL to avoid loading them into memory."""
-    params: dict = {"today": "CURRENT_DATE"}
+    # Expiry is (event_date + shift_end_time) in IST — matches /assignments/finalize-expired.
+    params: dict = {}
     excl_filter = ""
     if excluded_ids:
         params["excluded"] = list(excluded_ids)
@@ -140,7 +141,9 @@ async def _fetch_open_gigs(db: AsyncSession, excluded_ids: set) -> list[GigRow]:
             FROM gigs
             WHERE status = 'open'
               AND NOT is_paused
-              AND event_date >= CURRENT_DATE
+              AND event_date IS NOT NULL
+              AND (event_date::timestamp + shift_end_time::time)
+                  > (NOW() AT TIME ZONE 'Asia/Kolkata')
               {excl_filter}
             LIMIT 500
         """),
@@ -232,6 +235,32 @@ async def _fetch_poster_info(db: AsyncSession, poster_ids: set) -> tuple[dict, d
     return ratings, scores
 
 
+async def _fetch_host_summaries(db: AsyncSession, poster_ids: set) -> dict[str, HostSummary]:
+    """Bulk-fetch host profile summaries used to render swipe-card overlays."""
+    if not poster_ids:
+        return {}
+    result = await db.execute(
+        text("""
+            SELECT id, display_name, avatar_url, is_verified, poster_reputation
+            FROM profiles
+            WHERE id = ANY(:ids)
+        """),
+        {"ids": list(poster_ids)},
+    )
+    return {
+        str(r["id"]): HostSummary(
+            id=r["id"],
+            display_name=r["display_name"] or "",
+            avatar_url=r["avatar_url"],
+            is_verified=bool(r["is_verified"]),
+            poster_reputation=(
+                float(r["poster_reputation"]) if r["poster_reputation"] is not None else None
+            ),
+        )
+        for r in result.mappings().all()
+    }
+
+
 # ── Public entry point ────────────────────────────────────────────────────────
 
 async def match_gigs_for_worker(
@@ -251,6 +280,7 @@ async def match_gigs_for_worker(
     # Single JOIN for poster ratings + momentum scores (was 2 separate queries)
     poster_ids = {g.poster_id for g in gigs}
     poster_ratings, poster_scores = await _fetch_poster_info(db, poster_ids)
+    host_summaries = await _fetch_host_summaries(db, poster_ids)
 
     distance_mode = request.sort == "distance"
 
@@ -291,6 +321,7 @@ async def match_gigs_for_worker(
                 poster_id=g.poster_id,
                 event_date=g.event_date,
                 poster_score=poster_scores.get(str(g.poster_id)),
+                host=host_summaries.get(str(g.poster_id)),
             )
             for s, d, g in paginated
         ],

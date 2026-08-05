@@ -22,6 +22,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Gig } from "@/types/database";
+import type { HostSummary } from "@/lib/api/gigs";
 import { JobCard } from "./JobCard";
 import { T } from "@/constants/colors";
 
@@ -33,6 +34,7 @@ const NAV_THRESHOLD   = W * 0.25;  // horizontal px to trigger navigation
 interface SwipeableJobCardProps {
   gig: Gig;
   posterMomentum?: number;
+  host?: HostSummary;
   canApply?: boolean;
   onApply: () => void;
   onNext: () => void;
@@ -42,12 +44,46 @@ interface SwipeableJobCardProps {
 export const SwipeableJobCard = memo(function SwipeableJobCard({
   gig,
   posterMomentum,
+  host,
   canApply = true,
   onApply,
   onNext,
   onPrev,
 }: SwipeableJobCardProps) {
   const position = useRef(new Animated.ValueXY()).current;
+
+  // Threshold-crossing haptics — fire ONCE when the user drags past the
+  // commit line while still holding, so they feel when they've crossed the
+  // point of no return. Refs track whether each threshold is currently armed.
+  const applyArmed = useRef(false);
+  const rightArmed = useRef(false);
+  const leftArmed = useRef(false);
+  useEffect(() => {
+    const id = position.addListener(({ x, y }) => {
+      // Apply threshold (upward)
+      if (y < APPLY_THRESHOLD && !applyArmed.current) {
+        applyArmed.current = true;
+        Haptics.selectionAsync();
+      } else if (y > APPLY_THRESHOLD * 0.6 && applyArmed.current) {
+        applyArmed.current = false;
+      }
+      // Right nav threshold
+      if (x > NAV_THRESHOLD && !rightArmed.current) {
+        rightArmed.current = true;
+        Haptics.selectionAsync();
+      } else if (x < NAV_THRESHOLD * 0.6 && rightArmed.current) {
+        rightArmed.current = false;
+      }
+      // Left nav threshold
+      if (x < -NAV_THRESHOLD && !leftArmed.current) {
+        leftArmed.current = true;
+        Haptics.selectionAsync();
+      } else if (x > -NAV_THRESHOLD * 0.6 && leftArmed.current) {
+        leftArmed.current = false;
+      }
+    });
+    return () => position.removeListener(id);
+  }, [position]);
 
   // Memoized interpolations (computed once, not recreated on every render)
   const rotate = useMemo(
@@ -65,6 +101,30 @@ export const SwipeableJobCard = memo(function SwipeableJobCard({
       position.y.interpolate({
         inputRange: [APPLY_THRESHOLD, APPLY_THRESHOLD * 0.4],
         outputRange: [1, 0],
+        extrapolate: "clamp",
+      }),
+    [position.y]
+  );
+
+  // Icon scales from 0.6 (before threshold) → 1.1 (past threshold) so the
+  // check icon feels like it "commits" when the swipe passes the point of
+  // no return. Multiplied by opacity for a smooth pop.
+  const applyIconScale = useMemo(
+    () =>
+      position.y.interpolate({
+        inputRange: [APPLY_THRESHOLD * 1.4, APPLY_THRESHOLD, APPLY_THRESHOLD * 0.4],
+        outputRange: [1.15, 1.0, 0.6],
+        extrapolate: "clamp",
+      }),
+    [position.y]
+  );
+
+  // Radial glow behind the icon — grows as user commits.
+  const applyGlowScale = useMemo(
+    () =>
+      position.y.interpolate({
+        inputRange: [APPLY_THRESHOLD * 1.4, APPLY_THRESHOLD * 0.5],
+        outputRange: [1.4, 0.6],
         extrapolate: "clamp",
       }),
     [position.y]
@@ -234,7 +294,7 @@ export const SwipeableJobCard = memo(function SwipeableJobCard({
       style={[styles.card, animatedStyle]}
       {...pan.panHandlers}
     >
-      <JobCard gig={gig} variant="explore" posterMomentum={posterMomentum} />
+      <JobCard gig={gig} variant="explore" posterMomentum={posterMomentum} host={host} />
 
       {/* ⬆️ Apply overlay */}
       <Animated.View
@@ -245,8 +305,15 @@ export const SwipeableJobCard = memo(function SwipeableJobCard({
         ]}
         pointerEvents="none"
       >
-        <Feather name={canApply ? "check-circle" : "lock"} size={52} color={canApply ? "#000" : "#fff"} />
-        <Text style={[styles.overlayText, { color: canApply ? "#000" : "#fff" }]}>{canApply ? "Apply" : "Host Mode"}</Text>
+        {canApply && (
+          <Animated.View
+            style={[styles.applyGlow, { transform: [{ scale: applyGlowScale }] }]}
+          />
+        )}
+        <Animated.View style={{ transform: [{ scale: applyIconScale }], alignItems: "center", gap: 12 }}>
+          <Feather name={canApply ? "check-circle" : "lock"} size={64} color={canApply ? "#000" : "#fff"} />
+          <Text style={[styles.overlayText, { color: canApply ? "#000" : "#fff" }]}>{canApply ? "Apply" : "Host Mode"}</Text>
+        </Animated.View>
       </Animated.View>
 
       {/* ➡️ Next overlay (always rendered in circular carousel) */}
@@ -283,6 +350,14 @@ const styles = StyleSheet.create({
   },
   applyOverlayBlocked: {
     backgroundColor: "rgba(30,30,30,0.92)",     // Dark glass for Host Mode
+  },
+  applyGlow: {
+    position: "absolute",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(255,255,255,0.35)",
+    // Subtle radial-glow feel via a bright halo behind the icon
   },
   nextOverlay: {
     ...StyleSheet.absoluteFillObject,

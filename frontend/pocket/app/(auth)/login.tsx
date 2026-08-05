@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
 import { rf, rw, SCREEN } from "@/constants/responsive";
@@ -71,7 +72,7 @@ export default function LoginScreen() {
             <Text style={styles.countryCode}>+91</Text>
             <TextInput
               style={styles.input}
-              placeholder="9876543210"
+              placeholder="98XXXX1234"
               placeholderTextColor={T.textMuted}
               keyboardType="phone-pad"
               value={phone}
@@ -101,6 +102,24 @@ export default function LoginScreen() {
               </Text>
             </LinearGradient>
           </Pressable>
+
+          {/* Trust row */}
+          <View style={styles.trustRow}>
+            <View style={styles.trustItem}>
+              <Feather name="shield" size={rw(13)} color={T.primary} />
+              <Text style={styles.trustText}>Secure OTP</Text>
+            </View>
+            <View style={styles.trustDivider} />
+            <View style={styles.trustItem}>
+              <Feather name="user-check" size={rw(13)} color={T.primary} />
+              <Text style={styles.trustText}>Verified hosts</Text>
+            </View>
+            <View style={styles.trustDivider} />
+            <View style={styles.trustItem}>
+              <Feather name="zap" size={rw(13)} color={T.primary} />
+              <Text style={styles.trustText}>Paid weekly</Text>
+            </View>
+          </View>
 
           <Text style={styles.footer}>
             By continuing, you agree to our Terms of Service and Privacy Policy
@@ -222,6 +241,36 @@ const styles = StyleSheet.create({
     color: T.textMuted,
     textAlign: "center",
     lineHeight: 18,
-    marginTop: rw(24),
+    marginTop: rw(16),
+  },
+  trustRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: rw(10),
+    marginTop: rw(22),
+    paddingVertical: rw(10),
+    paddingHorizontal: rw(14),
+    backgroundColor: "rgba(212,255,0,0.06)",
+    borderRadius: rw(12),
+    borderWidth: 1,
+    borderColor: "rgba(212,255,0,0.16)",
+  },
+  trustItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rw(5),
+  },
+  trustText: {
+    fontSize: rf(11),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.text,
+    letterSpacing: 0.2,
+  },
+  trustDivider: {
+    width: 1,
+    height: rw(12),
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
 });

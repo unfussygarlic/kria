@@ -206,13 +206,18 @@ export default function GigsPage() {
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <GigStatusBadge status={gig.status} />
-                      {gig.is_paused && <PausedBadge />}
-                      {expired && <ExpiredBadge />}
+                      {expired ? (
+                        <ExpiredBadge />
+                      ) : (
+                        <>
+                          <GigStatusBadge status={gig.status} />
+                          {gig.is_paused && <PausedBadge />}
+                        </>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
-                    {(gig.status === "open" || gig.status === "in_progress") && (
+                    {(gig.status === "open" || gig.status === "in_progress") && !expired && (
                       <button
                         onClick={(e) => handleTogglePause(e, gig)}
                         disabled={pauseLoading === gig.id}

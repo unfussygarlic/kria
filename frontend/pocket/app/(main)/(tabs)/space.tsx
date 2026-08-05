@@ -14,8 +14,10 @@ import {
   Animated,
   ScrollView,
 } from "react-native";
+import { Easing } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { rf, rw } from "@/constants/responsive";
 import { Feather } from "@expo/vector-icons";
@@ -69,12 +71,13 @@ function getTimeLabel(
   return { label: formatDate(eventDate), color: T.textMuted };
 }
 
-function isUpcoming(item: AcceptedGigItem, today: Date): boolean {
+function isUpcoming(item: AcceptedGigItem, now: Date): boolean {
   if (item.assignment_status === "completed" || item.assignment_status === "no_show") return false;
   if (!item.event_date) return true;
-  const d = new Date(item.event_date);
-  d.setHours(0, 0, 0, 0);
-  return d >= today;
+  const gigEnd = new Date(item.event_date);
+  const [hh, mm] = (item.shift_end_time || "23:59").split(":");
+  gigEnd.setHours(Number(hh ?? 23), Number(mm ?? 59), 0, 0);
+  return gigEnd >= now;
 }
 
 // ── Compact upcoming card ─────────────────────────────────────────────────────
@@ -112,13 +115,25 @@ function HistoryGigCard({ item, onPress }: { item: AcceptedGigItem; onPress: () 
   const chip = getStatusChip(item, true);
   const catColor = (CategoryColors as Record<string, string>)[item.category] ?? T.textMuted;
   const dateLabel = item.event_date ? formatDate(item.event_date) : "—";
+  const isCompleted = item.assignment_status === "completed";
+  const isNoShow = item.assignment_status === "no_show";
 
   return (
-    <PressableScale style={[gcStyles.card, gcStyles.historyCard]} onPress={onPress}>
-      <View style={[gcStyles.accent, { backgroundColor: catColor, opacity: 0.35 }]} />
+    <PressableScale style={gcStyles.card} onPress={onPress}>
+      <View style={[gcStyles.accent, { backgroundColor: catColor }]} />
       <View style={gcStyles.content}>
         <View style={gcStyles.topRow}>
-          <Text style={[gcStyles.title, gcStyles.historyTitle]} numberOfLines={1}>{item.title}</Text>
+          <Text style={gcStyles.title} numberOfLines={1}>{item.title}</Text>
+          {isCompleted && (
+            <View style={gcStyles.completedDot}>
+              <Feather name="check" size={9} color="#0e0e0e" />
+            </View>
+          )}
+          {isNoShow && (
+            <View style={gcStyles.noShowDot}>
+              <Feather name="x" size={9} color="#fff" />
+            </View>
+          )}
           <Text style={gcStyles.historyDate}>{dateLabel}</Text>
         </View>
         <View style={gcStyles.bottomRow}>
@@ -178,6 +193,24 @@ const gcStyles = StyleSheet.create({
   },
   historyTitle: {
     color: T.textSub,
+  },
+  completedDot: {
+    width: rw(18),
+    height: rw(18),
+    borderRadius: rw(9),
+    backgroundColor: T.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  noShowDot: {
+    width: rw(18),
+    height: rw(18),
+    borderRadius: rw(9),
+    backgroundColor: T.error,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   timeLabel: {
     fontSize: rf(12),
@@ -254,6 +287,10 @@ function GigDetailSheet({
     }
   }, [item]);
 
+  const [celebrating, setCelebrating] = useState(false);
+  const celebrateScale = useRef(new Animated.Value(0.3)).current;
+  const celebrateHalo = useRef(new Animated.Value(0.4)).current;
+
   const handleVerifyOtp = async () => {
     if (!displayItem?.assignment_id) return;
     const otp = otpDigits.join("");
@@ -272,10 +309,24 @@ function GigDetailSheet({
           ? "That code doesn't match. Double-check the 4-digit OTP shown on the Grid."
           : result.error,
       );
-    } else {
+      return;
+    }
+
+    // Success — celebrate for ~1.5s before firing the rating flow.
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setCelebrating(true);
+    celebrateScale.setValue(0.3);
+    celebrateHalo.setValue(0.4);
+    Animated.parallel([
+      Animated.spring(celebrateScale, { toValue: 1, useNativeDriver: true, friction: 6, tension: 90 }),
+      Animated.timing(celebrateHalo, { toValue: 1.3, duration: 800, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+    ]).start();
+
+    setTimeout(() => {
+      setCelebrating(false);
       onOtpSuccess(displayItem.gig_id);
       onClose();
-    }
+    }, 1500);
   };
 
   const isGigExpired = (() => {
@@ -311,6 +362,22 @@ function GigDetailSheet({
             { paddingBottom: insets.bottom + rw(16), transform: [{ translateY: slideAnim }] },
           ]}
         >
+          {/* Post-OTP celebration — covers sheet content for ~1.5s */}
+          {celebrating && (
+            <View style={shStyles.celebrationOverlay}>
+              <Animated.View
+                style={[shStyles.celebrationHalo, { transform: [{ scale: celebrateHalo }] }]}
+              />
+              <Animated.View style={{ transform: [{ scale: celebrateScale }], alignItems: "center", gap: rw(10) }}>
+                <View style={shStyles.celebrationIconRing}>
+                  <Feather name="check" size={rw(46)} color="#0e0e0e" />
+                </View>
+                <Text style={shStyles.celebrationTitle}>You're checked in!</Text>
+                <Text style={shStyles.celebrationSub}>Nice work. Now go crush the shift.</Text>
+              </Animated.View>
+            </View>
+          )}
+
           <View style={shStyles.handle} />
 
           {displayItem && (
@@ -512,6 +579,43 @@ const shStyles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.65)",
+  },
+  celebrationOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: T.surface2,
+    borderTopLeftRadius: rw(28),
+    borderTopRightRadius: rw(28),
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 20,
+  },
+  celebrationHalo: {
+    position: "absolute",
+    width: rw(260),
+    height: rw(260),
+    borderRadius: rw(130),
+    backgroundColor: "rgba(212,255,0,0.16)",
+  },
+  celebrationIconRing: {
+    width: rw(92),
+    height: rw(92),
+    borderRadius: rw(46),
+    backgroundColor: T.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  celebrationTitle: {
+    fontSize: rf(22),
+    fontWeight: "800",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.text,
+    marginTop: rw(6),
+  },
+  celebrationSub: {
+    fontSize: rf(13),
+    fontFamily: "SpaceGrotesk_400Regular",
+    color: T.textSub,
+    textAlign: "center",
   },
   sheet: {
     position: "absolute",
@@ -758,11 +862,10 @@ function RunnerTab() {
 
   useEffect(() => { load(); }, []);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
 
   const upcoming = items
-    .filter((i) => isUpcoming(i, today))
+    .filter((i) => isUpcoming(i, now))
     .sort((a, b) => {
       if (!a.event_date) return 1;
       if (!b.event_date) return -1;
@@ -770,7 +873,7 @@ function RunnerTab() {
     });
 
   const history = items
-    .filter((i) => !isUpcoming(i, today))
+    .filter((i) => !isUpcoming(i, now))
     .sort((a, b) => {
       if (!a.event_date) return 1;
       if (!b.event_date) return -1;
@@ -829,12 +932,12 @@ function RunnerTab() {
                 color={T.textMuted}
               />
               <Text style={styles.emptyTitle}>
-                {activeSubTab === "upcoming" ? "No upcoming gigs" : "No past gigs yet"}
+                {activeSubTab === "upcoming" ? "Nothing on the calendar" : "No track record yet"}
               </Text>
               <Text style={styles.emptySubtitle}>
                 {activeSubTab === "upcoming"
-                  ? "Gigs you're accepted for will appear here."
-                  : "Completed gigs will show up here once done."}
+                  ? "Once a host accepts you, your next shift lands here. Swipe on Explore to find one."
+                  : "Every gig you complete builds your Momentum and shows up here — your permanent track record."}
               </Text>
             </View>
           )

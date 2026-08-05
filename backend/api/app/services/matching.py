@@ -18,7 +18,7 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.gig import GigMatchRequest, GigMatchResponse, GigRow, ScoredGig
+from app.models.gig import GigMatchRequest, GigMatchResponse, GigRow, HostSummary, ScoredGig
 
 
 # ── Scoring helpers ──────────────────────────────────────────────────────────
@@ -130,6 +130,8 @@ def score_gig(
 # ── Database helpers ─────────────────────────────────────────────────────────
 
 async def _fetch_open_gigs(db: AsyncSession) -> list[GigRow]:
+    # Expiry is (event_date + shift_end_time) evaluated in IST, matching the
+    # convention used by /assignments/finalize-expired in routers/applicants.py.
     result = await db.execute(
         text("""
             SELECT id, poster_id, title, category::text, pay_amount, pay_type::text,
@@ -141,7 +143,9 @@ async def _fetch_open_gigs(db: AsyncSession) -> list[GigRow]:
                    created_at, event_date
             FROM gigs
             WHERE status = 'open'
-              AND event_date >= CURRENT_DATE
+              AND event_date IS NOT NULL
+              AND (event_date::timestamp + shift_end_time::time)
+                  > (NOW() AT TIME ZONE 'Asia/Kolkata')
         """)
     )
     rows = result.mappings().all()
@@ -247,6 +251,29 @@ async def _poster_avg_ratings(db: AsyncSession, poster_ids: set) -> dict:
     return {str(row[0]): float(row[1]) for row in result}
 
 
+async def _host_summaries(db: AsyncSession, poster_ids: set) -> dict[str, HostSummary]:
+    if not poster_ids:
+        return {}
+    result = await db.execute(
+        text("""
+            SELECT id, display_name, avatar_url, is_verified, poster_reputation
+            FROM profiles
+            WHERE id = ANY(:ids)
+        """),
+        {"ids": list(poster_ids)},
+    )
+    return {
+        str(r["id"]): HostSummary(
+            id=r["id"],
+            display_name=r["display_name"],
+            avatar_url=r["avatar_url"],
+            is_verified=bool(r["is_verified"]),
+            poster_reputation=float(r["poster_reputation"]) if r["poster_reputation"] is not None else None,
+        )
+        for r in result.mappings().all()
+    }
+
+
 # ── Public entry point ───────────────────────────────────────────────────────
 
 async def match_gigs_for_worker(
@@ -265,6 +292,7 @@ async def match_gigs_for_worker(
     poster_ids = {g.poster_id for g in gigs}
     poster_ratings = await _poster_avg_ratings(db, poster_ids)
     poster_scores = await _poster_momentum_scores(db, poster_ids)
+    host_summaries = await _host_summaries(db, poster_ids)
 
     scored: list[tuple[float, float | None, GigRow]] = []
     for gig in gigs:
@@ -303,6 +331,7 @@ async def match_gigs_for_worker(
             poster_id=g.poster_id,
             event_date=g.event_date,
             poster_score=poster_scores.get(str(g.poster_id)),
+            host=host_summaries.get(str(g.poster_id)),
         )
         for s, d, g in paginated
     ]

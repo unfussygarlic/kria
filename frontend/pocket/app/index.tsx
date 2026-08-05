@@ -6,9 +6,9 @@ export default function Index() {
   const isOnboarded = useAuthStore((s) => s.isOnboarded);
   const activeRole = useAuthStore((s) => s.activeRole);
 
-  // Not logged in → Auth
+  // Not logged in → Intro carousel (auto-skips to login if already seen)
   if (!session) {
-    return <Redirect href="/(auth)/login" />;
+    return <Redirect href="/(auth)/intro" />;
   }
 
   // Logged in but not onboarded → Onboarding

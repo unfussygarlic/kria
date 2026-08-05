@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, Share } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -52,6 +52,20 @@ export default function ProfileScreen() {
     router.replace("/");
   };
 
+  const handleShareProfile = async () => {
+    if (!profile) return;
+    // public_slug is backfilled at migration time (0032), so this should
+    // always be set for anyone who's completed onboarding. Falls back to
+    // the raw user id if it isn't for any reason.
+    const slug = profile.public_slug ?? profile.id;
+    const url = `https://trykria.com/p/${slug}`;
+    const name = profile.first_name || profile.display_name || "This runner";
+    await Share.share({
+      message: `${name} on Kria — verified gig worker. See their profile: ${url}`,
+      url,
+    });
+  };
+
   const displayName = profile
     ? profile.first_name && profile.last_name
       ? `${profile.first_name} ${profile.last_name}`
@@ -85,11 +99,32 @@ export default function ProfileScreen() {
         <Text style={styles.name}>{displayName}</Text>
         <Text style={styles.phone}>{profile?.phone}</Text>
 
-        {/* Verified badge only */}
+        {/* Verified badge */}
         {profile?.is_verified && (
           <View style={styles.verifiedBadge}>
             <Feather name="check-circle" size={12} color="#16a34a" />
             <Text style={styles.verifiedText}>Verified</Text>
+          </View>
+        )}
+
+        {/* Bio */}
+        {profile?.bio ? (
+          <Text style={styles.bio} numberOfLines={3}>{profile.bio}</Text>
+        ) : null}
+
+        {/* Skills chips (top 5) */}
+        {profile?.skills && profile.skills.length > 0 && (
+          <View style={styles.skillRow}>
+            {profile.skills.slice(0, 5).map((skill) => (
+              <View key={skill} style={styles.skillChip}>
+                <Text style={styles.skillChipText}>{skill.replace(/_/g, " ")}</Text>
+              </View>
+            ))}
+            {profile.skills.length > 5 && (
+              <View style={styles.skillChip}>
+                <Text style={styles.skillChipText}>+{profile.skills.length - 5}</Text>
+              </View>
+            )}
           </View>
         )}
       </View>
@@ -118,7 +153,7 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {/* Stats — Gigs Done + Momentum only */}
+      {/* Stats — Gigs Done + Momentum + Streak */}
       <View style={styles.stats}>
         <View style={styles.stat}>
           <Text style={styles.statValue}>{gigsDone}</Text>
@@ -128,6 +163,14 @@ export default function ProfileScreen() {
         <View style={styles.stat}>
           <Text style={[styles.statValue, { color: T.momentum }]}>{momentumScore}</Text>
           <Text style={styles.statLabel}>Momentum</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.stat}>
+          <View style={styles.streakStatRow}>
+            {(profile?.streak_count ?? 0) > 0 && <Text style={styles.streakStatEmoji}>🔥</Text>}
+            <Text style={[styles.statValue, { color: "#FFC83D" }]}>{profile?.streak_count ?? 0}</Text>
+          </View>
+          <Text style={styles.statLabel}>Day Streak</Text>
         </View>
       </View>
 
@@ -140,6 +183,11 @@ export default function ProfileScreen() {
           onPress={() => router.push("/(main)/edit-profile")}
         />
         <QuickBox
+          icon="share-2"
+          label="Share Profile"
+          onPress={handleShareProfile}
+        />
+        <QuickBox
           icon="award"
           label="My Badges"
           onPress={() => router.push("/(main)/badges")}
@@ -147,11 +195,6 @@ export default function ProfileScreen() {
         <QuickBox
           icon="settings"
           label="Settings"
-          onPress={() => router.push("/(main)/settings")}
-        />
-        <QuickBox
-          icon="help-circle"
-          label="Help & Support"
           onPress={() => router.push("/(main)/settings")}
         />
       </View>
@@ -264,6 +307,46 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontFamily: "SpaceGrotesk_600SemiBold",
     color: "#16a34a",
+  },
+  bio: {
+    fontSize: rf(13),
+    fontFamily: "SpaceGrotesk_400Regular",
+    color: T.textSub,
+    textAlign: "center",
+    lineHeight: rf(19),
+    marginTop: rw(14),
+    paddingHorizontal: rw(28),
+  },
+  skillRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: rw(6),
+    marginTop: rw(14),
+    paddingHorizontal: rw(24),
+  },
+  skillChip: {
+    paddingHorizontal: rw(10),
+    paddingVertical: rw(4),
+    borderRadius: rw(999),
+    backgroundColor: T.surface2,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  skillChipText: {
+    fontSize: rf(11),
+    fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: T.textSub,
+    letterSpacing: 0.2,
+  },
+  streakStatRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: rw(3),
+  },
+  streakStatEmoji: {
+    fontSize: rf(18),
   },
 
   // ── Completion card ──

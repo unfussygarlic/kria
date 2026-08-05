@@ -16,6 +16,7 @@ import { T, CategoryColors } from "@/constants/colors";
 import { GigCategories } from "@/constants/config";
 import { StickyFooter } from "@/components/ui/StickyFooter";
 import { formatDate, formatTime, formatPay } from "@/components/gig/JobCard";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuthStore } from "@/stores/authStore";
 
 // ── Job row inside event ──────────────────────────────────────────────────────
@@ -87,9 +88,16 @@ export default function EventDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.screen, styles.center]}>
-        <ActivityIndicator size="large" color={T.primary} />
-      </View>
+      <ScrollView style={styles.screen} contentContainerStyle={{ padding: 20, paddingTop: insets.top + 20, gap: 14 }}>
+        <Skeleton width="70%" height={28} borderRadius={6} />
+        <Skeleton width="50%" height={16} borderRadius={4} />
+        <Skeleton width="100%" height={80} borderRadius={12} style={{ marginTop: 8 }} />
+        <View style={{ marginTop: 16, gap: 10 }}>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} width="100%" height={64} borderRadius={12} />
+          ))}
+        </View>
+      </ScrollView>
     );
   }
 

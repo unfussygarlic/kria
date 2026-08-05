@@ -102,6 +102,7 @@ export interface Database {
           work_experience: WorkExperience[];
           education_entries: EducationEntry[];
           is_verified: boolean;
+          public_slug: string | null;
           created_at: string;
           updated_at: string;
         };

@@ -253,7 +253,13 @@ class PauseResponse(BaseModel):
 
 async def _assert_gig_owner(gig_id: str, user_id: str, db: AsyncSession) -> dict:
     row = await db.execute(
-        text("SELECT id, poster_id, status, is_paused FROM gigs WHERE id = :id"),
+        text("""
+            SELECT id, poster_id, status, is_paused, event_date, event_end_date,
+                   (COALESCE(event_end_date, event_date)
+                    < (NOW() AT TIME ZONE 'Asia/Kolkata')::date) AS is_expired
+            FROM gigs
+            WHERE id = :id
+        """),
         {"id": gig_id},
     )
     gig = row.mappings().first()
@@ -274,6 +280,8 @@ async def pause_gig(
     gig = await _assert_gig_owner(gig_id, current_user.user_id, db)
     if gig["status"] not in ("open", "in_progress"):
         raise HTTPException(status_code=400, detail="Only open or in-progress gigs can be paused.")
+    if gig["is_expired"]:
+        raise HTTPException(status_code=400, detail="Cannot pause an expired gig.")
     result = await db.execute(
         text("UPDATE gigs SET is_paused = TRUE WHERE id = :id RETURNING id, is_paused, status::text"),
         {"id": gig_id},
@@ -291,6 +299,8 @@ async def unpause_gig(
 ) -> PauseResponse:
     """Unpause a gig — runners can see it again."""
     gig = await _assert_gig_owner(gig_id, current_user.user_id, db)
+    if gig["is_expired"]:
+        raise HTTPException(status_code=400, detail="Cannot resume an expired gig.")
     result = await db.execute(
         text("UPDATE gigs SET is_paused = FALSE WHERE id = :id RETURNING id, is_paused, status::text"),
         {"id": gig_id},

@@ -81,6 +81,14 @@ class GigMatchRequest(BaseModel):
     )
 
 
+class HostSummary(BaseModel):
+    id: UUID
+    display_name: str
+    avatar_url: str | None = None
+    is_verified: bool = False
+    poster_reputation: float | None = None  # 1-5 avg rating
+
+
 class ScoredGig(BaseModel):
     gig_id: UUID
     score: float = Field(..., ge=0.0, le=1.0)
@@ -92,6 +100,7 @@ class ScoredGig(BaseModel):
     poster_id: UUID
     event_date: date | None = None
     poster_score: int | None = None
+    host: HostSummary | None = None
 
 
 class GigMatchResponse(BaseModel):

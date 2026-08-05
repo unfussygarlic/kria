@@ -10,6 +10,14 @@ export interface MatchGigsParams {
   sort?: "score" | "distance";
 }
 
+export interface HostSummary {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+  is_verified: boolean;
+  poster_reputation: number | null;
+}
+
 export interface MatchedGig {
   gig_id: string;
   score: number;
@@ -21,6 +29,7 @@ export interface MatchedGig {
   poster_id: string;
   event_date: string | null;
   poster_score: number | null;
+  host: HostSummary | null;
 }
 
 interface MatchGigsResponse {

@@ -9,6 +9,7 @@ export default function AuthLayout() {
         contentStyle: { backgroundColor: T.bg },
       }}
     >
+      <Stack.Screen name="intro" />
       <Stack.Screen name="login" />
       <Stack.Screen name="verify" />
       <Stack.Screen name="role-select" />

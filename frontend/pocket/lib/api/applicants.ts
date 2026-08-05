@@ -32,6 +32,7 @@ export interface ApplicantListItem {
   assignment_status: string | null;
   assignment_otp: string | null;
   has_been_rated: boolean;
+  momentum_score: number | null;
 }
 
 export interface ApplicantListResponse {

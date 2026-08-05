@@ -9,6 +9,9 @@
 import { useEffect, useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -19,6 +22,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 
 import { T } from "@/constants/colors";
 import { L } from "@/constants/labels";
@@ -30,10 +34,15 @@ import { useMomentumStore } from "@/stores/momentumStore";
 import { SkillGraph } from "@/components/momentum/SkillGraph";
 import { MomentumBreakdown } from "@/components/momentum/MomentumBreakdown";
 
+// Ordered by rank so we can distinguish promotions from demotions.
+const BAND_ORDER = ["Newcomer", "Building", "Reliable", "Trusted", "Elite", "Legend"];
+
 export default function ArenaScreen() {
   const insets = useSafeAreaInsets();
   const activeRole = useAuthStore((s) => s.activeRole);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [levelUp, setLevelUp] = useState<{ to: string; color: string } | null>(null);
+  const prevBandRef = useRef<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -64,6 +73,26 @@ export default function ArenaScreen() {
   const activeScore = myMomentum?.worker.score ?? 0;
   const activeData = myMomentum?.worker;
   const roleLabel = activeRole === "host" ? L.HOST : L.RUNNER;
+
+  // Detect band promotions mid-session. First load just seeds the baseline —
+  // we never show a celebration for data we didn't watch happen.
+  useEffect(() => {
+    if (!activeData) return;
+    const band = getBand(activeScore);
+    if (prevBandRef.current === null) {
+      prevBandRef.current = band.label;
+      return;
+    }
+    if (prevBandRef.current !== band.label) {
+      const oldIdx = BAND_ORDER.indexOf(prevBandRef.current);
+      const newIdx = BAND_ORDER.indexOf(band.label);
+      if (newIdx > oldIdx) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setLevelUp({ to: band.label, color: band.color });
+      }
+      prevBandRef.current = band.label;
+    }
+  }, [activeData, activeScore]);
 
   return (
     <View style={styles.screen}>
@@ -124,7 +153,69 @@ export default function ArenaScreen() {
         breakdown={myBreakdown}
         isLoading={isLoadingBreakdown}
       />
+
+      {/* ── Level-up celebration ── */}
+      <LevelUpModal visible={!!levelUp} data={levelUp} onClose={() => setLevelUp(null)} />
     </View>
+  );
+}
+
+/**
+ * LevelUpModal — full-screen "Promoted!" celebration when the runner crosses
+ * into a new band. Icon scales in with a spring, a band-color halo pulses
+ * behind it, haptic success fires on mount (in parent).
+ */
+function LevelUpModal({
+  visible,
+  data,
+  onClose,
+}: {
+  visible: boolean;
+  data: { to: string; color: string } | null;
+  onClose: () => void;
+}) {
+  const scale = useRef(new Animated.Value(0.4)).current;
+  const halo = useRef(new Animated.Value(0.6)).current;
+
+  useEffect(() => {
+    if (!visible) return;
+    scale.setValue(0.4);
+    halo.setValue(0.6);
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 6, tension: 90 }).start();
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(halo, { toValue: 1.2, duration: 900, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(halo, { toValue: 0.6, duration: 900, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [visible, scale, halo]);
+
+  if (!data) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.levelUpBackdrop}>
+        <Animated.View
+          style={[
+            styles.levelUpHalo,
+            { backgroundColor: data.color + "33", transform: [{ scale: halo }] },
+          ]}
+        />
+        <Animated.View style={[styles.levelUpContent, { transform: [{ scale }] }]}>
+          <Text style={[styles.levelUpEyebrow, { color: data.color }]}>PROMOTED</Text>
+          <Text style={styles.levelUpTitle}>You're now</Text>
+          <Text style={[styles.levelUpBand, { color: data.color }]}>{data.to}</Text>
+          <Text style={styles.levelUpSub}>
+            Your Momentum crossed a new band. Keep it going.
+          </Text>
+          <Pressable style={[styles.levelUpCta, { backgroundColor: data.color }]} onPress={onClose}>
+            <Text style={styles.levelUpCtaText}>Nice</Text>
+          </Pressable>
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
@@ -357,6 +448,64 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: T.bg,
+  },
+  levelUpBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.82)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  levelUpHalo: {
+    position: "absolute",
+    width: rw(320),
+    height: rw(320),
+    borderRadius: rw(160),
+  },
+  levelUpContent: {
+    alignItems: "center",
+    paddingHorizontal: rw(32),
+    gap: rw(6),
+  },
+  levelUpEyebrow: {
+    fontSize: rf(12),
+    fontWeight: "800",
+    fontFamily: "SpaceGrotesk_700Bold",
+    letterSpacing: 3,
+    marginBottom: rw(8),
+  },
+  levelUpTitle: {
+    fontSize: rf(20),
+    fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: T.text,
+  },
+  levelUpBand: {
+    fontSize: rf(48),
+    fontWeight: "800",
+    fontFamily: "SpaceGrotesk_700Bold",
+    letterSpacing: 1,
+    marginTop: rw(2),
+  },
+  levelUpSub: {
+    fontSize: rf(13),
+    fontFamily: "SpaceGrotesk_400Regular",
+    color: T.textSub,
+    textAlign: "center",
+    marginTop: rw(10),
+    paddingHorizontal: rw(20),
+  },
+  levelUpCta: {
+    marginTop: rw(24),
+    paddingHorizontal: rw(40),
+    paddingVertical: rw(14),
+    borderRadius: rw(999),
+  },
+  levelUpCtaText: {
+    fontSize: rf(15),
+    fontWeight: "800",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: "#0e0e0e",
+    letterSpacing: 0.5,
   },
   header: {
     paddingHorizontal: rw(20),

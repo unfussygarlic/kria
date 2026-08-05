@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Info, MapPin, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Info, MapPin, AlertCircle, Loader2, Upload, X, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { geocodeVenue, updateGigLocation } from "@/lib/api/recommendations";
 import { generateGigCover } from "@/lib/api/gigs";
@@ -95,7 +95,12 @@ interface FormData {
   venue_lat: number | null;
   venue_lng: number | null;
   geocoded_address: string;
+  // Optional cover photo — replaces the template photo slot in the cover PNG.
+  cover_photo: File | null;
+  cover_photo_preview: string | null;
 }
+
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024; // 10 MB (matches backend limit)
 
 const INITIAL: FormData = {
   category: "",
@@ -104,6 +109,7 @@ const INITIAL: FormData = {
   venue_name: "", city: "", event_date: "", shift_start_time: "09:00", shift_end_time: "18:00", report_time: "",
   gender_preference: "any", dress_code: "", languages_required: [], experience_required: false, requirements_note: "",
   venue_lat: null, venue_lng: null, geocoded_address: "",
+  cover_photo: null, cover_photo_preview: null,
 };
 
 const inputCls = "w-full bg-surface-3 border border-theme rounded-lg px-4 py-3 text-text text-sm focus:outline-none focus:border-primary transition-colors placeholder:text-text-muted";
@@ -122,6 +128,31 @@ export default function NewGigPage() {
   const [geocodeError, setGeocodeError] = useState("");
 
   const set = (patch: Partial<FormData>) => setForm((f) => ({ ...f, ...patch }));
+
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoError, setPhotoError] = useState("");
+
+  const handlePickPhoto = (file: File | null) => {
+    setPhotoError("");
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setPhotoError("Photo must be JPEG, PNG, or WebP.");
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setPhotoError("Photo is too large (max 10 MB).");
+      return;
+    }
+    // Revoke previous preview URL if any
+    if (form.cover_photo_preview) URL.revokeObjectURL(form.cover_photo_preview);
+    set({ cover_photo: file, cover_photo_preview: URL.createObjectURL(file) });
+  };
+
+  const handleRemovePhoto = () => {
+    if (form.cover_photo_preview) URL.revokeObjectURL(form.cover_photo_preview);
+    set({ cover_photo: null, cover_photo_preview: null });
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  };
 
   const handleFetchLocation = async () => {
     if (!form.venue_name || !form.city) return;
@@ -188,11 +219,11 @@ export default function NewGigPage() {
       await updateGigLocation(data.id, form.venue_lat, form.venue_lng, form.geocoded_address);
     }
 
-    // Auto-generate cover art (template-based). No photo yet — that's a
-    // future "customize cover" step; this call still renders a clean
-    // template-only cover so every gig has one immediately.
-    generateGigCover(data.id).catch(() => {
-      // Non-fatal — gig is already created either way, cover can be regenerated later.
+    // Auto-generate cover art. If the host uploaded a photo it goes into the
+    // template's photo slot; otherwise the compositor renders a template-only
+    // cover. Fire-and-forget so gig creation doesn't block on cover render.
+    generateGigCover(data.id, form.cover_photo ?? undefined).catch(() => {
+      // Non-fatal — gig is already created, cover can be regenerated later.
     });
 
     setSubmitting(false);
@@ -355,6 +386,69 @@ export default function NewGigPage() {
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold text-sm">₹</span>
                 <input className={`${inputCls} pl-10`} type="number" placeholder="5000" value={form.pay_amount || ""} onChange={(e) => set({ pay_amount: Number(e.target.value) })} />
               </div>
+            </div>
+
+            {/* Cover photo picker (optional) */}
+            <div>
+              <label className={labelCls}>Cover Photo (optional)</label>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => handlePickPhoto(e.target.files?.[0] ?? null)}
+                className="hidden"
+              />
+              {form.cover_photo_preview ? (
+                <div className="flex items-start gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={form.cover_photo_preview}
+                    alt="Cover preview"
+                    className="w-24 h-30 rounded-lg object-cover border border-white/10"
+                    style={{ aspectRatio: "4/5" }}
+                  />
+                  <div className="flex-1 space-y-2">
+                    <p className="text-xs text-text-sub leading-relaxed">
+                      This photo will fill the photo slot in the gig cover so runners see a real image, not the template.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => photoInputRef.current?.click()}
+                        className="text-[10px] font-bold uppercase tracking-wider text-primary hover:brightness-110 transition"
+                      >
+                        Change
+                      </button>
+                      <span className="text-text-muted">·</span>
+                      <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-text-muted hover:text-text transition"
+                      >
+                        <X size={11} /> Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  className="w-full flex items-center gap-3 p-4 border border-dashed border-white/15 hover:border-primary/60 rounded-xl transition-colors text-left"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Upload size={16} className="text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-text">Upload a cover photo</p>
+                    <p className="text-xs text-text-muted mt-0.5">Photos of your venue, team, or past events make cards stand out. JPEG / PNG / WebP · max 10 MB.</p>
+                  </div>
+                  <ImageIcon size={14} className="text-text-muted flex-shrink-0" />
+                </button>
+              )}
+              {photoError && (
+                <p className="text-xs text-error mt-2">{photoError}</p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3 p-4 border border-dashed border-white/10 rounded-xl">

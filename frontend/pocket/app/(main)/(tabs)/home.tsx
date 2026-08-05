@@ -210,11 +210,7 @@ const BandHeroCard = memo(function BandHeroCard({ score, gigsDone, streak }: {
           <Text style={styles.heroStatKey}>gigs</Text>
         </View>
         <View style={styles.heroStatDivider} />
-        <View style={styles.heroStat}>
-          <Feather name="zap" size={12} color={T.textMuted} />
-          <Text style={styles.heroStatVal}>{streak}</Text>
-          <Text style={styles.heroStatKey}>day streak</Text>
-        </View>
+        <StreakStat streak={streak} />
         <View style={styles.heroStatDivider} />
         <View style={styles.heroStat}>
           <Feather name="chevron-right" size={12} color={T.textMuted} />
@@ -224,6 +220,44 @@ const BandHeroCard = memo(function BandHeroCard({ score, gigsDone, streak }: {
     </PressableScale>
   );
 });
+
+/**
+ * StreakStat — flame that pulses (opacity loop) when the runner has an active
+ * streak. Falls back to a muted "start a streak" prompt at 0 so the space
+ * doesn't feel empty. Kept inline so it can access home.tsx's shared styles.
+ */
+function StreakStat({ streak }: { streak: number }) {
+  const flameOpacity = useRef(new Animated.Value(0.7)).current;
+
+  useEffect(() => {
+    if (streak <= 0) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(flameOpacity, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(flameOpacity, { toValue: 0.6, duration: 900, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [streak, flameOpacity]);
+
+  if (streak <= 0) {
+    return (
+      <View style={styles.heroStat}>
+        <Feather name="zap" size={12} color={T.textMuted} />
+        <Text style={[styles.heroStatKey, { color: T.textMuted }]}>Start a streak</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.streakChip}>
+      <Animated.Text style={[styles.streakEmoji, { opacity: flameOpacity }]}>🔥</Animated.Text>
+      <Text style={styles.streakVal}>{streak}</Text>
+      <Text style={styles.streakKey}>day streak</Text>
+    </View>
+  );
+}
 
 const GIG_CARD_W = rw(150);
 const GIG_CARD_GAP = rw(10);
@@ -643,10 +677,17 @@ export default function HomeScreen() {
   const gigsDone = momentumData?.gig_count ?? profile?.total_gigs_completed ?? 0;
   const streak = profile?.streak_count ?? 0;
 
-  const activeApplications = useMemo(
-    () => myApplications.filter((a) => a.status === "pending" || a.status === "accepted"),
-    [myApplications],
-  );
+  const activeApplications = useMemo(() => {
+    const now = new Date();
+    return myApplications.filter((a) => {
+      if (a.status !== "pending" && a.status !== "accepted") return false;
+      if (!a.gig?.event_date) return true;
+      const gigEnd = new Date(a.gig.event_date);
+      const [hh, mm] = (a.gig.shift_end_time || "23:59").split(":");
+      gigEnd.setHours(Number(hh ?? 23), Number(mm ?? 59), 0, 0);
+      return gigEnd >= now;
+    });
+  }, [myApplications]);
 
   const renderRecentGig = useCallback(
     ({ item }: { item: { gig: any; status: string } }) => (
@@ -921,6 +962,34 @@ const styles = StyleSheet.create({
     width: 1,
     height: rw(12),
     backgroundColor: T.border,
+  },
+  streakChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: rw(8),
+    paddingVertical: rw(4),
+    borderRadius: rw(12),
+    backgroundColor: "rgba(255,199,61,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(255,199,61,0.35)",
+  },
+  streakEmoji: {
+    fontSize: rf(14),
+  },
+  streakVal: {
+    fontSize: rf(13),
+    fontWeight: "800",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: "#FFC83D",
+  },
+  streakKey: {
+    fontSize: rf(10),
+    fontWeight: "600",
+    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: "#FFC83D",
+    opacity: 0.85,
+    letterSpacing: 0.2,
   },
 
   // ── Badge marquee ──

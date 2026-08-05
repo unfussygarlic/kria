@@ -27,6 +27,7 @@ import { T } from "@/constants/colors";
 import { SkillCategories, DegreeOptions, Languages } from "@/constants/config";
 import { MomentumBadge } from "@/components/momentum/MomentumBadge";
 import { RatingModal } from "@/components/ui/RatingModal";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 // ── Label lookup helpers ─────────────────────────────────────────────────────
 
@@ -293,8 +294,17 @@ export default function ApplicantsScreen() {
         </LinearGradient>
 
         {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={T.primary} />
+          <View style={styles.listSkeletonWrap}>
+            {[0, 1, 2, 3].map((i) => (
+              <View key={i} style={styles.listSkeletonRow}>
+                <Skeleton width={44} height={44} borderRadius={22} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <Skeleton width="60%" height={14} borderRadius={4} />
+                  <Skeleton width="40%" height={12} borderRadius={4} />
+                </View>
+                <Skeleton width={70} height={22} borderRadius={11} />
+              </View>
+            ))}
           </View>
         ) : error ? (
           <View style={styles.center}>
@@ -337,7 +347,10 @@ export default function ApplicantsScreen() {
             ListEmptyComponent={
               <View style={styles.center}>
                 <Feather name="users" size={48} color={T.textMuted} />
-                <Text style={styles.emptyText}>No applicants yet</Text>
+                <Text style={styles.emptyText}>Waiting for applicants</Text>
+                <Text style={styles.emptySub}>
+                  Runners nearby will see your gig in Explore. First applications usually land within a few hours.
+                </Text>
               </View>
             }
             ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -374,7 +387,7 @@ function DetailSheet({
   onRate,
 }: DetailSheetProps) {
   const p = item.applicant;
-  const workerMomentum = (p as any).worker_momentum ?? 500;
+  const workerMomentum = item.momentum_score ?? 0;
 
   return (
     <View style={styles.sheet}>
@@ -1116,6 +1129,34 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 44,
     borderRadius: 10,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+  },
+  emptySub: {
+    fontSize: 13,
+    fontFamily: "SpaceGrotesk_400Regular",
+    color: T.textMuted,
+    textAlign: "center",
+    lineHeight: 19,
+    paddingHorizontal: 24,
+    marginTop: 6,
+  },
+  listSkeletonWrap: {
+    padding: 20,
+    gap: 14,
+  },
+  listSkeletonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
   },
   chatBtn: {
     backgroundColor: T.ctaBg,

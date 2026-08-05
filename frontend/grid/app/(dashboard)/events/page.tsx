@@ -19,6 +19,15 @@ const STATUS_STYLE: Record<string, string> = {
   draft:       "bg-white/5 text-text-muted",
 };
 
+const EXPIRED_STYLE = "bg-white/10 text-text-muted";
+
+function isEventExpired(event: MyEventSummary): boolean {
+  if (event.status !== "open" && event.status !== "in_progress") return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(event.event_date) < today;
+}
+
 export default function EventsPage() {
   const router = useRouter();
   const [events, setEvents] = useState<MyEventSummary[]>([]);
@@ -74,13 +83,15 @@ export default function EventsPage() {
         <>
           <div className="space-y-3 mb-8">
             {events.map((event) => {
-              const statusCls = STATUS_STYLE[event.status] ?? "bg-white/10 text-text-muted";
+              const expired = isEventExpired(event);
+              const statusCls = expired ? EXPIRED_STYLE : (STATUS_STYLE[event.status] ?? "bg-white/10 text-text-muted");
+              const statusLabel = expired ? "Expired" : event.status.replace(/_/g, " ");
               const fillPct = event.total_slots > 0 ? Math.round((event.slots_filled / event.total_slots) * 100) : 0;
               return (
                 <div
                   key={event.id}
                   onClick={() => router.push(`/events/${event.id}`)}
-                  className="bg-surface-1 border border-white/10 rounded-xl p-5 cursor-pointer hover:border-white/20 hover:bg-white/[0.02] transition-all group"
+                  className={`bg-surface-1 border border-white/10 rounded-xl p-5 cursor-pointer hover:border-white/20 hover:bg-white/[0.02] transition-all group ${expired ? "opacity-60" : ""}`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-4">
@@ -96,7 +107,7 @@ export default function EventsPage() {
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded ${statusCls}`}>
-                        {event.status.replace(/_/g, " ")}
+                        {statusLabel}
                       </span>
                       <ArrowRight size={14} className="text-text-muted group-hover:text-primary transition-colors" />
                     </div>

@@ -7,7 +7,6 @@ import {
   Pressable,
   Alert,
   Linking,
-  ActivityIndicator,
   Image,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
@@ -15,6 +14,8 @@ import { Feather } from "@expo/vector-icons";
 import { useGigStore } from "@/stores/gigStore";
 import { useAuthStore } from "@/stores/authStore";
 import { PressableScale } from "@/components/ui/PressableScale";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { HostAvatarChip } from "@/components/gig/HostAvatarChip";
 import { T, CategoryColors } from "@/constants/colors";
 import { GigCategories } from "@/constants/config";
 import { Gig } from "@/types/database";
@@ -30,6 +31,7 @@ export default function GigDetailScreen() {
   const getGig = useGigStore((s) => s.getGig);
   const applyToGig = useGigStore((s) => s.applyToGig);
   const myApplications = useGigStore((s) => s.myApplications);
+  const hosts = useGigStore((s) => s.hosts);
   const profile = useAuthStore((s) => s.profile);
 
   useEffect(() => {
@@ -65,9 +67,18 @@ export default function GigDetailScreen() {
 
   if (!gig) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={T.primary} />
-      </View>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <Skeleton width="100%" height={rw(320)} borderRadius={rw(16)} style={{ aspectRatio: 4 / 5, height: undefined }} />
+        <Skeleton width={rw(120)} height={rw(24)} borderRadius={rw(6)} style={{ marginTop: rw(20) }} />
+        <Skeleton width="80%" height={rw(28)} borderRadius={rw(6)} style={{ marginTop: rw(12) }} />
+        <Skeleton width="50%" height={rw(18)} borderRadius={rw(4)} style={{ marginTop: rw(6) }} />
+        <Skeleton width={rw(160)} height={rw(38)} borderRadius={rw(8)} style={{ marginTop: rw(20) }} />
+        <View style={{ marginTop: rw(24), gap: rw(10) }}>
+          <Skeleton width="90%" height={rw(16)} borderRadius={rw(4)} />
+          <Skeleton width="70%" height={rw(16)} borderRadius={rw(4)} />
+          <Skeleton width="80%" height={rw(16)} borderRadius={rw(4)} />
+        </View>
+      </ScrollView>
     );
   }
 
@@ -103,6 +114,13 @@ export default function GigDetailScreen() {
         )}
         {gig.event_name && (
           <Text style={styles.eventName}>{gig.event_name}</Text>
+        )}
+
+        {/* Host trust chip — face + verified + rating */}
+        {hosts[gig.poster_id] && (
+          <View style={styles.hostChipRow}>
+            <HostAvatarChip host={hosts[gig.poster_id]!} />
+          </View>
         )}
 
         {/* Pay */}
@@ -321,6 +339,10 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceGrotesk_500Medium",
     color: T.primary,
     marginTop: rw(4),
+  },
+  hostChipRow: {
+    marginTop: rw(14),
+    alignSelf: "flex-start",
   },
   payContainer: {
     flexDirection: "row",
