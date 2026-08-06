@@ -6,6 +6,37 @@ type: project
 
 # Changelog
 
+## 2026-08-07 — Jobs + My Space + Arena revamps (research-driven)
+
+Full package A+B for all three tabs following deep code audits + web research on [DoorDash](https://dasher.doordash.com/en-us/blog/new-doordash-dasher-app), [Uber Driver](https://www.uber.com/us/en/deliver/driver-app/), [Instacart](https://www.instacart.com/company/shopper-community/new-tools-to-track-your-earnings), [LinkedIn Jobs](https://www.linkedin.com/blog/member/product/new-job-search-mobile-app), [Indeed](https://apps.apple.com/ca/app/indeed-job-search/id309735670), [Duolingo/Strava gamification](https://citrusbits.com/how-gamification-has-catapulted-duolingo-strava-and-forest-to-the-top-of-their-respective-app-categories/).
+
+**Backend (4 new/expanded endpoints):**
+- Expanded `AcceptedGigItem` response with description, cover_image_url, event_end_date, is_multi_day, report_time, slots, dress_code, languages_required, gender_preference, experience_required, requirements_note. Space no longer has to route runners to gig detail for basic info.
+- **New `POST /api/v1/assignments/{id}/cancel`** — runner cancels a shift BEFORE it starts. Frees the slot, no momentum penalty. Migration `0033_assignment_cancelled_status.py` adds `'cancelled'` to the assignment_status enum.
+- **New `GET /api/v1/momentum/me/percentile`** — city-scoped or global percentile rank. Powers the "Top X% in Bengaluru" chip on Arena.
+- **Extended `BadgeOut`** with `progress_current` / `progress_target` / `unlock_hint` for locked milestone + streak badges. Server owns thresholds.
+
+**Space (full doc: `features/space_revamp.md`):**
+- `<CountdownPill>` (auto-refresh 30s, colour escalation lime → amber → coral → live pulse) on every upcoming card AND on the sheet header.
+- Action row in GigDetailSheet: **Directions** (`openDirections()` → Google Maps nav intent), **Share** (native `Share.share` with trykria.com URL), **Cancel** (Alert confirmation → API → optimistic remove).
+- New helpers: `lib/shiftTime.ts` + `lib/openMaps.ts` + `components/space/CountdownPill.tsx`.
+- Deferred: Add-to-calendar (needs `expo-calendar` — new native dep).
+
+**Arena (full doc: `features/arena_revamp.md`):**
+- `<ArenaHero>` — streak (big amber number, 🔥 or 🌱), weekly delta chip (`+18 this week` — client-side snapshot via SecureStore until a `momentum_snapshots` table lands), percentile chip (`Top X% in Bengaluru` — only when peer_count ≥ 5).
+- `+N pts` contribution badge on each signal row in `MomentumBreakdown` — makes the abstract progress bar concrete.
+- `<NextUnlocks>` — top 3 locked badges sorted by progress ratio, with server-computed hints like "2 more gigs to unlock". Links to full `/badges` screen.
+- New helpers: `lib/momentumSnapshot.ts` + `components/arena/{ArenaHero,NextUnlocks}.tsx`.
+- Deferred: full leaderboard (needs opt-in privacy toggle), full Badges page merge (kept as its own screen), momentum history chart (needs snapshots table).
+
+**Jobs (full doc: `features/jobs_revamp.md`):**
+- Sort chip row above results: **Soonest** (default) / **Newest** / **Highest pay**. Client-side sort of the current page.
+- Applied-status pill on cards (reuses `gigStore.myApplications` cache).
+- Bookmark heart on gig cards → new `stores/savedGigsStore.ts` (SecureStore-persisted set of gig IDs).
+- Deferred: quick-apply from list (needs inline confirmation modal), pay-range filter (needs slider component/dep), distance filter (needs GPS gating), dedicated Saved tab (bookmark set exists but no surface yet).
+
+---
+
 ## 2026-08-07 — Home Revamp (Pocket, earnings-first)
 
 Full Home redesign following a code audit + web research on DoorDash / Uber Driver / Instacart. Three problems the old Home had: no money signal, no primary CTA, home collapses for new runners. Full doc: `features/home_revamp.md`.

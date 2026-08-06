@@ -73,3 +73,17 @@ export async function getUserMomentum(userId: string) {
 export async function getSignalMeta() {
   return apiGet<SignalMeta[]>("/api/v1/momentum/signals");
 }
+
+// ── Percentile (social proof — "top X% in Bengaluru") ──────────────────────
+
+export interface PercentileData {
+  score: number;
+  city: string | null;
+  percentile: number;   // 1–100
+  peer_count: number;
+  scope: "city" | "global";
+}
+
+export async function getMyPercentile() {
+  return apiGet<PercentileData>("/api/v1/momentum/me/percentile");
+}

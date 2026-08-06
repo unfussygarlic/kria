@@ -53,13 +53,25 @@ class AcceptedGigItem(BaseModel):
     title: str
     category: str
     company_name: Optional[str] = None
+    description: Optional[str] = None                 # new 2026-08-07 — for Space sheet richness
+    cover_image_url: Optional[str] = None             # new 2026-08-07
     venue_name: str
     city: str
     venue_lat: Optional[float] = None
     venue_lng: Optional[float] = None
     event_date: str
+    event_end_date: Optional[str] = None              # new — multi-day support in Space
+    is_multi_day: bool = False                        # new
     shift_start_time: str
     shift_end_time: str
+    report_time: Optional[str] = None                 # new — Space countdown can factor in report_time
+    slots_total: int = 0                              # new — "3/5 spots filled" on Space card
+    slots_filled: int = 0                             # new
+    dress_code: Optional[str] = None                  # new — Space requirements section
+    languages_required: list[str] = []                # new
+    gender_preference: Optional[str] = None           # new
+    experience_required: bool = False                 # new
+    requirements_note: Optional[str] = None           # new
     pay_amount: float
     pay_type: str
     poster: AcceptedGigPoster
@@ -141,13 +153,25 @@ async def get_my_accepted_gigs(
                 g.title,
                 g.category,
                 g.company_name,
+                g.description,
+                g.cover_image_url,
                 g.venue_name,
                 g.city,
                 g.venue_lat,
                 g.venue_lng,
                 g.event_date::TEXT,
+                g.event_end_date::TEXT,
+                g.is_multi_day,
                 g.shift_start_time::TEXT,
                 g.shift_end_time::TEXT,
+                g.report_time::TEXT,
+                g.slots_total,
+                g.slots_filled,
+                g.dress_code,
+                g.languages_required,
+                g.gender_preference,
+                g.experience_required,
+                g.requirements_note,
                 g.pay_amount,
                 g.pay_type,
                 p.id               AS poster_id,
@@ -182,13 +206,25 @@ async def get_my_accepted_gigs(
             title=row["title"],
             category=row["category"],
             company_name=row["company_name"],
+            description=row["description"],
+            cover_image_url=row["cover_image_url"],
             venue_name=row["venue_name"],
             city=row["city"],
             venue_lat=row["venue_lat"],
             venue_lng=row["venue_lng"],
             event_date=str(row["event_date"]),
+            event_end_date=str(row["event_end_date"]) if row["event_end_date"] else None,
+            is_multi_day=bool(row["is_multi_day"]),
             shift_start_time=str(row["shift_start_time"]),
             shift_end_time=str(row["shift_end_time"]),
+            report_time=str(row["report_time"]) if row["report_time"] else None,
+            slots_total=int(row["slots_total"] or 0),
+            slots_filled=int(row["slots_filled"] or 0),
+            dress_code=row["dress_code"],
+            languages_required=list(row["languages_required"] or []),
+            gender_preference=row["gender_preference"],
+            experience_required=bool(row["experience_required"]),
+            requirements_note=row["requirements_note"],
             pay_amount=float(row["pay_amount"]),
             pay_type=row["pay_type"],
             poster=AcceptedGigPoster(

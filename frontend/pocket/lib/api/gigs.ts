@@ -72,13 +72,25 @@ export interface AcceptedGigItem {
   title: string;
   category: string;
   company_name: string | null;
+  description: string | null;
+  cover_image_url: string | null;
   venue_name: string;
   city: string;
   venue_lat: number | null;
   venue_lng: number | null;
   event_date: string;
+  event_end_date: string | null;
+  is_multi_day: boolean;
   shift_start_time: string;
   shift_end_time: string;
+  report_time: string | null;
+  slots_total: number;
+  slots_filled: number;
+  dress_code: string | null;
+  languages_required: string[];
+  gender_preference: string | null;
+  experience_required: boolean;
+  requirements_note: string | null;
   pay_amount: number;
   pay_type: string;
   poster: AcceptedGigPoster;
@@ -92,4 +104,20 @@ export interface AcceptedGigsResponse {
 
 export function getMyAcceptedGigs() {
   return apiGet<AcceptedGigsResponse>("/api/v1/gigs/my-accepted");
+}
+
+// ── Cancel-shift (runner backs out BEFORE shift starts) ──────────────────────
+
+export interface CancelAssignmentResponse {
+  ok: boolean;
+  application_id: string;
+  new_status: string;
+  message: string;
+}
+
+export function cancelAssignment(assignmentId: string) {
+  return apiPost<CancelAssignmentResponse>(
+    `/api/v1/assignments/${assignmentId}/cancel`,
+    {},
+  );
 }

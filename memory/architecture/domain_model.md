@@ -202,10 +202,11 @@ events ──< gigs (event_id nullable FK)
 | `0030_admin_support.py` | ADD `is_admin BOOLEAN NOT NULL DEFAULT FALSE` to profiles; CREATE `support_queries` table with indexes + auto-update trigger |
 | `0031_gig_cover_images.py` | ADD `cover_image_url TEXT` + `cover_image_square_url TEXT` to gigs (template covers) |
 | `0032_public_profile_slug.py` | ADD `public_slug TEXT UNIQUE` to profiles + `idx_profiles_public_slug`. Backfill `{firstname}-{last6ofid}`. Powers `trykria.com/p/{slug}`. |
+| `0033_assignment_cancelled_status.py` | ADD `'cancelled'` to `assignment_status` enum. Powers `POST /assignments/{id}/cancel` — runner backs out of a shift BEFORE it starts. |
 
-**Applied migrations:** 0001–0032 confirmed, all applied via EC2 `alembic upgrade head`.
+**Applied migrations:** 0001–0033 confirmed, all applied via EC2 `alembic upgrade head`.
 
-**Next migration number:** `0033`
+**Next migration number:** `0034`
 
 Migrations live at: `backend/api/alembic/versions/`
 Auto-run on backend startup.

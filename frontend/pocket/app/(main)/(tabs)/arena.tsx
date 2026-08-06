@@ -33,6 +33,10 @@ import { useAuthStore } from "@/stores/authStore";
 import { useMomentumStore } from "@/stores/momentumStore";
 import { SkillGraph } from "@/components/momentum/SkillGraph";
 import { MomentumBreakdown } from "@/components/momentum/MomentumBreakdown";
+import { ArenaHero } from "@/components/arena/ArenaHero";
+import { NextUnlocks } from "@/components/arena/NextUnlocks";
+import { useBadgeStore } from "@/stores/badgeStore";
+import { readWeeklyDelta } from "@/lib/momentumSnapshot";
 
 // Ordered by rank so we can distinguish promotions from demotions.
 const BAND_ORDER = ["Newcomer", "Building", "Reliable", "Trusted", "Elite", "Legend"];
@@ -52,23 +56,40 @@ export default function ArenaScreen() {
 
   const myMomentum = useMomentumStore((s) => s.myMomentum);
   const myBreakdown = useMomentumStore((s) => s.myBreakdown);
+  const myPercentile = useMomentumStore((s) => s.myPercentile);
   const isLoadingMy = useMomentumStore((s) => s.isLoadingMy);
   const isLoadingBreakdown = useMomentumStore((s) => s.isLoadingBreakdown);
   const fetchMyMomentum = useMomentumStore((s) => s.fetchMyMomentum);
   const fetchMyBreakdown = useMomentumStore((s) => s.fetchMyBreakdown);
+  const fetchMyPercentile = useMomentumStore((s) => s.fetchMyPercentile);
+  const profile = useAuthStore((s) => s.profile);
+
+  const [weeklyDelta, setWeeklyDelta] = useState<number | null>(null);
+
+  const badges = useBadgeStore((s) => s.badges);
+  const fetchBadges = useBadgeStore((s) => s.fetchBadges);
 
   useEffect(() => {
     fetchMyMomentum();
     fetchMyBreakdown();
+    fetchMyPercentile();
+    fetchBadges();
   }, []);
+
+  // Once momentum lands, snapshot / diff for the "+X this week" chip.
+  useEffect(() => {
+    if (myMomentum?.worker.score !== undefined) {
+      readWeeklyDelta(myMomentum.worker.score).then(setWeeklyDelta);
+    }
+  }, [myMomentum?.worker.score]);
 
   const handleBreakdownOpen = useCallback(() => {
     setShowBreakdown(true);
   }, []);
 
   const handleRefresh = useCallback(async () => {
-    await Promise.all([fetchMyMomentum(), fetchMyBreakdown()]);
-  }, [fetchMyMomentum, fetchMyBreakdown]);
+    await Promise.all([fetchMyMomentum(), fetchMyBreakdown(), fetchMyPercentile()]);
+  }, [fetchMyMomentum, fetchMyBreakdown, fetchMyPercentile]);
 
   const activeScore = myMomentum?.worker.score ?? 0;
   const activeData = myMomentum?.worker;
@@ -117,6 +138,14 @@ export default function ArenaScreen() {
           <RefreshControl refreshing={isLoadingMy} onRefresh={handleRefresh} tintColor={T.secondary} />
         }
       >
+        {/* ── Hero: streak + weekly delta + percentile (2026-08-07) ── */}
+        <ArenaHero
+          streak={profile?.streak_count ?? 0}
+          longestStreak={profile?.longest_streak ?? 0}
+          weeklyDelta={weeklyDelta}
+          percentile={myPercentile}
+        />
+
         {/* ── Skill Graph ── */}
         <View style={styles.gaugeCard}>
           {isLoadingMy && !myMomentum ? (
@@ -138,6 +167,9 @@ export default function ArenaScreen() {
         {activeData && (
           <StatsGrid score={activeData.score} gigCount={activeData.gig_count} />
         )}
+
+        {/* ── Next unlocks (2026-08-07 revamp) — top 3 badges closest to earn ── */}
+        <NextUnlocks badges={badges} />
 
         {/* ── How Momentum works ── */}
         <HowItWorksCard />

@@ -29,8 +29,11 @@ import { T, CategoryColors } from "@/constants/colors";
 import { L } from "@/constants/labels";
 import { JobCard, formatDate } from "@/components/gig/JobCard";
 import { RatingModal } from "@/components/ui/RatingModal";
-import { getMyAcceptedGigs, AcceptedGigItem } from "@/lib/api/gigs";
+import { getMyAcceptedGigs, AcceptedGigItem, cancelAssignment } from "@/lib/api/gigs";
 import { verifyOtp, finalizeExpiredAssignments } from "@/lib/api/ratings";
+import { openDirections } from "@/lib/openMaps";
+import { CountdownPill } from "@/components/space/CountdownPill";
+import { Share } from "react-native";
 
 // ── Poster tab items ──────────────────────────────────────────────────────────
 
@@ -99,6 +102,14 @@ function UpcomingGigCard({ item, onPress }: { item: AcceptedGigItem; onPress: ()
           <Text style={gcStyles.sub} numberOfLines={1}>
             {item.company_name ?? item.city}
           </Text>
+          {/* Compact countdown pill trumps the static status chip when the
+              shift is within 24h — creates urgency at a glance. */}
+          <CountdownPill
+            eventDate={item.event_date}
+            shiftStart={item.shift_start_time}
+            shiftEnd={item.shift_end_time}
+            compact
+          />
           <View style={[gcStyles.pill, { backgroundColor: chip.bg }]}>
             <Text style={[gcStyles.pillText, { color: chip.color }]}>{chip.label}</Text>
           </View>
@@ -250,11 +261,13 @@ function GigDetailSheet({
   onClose,
   onOtpSuccess,
   onRateSuccess,
+  onCancelSuccess,
 }: {
   item: AcceptedGigItem | null;
   onClose: () => void;
   onOtpSuccess: (gigId: string) => void;
   onRateSuccess: (gigId: string) => void;
+  onCancelSuccess: (assignmentId: string) => void;
 }) {
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(600)).current;
@@ -288,6 +301,48 @@ function GigDetailSheet({
   }, [item]);
 
   const [celebrating, setCelebrating] = useState(false);
+
+  const handleShareGig = useCallback(async (gig: AcceptedGigItem) => {
+    // Deep-link to the gig detail via trykria.com. That URL doesn't render
+    // a public page for gig detail yet (only /p/{slug} for runners), but the
+    // Play Store listing catches the app-scheme redirect. Good enough for
+    // WhatsApp-share-then-open.
+    const url = `https://trykria.com/gig/${gig.gig_id}`;
+    const dateStr = gig.event_date
+      ? new Date(gig.event_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+      : "";
+    const msg = `${gig.title} on Kria — ₹${gig.pay_amount.toLocaleString("en-IN")} ${gig.pay_type} · ${gig.venue_name}${dateStr ? " · " + dateStr : ""}\n${url}`;
+    try {
+      await Share.share({ message: msg, url });
+    } catch {
+      // User cancelled — silent
+    }
+  }, []);
+
+  const handleCancelShift = useCallback((gig: AcceptedGigItem) => {
+    if (!gig.assignment_id) return;
+    Alert.alert(
+      "Cancel this shift?",
+      "Your slot will be freed up for another runner. No penalty for cancelling in advance — but it's better to cancel than to no-show.",
+      [
+        { text: "Keep shift", style: "cancel" },
+        {
+          text: "Cancel shift",
+          style: "destructive",
+          onPress: async () => {
+            const result = await cancelAssignment(gig.assignment_id!);
+            if (result.error) {
+              Alert.alert("Couldn't cancel", result.error);
+              return;
+            }
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            onCancelSuccess(gig.assignment_id!);
+            onClose();
+          },
+        },
+      ],
+    );
+  }, [onClose, onCancelSuccess]);
   const celebrateScale = useRef(new Animated.Value(0.3)).current;
   const celebrateHalo = useRef(new Animated.Value(0.4)).current;
 
@@ -467,6 +522,51 @@ function GigDetailSheet({
                     <Text style={shStyles.payType}> / {displayItem.pay_type.replace("_", " ")}</Text>
                   </Text>
                 </View>
+
+                {/* Countdown pill — upcoming only, refreshes every 30s */}
+                {isUpcomingItem && (
+                  <View style={shStyles.countdownWrap}>
+                    <CountdownPill
+                      eventDate={displayItem.event_date}
+                      shiftStart={displayItem.shift_start_time}
+                      shiftEnd={displayItem.shift_end_time}
+                    />
+                  </View>
+                )}
+
+                {/* Action row — Directions | Share | Cancel — upcoming only */}
+                {isUpcomingItem && (
+                  <View style={shStyles.actionRow}>
+                    {displayItem.venue_lat !== null && displayItem.venue_lng !== null && (
+                      <PressableScale
+                        style={shStyles.actionIconBtn}
+                        onPress={() =>
+                          openDirections(
+                            { latitude: displayItem.venue_lat!, longitude: displayItem.venue_lng! },
+                            displayItem.venue_name,
+                          )
+                        }
+                      >
+                        <Feather name="navigation" size={rw(15)} color={T.primary} />
+                        <Text style={shStyles.actionIconLabel}>Directions</Text>
+                      </PressableScale>
+                    )}
+                    <PressableScale
+                      style={shStyles.actionIconBtn}
+                      onPress={() => handleShareGig(displayItem)}
+                    >
+                      <Feather name="share-2" size={rw(15)} color={T.textSub} />
+                      <Text style={[shStyles.actionIconLabel, { color: T.textSub }]}>Share</Text>
+                    </PressableScale>
+                    <PressableScale
+                      style={shStyles.actionIconBtn}
+                      onPress={() => handleCancelShift(displayItem)}
+                    >
+                      <Feather name="x-circle" size={rw(15)} color={T.error} />
+                      <Text style={[shStyles.actionIconLabel, { color: T.error }]}>Cancel</Text>
+                    </PressableScale>
+                  </View>
+                )}
 
                 {/* View Gig — upcoming only */}
                 {isUpcomingItem && (
@@ -800,6 +900,37 @@ const shStyles = StyleSheet.create({
     borderColor: T.border,
     backgroundColor: T.surface,
   },
+  countdownWrap: {
+    alignItems: "flex-start",
+    marginBottom: rw(4),
+  },
+  actionRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "stretch",
+    gap: rw(8),
+    paddingVertical: rw(6),
+  },
+  actionIconBtn: {
+    flex: 1,
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: rw(4),
+    paddingVertical: rw(12),
+    paddingHorizontal: rw(8),
+    borderRadius: rw(12),
+    borderWidth: 1,
+    borderColor: T.border,
+    backgroundColor: T.surface,
+  },
+  actionIconLabel: {
+    fontSize: rf(11),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.primary,
+    letterSpacing: 0.3,
+  },
   viewGigBtnText: {
     fontSize: rf(14),
     fontWeight: "600",
@@ -957,6 +1088,12 @@ function RunnerTab() {
           setItems((prev) =>
             prev.map((i) => i.gig_id === gigId ? { ...i, has_been_rated: true } : i)
           );
+        }}
+        onCancelSuccess={(assignmentId) => {
+          // Drop the cancelled item from the list entirely — it's neither
+          // Upcoming (no assignment anymore) nor History (not a completed
+          // record). A follow-up load() will refetch fresh state.
+          setItems((prev) => prev.filter((i) => i.assignment_id !== assignmentId));
         }}
       />
     </>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -20,6 +20,8 @@ import {
 } from "@/lib/api/search";
 import { GigCategories } from "@/constants/config";
 import { T } from "@/constants/colors";
+import { useSavedGigsStore } from "@/stores/savedGigsStore";
+import { useGigStore } from "@/stores/gigStore";
 
 // ── Filter option definitions ─────────────────────────────────────────────
 
@@ -290,7 +292,12 @@ const fs = StyleSheet.create({
 
 // ── Search result card ────────────────────────────────────────────────────
 
-function ResultCard({ item }: { item: SearchResultItem }) {
+function ResultCard({ item, applied, saved, onToggleSave }: {
+  item: SearchResultItem;
+  applied: boolean;
+  saved: boolean;
+  onToggleSave: () => void;
+}) {
   const isEvent = item.result_type === "event";
 
   return (
@@ -305,17 +312,39 @@ function ResultCard({ item }: { item: SearchResultItem }) {
       }}
     >
       <View style={styles.cardTopRow}>
-        <View style={[styles.typeBadge, isEvent ? styles.typeBadgeEvent : styles.typeBadgeGig]}>
-          <Text style={[styles.typeBadgeText, isEvent ? styles.typeBadgeEventText : styles.typeBadgeGigText]}>
-            {isEvent ? "Event" : CAT_LABEL.get(item.category ?? "") ?? "Gig"}
-          </Text>
-        </View>
-        {item.event_date && (
-          <View style={styles.dateChip}>
-            <Feather name="calendar" size={11} color={T.textMuted} />
-            <Text style={styles.dateText}>{fmtDate(item.event_date)}</Text>
+        <View style={styles.cardTopLeft}>
+          <View style={[styles.typeBadge, isEvent ? styles.typeBadgeEvent : styles.typeBadgeGig]}>
+            <Text style={[styles.typeBadgeText, isEvent ? styles.typeBadgeEventText : styles.typeBadgeGigText]}>
+              {isEvent ? "Event" : CAT_LABEL.get(item.category ?? "") ?? "Gig"}
+            </Text>
           </View>
-        )}
+          {applied && (
+            <View style={styles.appliedPill}>
+              <Feather name="check" size={10} color={T.primary} />
+              <Text style={styles.appliedText}>Applied</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.cardTopRight}>
+          {item.event_date && (
+            <View style={styles.dateChip}>
+              <Feather name="calendar" size={11} color={T.textMuted} />
+              <Text style={styles.dateText}>{fmtDate(item.event_date)}</Text>
+            </View>
+          )}
+          {/* Save/bookmark toggle — hitSlop keeps the tap target usable without
+              enlarging the icon and crowding the row. */}
+          {!isEvent && (
+            <Pressable onPress={onToggleSave} hitSlop={12} style={styles.saveBtn}>
+              <Feather
+                name={saved ? "bookmark" : "bookmark"}
+                size={16}
+                color={saved ? T.primary : T.textMuted}
+                style={saved ? undefined : { opacity: 0.7 }}
+              />
+            </Pressable>
+          )}
+        </View>
       </View>
 
       <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
@@ -352,6 +381,30 @@ function ResultCard({ item }: { item: SearchResultItem }) {
   );
 }
 
+// ── Sort options ─────────────────────────────────────────────────────────
+
+type SortKey = "date_asc" | "date_desc" | "pay_desc";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "date_asc",  label: "Soonest" },
+  { value: "date_desc", label: "Newest" },
+  { value: "pay_desc",  label: "Highest pay" },
+];
+
+function sortResults(items: SearchResultItem[], sortKey: SortKey): SearchResultItem[] {
+  const copy = [...items];
+  switch (sortKey) {
+    case "date_desc":
+      return copy.sort((a, b) => (b.event_date ?? "").localeCompare(a.event_date ?? ""));
+    case "pay_desc":
+      // Events lack pay_rate — push them to the end so gig sort makes sense.
+      return copy.sort((a, b) => (b.pay_rate ?? -1) - (a.pay_rate ?? -1));
+    case "date_asc":
+    default:
+      return copy.sort((a, b) => (a.event_date ?? "").localeCompare(b.event_date ?? ""));
+  }
+}
+
 // ── Main SearchTab ────────────────────────────────────────────────────────
 
 export function SearchTab() {
@@ -360,6 +413,7 @@ export function SearchTab() {
   const [type, setType]               = useState<SearchType>("all");
   const [when, setWhen]               = useState<WhenFilter | "">("");
   const [category, setCategory]       = useState<string>("");
+  const [sortKey, setSortKey]         = useState<SortKey>("date_asc");
   const [showFilters, setShowFilters] = useState(false);
 
   const [results, setResults]         = useState<SearchResultItem[]>([]);
@@ -368,6 +422,22 @@ export function SearchTab() {
   const [loading, setLoading]         = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError]             = useState<string | null>(null);
+
+  // Client-side derived signals for the ResultCard
+  const savedIds = useSavedGigsStore((s) => s.ids);
+  const hydrateSaved = useSavedGigsStore((s) => s.hydrate);
+  const toggleSaved = useSavedGigsStore((s) => s.toggle);
+  const myApplications = useGigStore((s) => s.myApplications);
+  const fetchMyApplications = useGigStore((s) => s.fetchMyApplications);
+  const appliedIds = useMemo(
+    () => new Set(myApplications.map((a) => a.gig.id)),
+    [myApplications],
+  );
+
+  useEffect(() => {
+    hydrateSaved();
+    fetchMyApplications();
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(query.trim()), 400);
@@ -493,6 +563,27 @@ export function SearchTab() {
         </ScrollView>
       )}
 
+      {/* Sort row — three-way segmented toggle above the list */}
+      {results.length > 1 && (
+        <View style={styles.sortRow}>
+          <Text style={styles.sortLabel}>Sort:</Text>
+          {SORT_OPTIONS.map((opt) => {
+            const active = sortKey === opt.value;
+            return (
+              <Pressable
+                key={opt.value}
+                onPress={() => setSortKey(opt.value)}
+                style={[styles.sortChip, active && styles.sortChipActive]}
+              >
+                <Text style={[styles.sortChipText, active && styles.sortChipTextActive]}>
+                  {opt.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
       {/* Results */}
       {loading ? (
         <View style={styles.center}>
@@ -505,9 +596,16 @@ export function SearchTab() {
         </View>
       ) : (
         <FlatList
-          data={results}
+          data={sortResults(results, sortKey)}
           keyExtractor={(item) => `${item.result_type}-${item.id}`}
-          renderItem={({ item }) => <ResultCard item={item} />}
+          renderItem={({ item }) => (
+            <ResultCard
+              item={item}
+              applied={appliedIds.has(item.id)}
+              saved={savedIds.has(item.id)}
+              onToggleSave={() => toggleSaved(item.id)}
+            />
+          )}
           contentContainerStyle={styles.resultsList}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           onEndReached={loadMore}
@@ -685,6 +783,76 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    justifyContent: "space-between",
+  },
+  cardTopLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 1,
+  },
+  cardTopRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  saveBtn: {
+    padding: 2,
+  },
+  appliedPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: "rgba(212,255,0,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(212,255,0,0.30)",
+  },
+  appliedText: {
+    fontSize: 10,
+    fontWeight: "800",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.primary,
+    letterSpacing: 0.5,
+  },
+  sortRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
+  sortLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.textMuted,
+    letterSpacing: 0.8,
+    marginRight: 2,
+    textTransform: "uppercase",
+  },
+  sortChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  sortChipActive: {
+    backgroundColor: T.selBg,
+    borderColor: T.selBorder,
+  },
+  sortChipText: {
+    fontSize: 11,
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: T.textSub,
+  },
+  sortChipTextActive: {
+    color: T.selText,
   },
   typeBadge: {
     paddingHorizontal: 8,

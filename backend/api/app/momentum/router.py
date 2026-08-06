@@ -4,6 +4,7 @@ Routes:
   GET /api/v1/momentum/signals           → list of all signal metadata (for dynamic UI)
   GET /api/v1/momentum/me                → my Runner Momentum score
   GET /api/v1/momentum/me/breakdown      → full signal breakdown (private, for skill graph)
+  GET /api/v1/momentum/me/percentile     → my percentile within my city (social proof)
   GET /api/v1/momentum/user/{user_id}    → another user's public score
   GET /api/v1/momentum/user/{user_id}/breakdown  → full breakdown (readable by any authed user)
 """
@@ -28,6 +29,15 @@ from app.momentum.models import (
     SignalMetaResponse,
     WorkerBreakdownResponse,
 )
+from pydantic import BaseModel
+
+
+class PercentileResponse(BaseModel):
+    score: int
+    city: str | None
+    percentile: int          # 0–100, higher = better rank in the city
+    peer_count: int          # runners this comparison covers
+    scope: str               # "city" if city known, else "global"
 
 router = APIRouter(tags=["momentum"])
 
@@ -173,6 +183,92 @@ async def get_my_breakdown(current_user: CurrentUser, db: AsyncSession = Depends
         pf,
     )
     return _make_breakdown_response(score_obj, items, profile_items)
+
+
+@router.get("/momentum/me/percentile", response_model=PercentileResponse)
+async def get_my_percentile(
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> PercentileResponse:
+    """
+    Runner's percentile rank within their city — e.g. "top 23% of runners in
+    Bengaluru". If the runner has no city set OR their city has < 5 other
+    runners with scores, falls back to global.
+
+    Uses the pre-computed `worker_score` column on `momentum_profiles` to
+    avoid recomputing every peer's score. Slight staleness is fine here —
+    percentile is a rough social-proof number, not a hard ranking.
+    """
+    # Get runner's score + city
+    me = await db.execute(
+        text("""
+            SELECT p.city, mp.worker_score
+            FROM profiles p
+            LEFT JOIN momentum_profiles mp ON mp.user_id = p.id
+            WHERE p.id = :uid
+        """),
+        {"uid": current_user.user_id},
+    )
+    me_row = me.mappings().first()
+    if not me_row:
+        raise HTTPException(status_code=404, detail="Profile not found.")
+
+    my_score = int(me_row["worker_score"] or 0)
+    city = me_row["city"]
+
+    # Try city-scoped percentile first
+    if city:
+        result = await db.execute(
+            text("""
+                SELECT
+                    COUNT(*) AS total,
+                    COUNT(*) FILTER (WHERE mp.worker_score <= :my_score) AS at_or_below
+                FROM momentum_profiles mp
+                JOIN profiles p ON p.id = mp.user_id
+                WHERE p.city = :city
+                  AND p.default_role = 'runner'
+                  AND mp.worker_score IS NOT NULL
+            """),
+            {"my_score": my_score, "city": city},
+        )
+        row = result.mappings().first()
+        if row and int(row["total"]) >= 5:
+            total = int(row["total"])
+            at_or_below = int(row["at_or_below"])
+            percentile = int((at_or_below / total) * 100) if total > 0 else 0
+            return PercentileResponse(
+                score=my_score,
+                city=city,
+                percentile=max(1, min(100, percentile)),
+                peer_count=total,
+                scope="city",
+            )
+
+    # Fall back to global
+    result = await db.execute(
+        text("""
+            SELECT
+                COUNT(*) AS total,
+                COUNT(*) FILTER (WHERE mp.worker_score <= :my_score) AS at_or_below
+            FROM momentum_profiles mp
+            JOIN profiles p ON p.id = mp.user_id
+            WHERE p.default_role = 'runner'
+              AND mp.worker_score IS NOT NULL
+        """),
+        {"my_score": my_score},
+    )
+    row = result.mappings().first()
+    total = int(row["total"]) if row else 0
+    at_or_below = int(row["at_or_below"]) if row else 0
+    percentile = int((at_or_below / total) * 100) if total > 0 else 0
+
+    return PercentileResponse(
+        score=my_score,
+        city=None,
+        percentile=max(1, min(100, percentile)),
+        peer_count=total,
+        scope="global",
+    )
 
 
 @router.get("/momentum/user/{user_id}", response_model=PublicMomentumResponse)

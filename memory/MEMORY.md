@@ -6,7 +6,7 @@
 
 ## Architecture
 - [Stack](architecture/stack.md) — Expo, FastAPI, Supabase, Next.js, Inspector, ports, Docker networking
-- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (0001–0032 applied; next: 0033)
+- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (0001–0033 applied; next: 0034)
 - [Data Access](architecture/data_access.md) — Supabase direct vs FastAPI, auth patterns, key utils
 
 ## Apps
@@ -23,6 +23,9 @@
 
 ## Features
 - [Home Revamp (Pocket)](features/home_revamp.md) — 2026-08-07 Home redesign: earnings hero, primary CTA with nearby-count social proof, shrunk Momentum, dynamic growth nudge, pull-to-refresh
+- [My Space Revamp (Pocket)](features/space_revamp.md) — 2026-08-07: countdown pill, directions button, cancel-shift flow, share sheet, expanded backend AcceptedGigItem
+- [Arena Revamp (Pocket)](features/arena_revamp.md) — 2026-08-07: streak hero, weekly delta, percentile chip, contribution badges, NextUnlocks
+- [Jobs Revamp (Pocket)](features/jobs_revamp.md) — 2026-08-07: sort chips, applied-status pill, save/bookmark
 - [Gig Card](features/gig_card.md) — Pocket swipe card v3: overlays (host chip, pulsing spots, time pill), fallback hero, deck depth, threshold haptics, celebratory apply (2026-08-05)
 - [Public Runner Profile](features/public_profile.md) — Career passport at trykria.com/p/{slug}, no-auth backend endpoint, Pocket share sheet (2026-08-05)
 - [Momentum](features/momentum.md) — 0–1000 scale, 6 bands, profile completion bonus, skill graph, signals, backend module, formula; Grid-vs-Pocket stale-score bug fixed 2026-07-31

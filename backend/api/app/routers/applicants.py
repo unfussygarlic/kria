@@ -638,6 +638,96 @@ async def finalize_expired_assignments(
 
 
 # ---------------------------------------------------------------------------
+# POST /assignments/{assignment_id}/cancel  (runner cancels BEFORE shift starts)
+# ---------------------------------------------------------------------------
+
+@router.post("/assignments/{assignment_id}/cancel", response_model=ApplicationActionResponse)
+async def cancel_assignment(
+    assignment_id: str,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> ApplicationActionResponse:
+    """
+    Runner cancels their accepted shift BEFORE it starts.
+
+    Different from no-show (didn't show up) and left-early (mid-shift). Frees
+    the slot for another runner and marks the application as withdrawn. No
+    momentum penalty for MVP — cancelling cleanly is better than a no-show,
+    and the host can immediately reopen the slot.
+
+    Rules:
+    - Runner-only (the worker on the assignment)
+    - Only cancellable while status = 'assigned' (not after check-in)
+    - Only cancellable BEFORE the shift's end time — after that, use the
+      no-show flow instead. (If the runner is inside the window and cancels
+      mid-shift, we treat it as 'left_early' — a separate flow, not here.)
+    """
+    row = await db.execute(
+        text("""
+            SELECT asgn.id, asgn.status, asgn.worker_id, asgn.gig_id,
+                   g.id AS gig_id_from_g, g.event_date, g.shift_end_time
+            FROM gig_assignments asgn
+            JOIN gigs g ON g.id = asgn.gig_id
+            WHERE asgn.id = :asgn_id
+        """),
+        {"asgn_id": assignment_id},
+    )
+    asgn = row.mappings().first()
+    if not asgn:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found.")
+    if str(asgn["worker_id"]) != current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your shift.")
+    if asgn["status"] != "assigned":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Can't cancel a {asgn['status']} shift.",
+        )
+
+    # Guard against cancelling after the shift is over — that's a no-show,
+    # handled by finalize-expired.
+    ist_check = await db.execute(
+        text("""
+            SELECT (:event_date::timestamp + :shift_end::time)
+                   < (NOW() AT TIME ZONE 'Asia/Kolkata') AS expired
+        """),
+        {"event_date": asgn["event_date"], "shift_end": asgn["shift_end_time"]},
+    )
+    if ist_check.mappings().first()["expired"]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Shift has already ended — use the no-show flow.",
+        )
+
+    gig_id = str(asgn["gig_id"])
+
+    await db.execute(
+        text("UPDATE gig_assignments SET status = 'cancelled' WHERE id = :asgn_id"),
+        {"asgn_id": assignment_id},
+    )
+    await db.execute(
+        text("""
+            UPDATE gig_applications
+            SET status = 'withdrawn'
+            WHERE gig_id = :gig_id AND applicant_id = :uid AND status = 'accepted'
+        """),
+        {"gig_id": gig_id, "uid": current_user.user_id},
+    )
+    # Free the slot so another runner can be accepted.
+    await db.execute(
+        text("UPDATE gigs SET slots_filled = GREATEST(slots_filled - 1, 0) WHERE id = :gig_id"),
+        {"gig_id": gig_id},
+    )
+    await db.commit()
+
+    return ApplicationActionResponse(
+        ok=True,
+        application_id=assignment_id,
+        new_status="cancelled",
+        message="Shift cancelled. Slot has been freed up for another runner.",
+    )
+
+
+# ---------------------------------------------------------------------------
 # POST /assignments/{assignment_id}/no-show
 # ---------------------------------------------------------------------------
 

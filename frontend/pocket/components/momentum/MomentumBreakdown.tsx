@@ -191,9 +191,15 @@ function SignalRow({ item, bandColor }: { item: BreakdownItem; bandColor: string
           <Text style={[styles.signalLabel, !item.has_data && styles.signalLabelNoData]}>
             {item.label}
           </Text>
-          {!item.has_data && (
+          {!item.has_data ? (
             <Text style={styles.noDataBadge}>No data yet</Text>
-          )}
+          ) : item.contribution > 0 ? (
+            // Contribution shows how many score points this signal is
+            // currently adding — makes the abstract bar concrete (2026-08-07).
+            <Text style={[styles.contribBadge, { color: bandColor, borderColor: bandColor + "44" }]}>
+              +{Math.round(item.contribution)} pts
+            </Text>
+          ) : null}
         </View>
         <Text style={styles.signalDesc}>{item.description}</Text>
       </View>
@@ -337,6 +343,16 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     paddingHorizontal: rw(6),
     paddingVertical: 2,
+  },
+  contribBadge: {
+    fontSize: rf(10),
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    borderRadius: 4,
+    borderWidth: 1,
+    paddingHorizontal: rw(6),
+    paddingVertical: 2,
+    letterSpacing: 0.2,
   },
   signalDesc: {
     fontSize: rf(11),
