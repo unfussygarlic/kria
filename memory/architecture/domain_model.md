@@ -14,6 +14,7 @@ One row per user. **Created explicitly at onboarding completion** (migration 002
 - `phone` (nullable), `email` (nullable, added migration 0023), `display_name` (NOT NULL), `first_name`, `last_name`
 - `is_admin BOOLEAN NOT NULL DEFAULT FALSE` (migration 0030) — checked by `require_admin` FastAPI dep
 - `default_role` TEXT ('runner' | 'host') — set at onboarding: Grid sets 'host', Pocket sets 'runner' (added migration 0025)
+- `public_slug` TEXT UNIQUE (added migration 0032) — powers `trykria.com/p/{slug}`. Backfilled as `{lowercase_alphanumeric(first_name)}-{last 6 chars of id}` (falls back to `runner-{id6}`). Indexed at `idx_profiles_public_slug`. See `features/public_profile.md`.
 - `city`, `state`, `gender`, `date_of_birth`
 - `worker_reputation` (0–5 float), `poster_reputation` (0–5 float)
 - **isOnboarded check:** `first_name + date_of_birth + gender + city + state` all present (`authStore.ts:157`)
@@ -197,12 +198,14 @@ events ──< gigs (event_id nullable FK)
 | `0026_subscriptions.py` | `subscriptions` table — id, user_id (UNIQUE FK), plan (trial/active/expired/cancelled), trial_ends_at, trial_duration_days |
 | `0027_gig_pause.py` | ADD `is_paused BOOLEAN DEFAULT FALSE` to gigs; partial index on `(poster_id) WHERE NOT is_paused` |
 | `0028_email_tracking.py` | ADD `first_application_notified`, `last_burst_email_at` to gigs; CREATE `email_unsubscribes`, `profile_reminder_log` tables |
-| `0029_...py` | (check alembic/versions/ for exact name) |
+| `0029_push_tokens.py` | ADD `push_token` to profiles for Expo push notifications |
 | `0030_admin_support.py` | ADD `is_admin BOOLEAN NOT NULL DEFAULT FALSE` to profiles; CREATE `support_queries` table with indexes + auto-update trigger |
+| `0031_gig_cover_images.py` | ADD `cover_image_url TEXT` + `cover_image_square_url TEXT` to gigs (template covers) |
+| `0032_public_profile_slug.py` | ADD `public_slug TEXT UNIQUE` to profiles + `idx_profiles_public_slug`. Backfill `{firstname}-{last6ofid}`. Powers `trykria.com/p/{slug}`. |
 
-**Applied migrations:** 0001–0030 confirmed, all applied via EC2 `alembic upgrade head`.
+**Applied migrations:** 0001–0032 confirmed, all applied via EC2 `alembic upgrade head`.
 
-**Next migration number:** `0031`
+**Next migration number:** `0033`
 
 Migrations live at: `backend/api/alembic/versions/`
 Auto-run on backend startup.

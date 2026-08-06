@@ -354,12 +354,40 @@ OLD STEP (removed):
 
 ## Gig Post Wizard (4 Steps)
 
-1. Category (emoji grid, 14 categories)
-2. Basic Info (title, company, description, slots, pay)
-3. Schedule (venue, city, date, shift times, report time)
+1. Category (emoji-grouped role picker — see `features/gigs.md` Categories)
+2. **Basic Info** (title, company, description, slots, pay, **cover photo picker (2026-08-05)**)
+3. Schedule (venue, city, date, shift times, report time, geocoding fetch button)
 4. Requirements (gender preference, dress code, languages, experience, note) + review summary
 
-Submits via `supabase.from("gigs").insert(...)` directly → redirect to `/gigs/${data.id}`.
+Submits via `supabase.from("gigs").insert(...)` → redirect to `/gigs/${data.id}`. Then fires `generateGigCover(data.id, cover_photo)` fire-and-forget so cover renders in the background.
+
+### Cover Photo Upload (2026-08-05)
+
+Basic Info step now has an optional cover photo picker.
+- Accepts JPEG / PNG / WebP, max 10 MB (matches backend `_COVER_MAX_BYTES` in `routers/gigs.py`)
+- Preview thumbnail (aspect 4:5, ~96×120px) + Change / Remove buttons after selection
+- File input hidden, triggered by dashed-border "Upload a cover photo" button when empty
+- Passes to `generateGigCover(data.id, form.cover_photo ?? undefined)` — compositor renders it into its photo slot instead of just template art
+- No new dependencies — uses native `<input type="file">` and `URL.createObjectURL` for preview
+- Form state has `cover_photo: File | null` + `cover_photo_preview: string | null`. `handleRemovePhoto` revokes the preview URL to free memory.
+
+## Expired Gigs & Events (2026-08-05)
+
+Both list + detail pages show a single "Expired" badge (via `ExpiredBadge`) instead of "Open + Expired" side-by-side when a gig/event is past its date.
+
+**Expiry helper (client-side, day-granularity):**
+```typescript
+function isExpired(gig: Gig): boolean {
+  if (gig.status !== "open" && gig.status !== "in_progress") return false;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return new Date(gig.event_end_date || gig.event_date) < today;
+}
+```
+Defined inline in `gigs/page.tsx`, `gigs/[id]/page.tsx`, `events/page.tsx`, `events/[id]/page.tsx`. Event JobCard receives `eventExpired` prop from parent (event summary doesn't include `event_end_date`, so events list uses day-granularity `event_date` only).
+
+**Pause/resume disabled on expired gigs:**
+- Client: `{(gig.status === "open" || gig.status === "in_progress") && !expired && <button>Pause</button>}`
+- Backend: `pause_gig` and `unpause_gig` in `routers/gigs.py` check `is_expired` (computed in `_assert_gig_owner` via `COALESCE(event_end_date, event_date) < (NOW() AT TIME ZONE 'Asia/Kolkata')::date`) and return 400. Belt-and-suspenders against stale UI or direct curl bypass.
 
 ## OTP Check-in (Gig Detail)
 

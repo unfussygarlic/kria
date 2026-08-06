@@ -60,6 +60,18 @@ components/
 
 Nav (absolute) → SectionHero → lime divider → SectionWhyKria → SectionMomentum → SectionWaitlist → Footer
 
+## Public Runner Profile (`/p/[slug]`, added 2026-08-05)
+
+Shareable "career passport" URL — runners share `https://trykria.com/p/{slug}` from the Pocket app. See `features/public_profile.md` for the full feature.
+
+- **Route:** `app/p/[slug]/page.tsx` — Next.js server component, ISR with 5-min revalidation
+- **404 handler:** `app/p/[slug]/not-found.tsx` — custom "Runner not found" screen with lime "Discover Kria" CTA
+- **API:** fetches from `${NEXT_PUBLIC_API_URL}/public/runners/${slug}`. Fallback default: `https://api.trykria.com/api/v1` — set env var on Vercel if EC2 hostname differs
+- **OG metadata:** per-slug `generateMetadata` for WhatsApp/social link previews. Uses bio if present, else `{name} from {city} — {band} runner on Kria, {N} gigs completed.`
+- **Design:** dark card (max-width 520), band-color gradient hero strip, avatar with verified check, band pill (color-coded, includes momentum score), ID-verified pill, bio, 3-stat row (Gigs / Streak with 🔥 / Momentum in band color), skills chips (lime-tinted), languages chips, "Discover Kria →" CTA
+- **Inline styles only** — matches existing landing-page convention (no Tailwind)
+- **Proxy note:** `proxy.ts` matcher is `["/"]` only, so `/p/[slug]` is untouched. Do not broaden the matcher.
+
 ## Current Hero Copy
 
 - Line 1 (white): "Swipe up." / "स्वाइप करो" / "ஸ்வைப் செய்."

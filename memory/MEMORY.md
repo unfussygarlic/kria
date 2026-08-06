@@ -6,7 +6,7 @@
 
 ## Architecture
 - [Stack](architecture/stack.md) — Expo, FastAPI, Supabase, Next.js, Inspector, ports, Docker networking
-- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (0001–0030 applied; next: 0031)
+- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (0001–0032 applied; next: 0033)
 - [Data Access](architecture/data_access.md) — Supabase direct vs FastAPI, auth patterns, key utils
 
 ## Apps
@@ -22,17 +22,19 @@
 - [Landing Page](apps/landing-page/overview.md) — trykria.com, i18n, inline styles, gotchas
 
 ## Features
-- [Momentum](features/momentum.md) — 0–1000 scale, 6 bands, profile completion bonus, skill graph, signals, backend module, formula; Grid-vs-Pocket stale-score bug fixed 2026-07-31 (needs deploy)
+- [Gig Card](features/gig_card.md) — Pocket swipe card v3: overlays (host chip, pulsing spots, time pill), fallback hero, deck depth, threshold haptics, celebratory apply (2026-08-05)
+- [Public Runner Profile](features/public_profile.md) — Career passport at trykria.com/p/{slug}, no-auth backend endpoint, Pocket share sheet (2026-08-05)
+- [Momentum](features/momentum.md) — 0–1000 scale, 6 bands, profile completion bonus, skill graph, signals, backend module, formula; Grid-vs-Pocket stale-score bug fixed 2026-07-31
 - [Badges](features/badges.md) — 18 badges (milestone/streak/identity), backend service, award hooks, home marquee
 - [Identity Verification](features/identity_verification.md) — multi-ID, Inspector pipeline, badge system, VerificationCamera, error codes, gotchas
-- [Gigs & Check-in](features/gigs.md) — lifecycle, OTP flow, applicants, geocoding wizard, venue Maps links; expired-gig filtering fixed 2026-07-31 (needs deploy)
-- [Recommendations](features/recommendations.md) — matching engine, geocoding, GPS, scoring weights, Maps deep link
+- [Gigs & Check-in](features/gigs.md) — lifecycle, OTP flow, applicants, geocoding wizard, venue Maps links; **canonical expiry SQL uses shift_end_time** (2026-08-05 fix)
+- [Recommendations](features/recommendations.md) — matching engine, geocoding, GPS, scoring weights, Maps deep link; **`services/matching.py` is DEAD CODE — do not edit**, live file is `recommendations/engine.py`
 - [Events](features/events.md) — events table, creation wizard, host/runner split
 - [Chat](features/chat.md) — hidden feature, tables, real-time bug, do-not-install list
 - [Email Notifications](features/email.md) — Resend, 3 email types, webhook architecture, unsubscribe, env vars, pending Supabase webhook setup
 - [SMS Notifications](features/sms_notifications.md) — Fast2SMS via GoTrue hook, sms_notifications/ module, template registry, how to add new templates
 - [Help & Support](features/help_support.md) — Grid /support page, FAQ accordion, 7-category query form + My Tickets tab (GET /support/my-tickets, email fallback), Resend notifications, Admin Dashboard integration
-- [Gig Cover Images](features/gig_cover_images.md) — template-based cover art (venue now included); Grid deployed on EC2; Pocket Explore card redesigned to use the cover as the full card face (badges overlaid live) but unverified visually
+- [Gig Cover Images](features/gig_cover_images.md) — template-based cover art; Grid gig-creation wizard now has optional photo upload (2026-08-05)
 - [Gig Cover Asset Pipeline](features/gig_cover_asset_pipeline.md) — Claude-authored (not Stitch) generator for the 6 category-group covers, `~/envs/covers` venv, regeneration scripts
 
 ## Project
@@ -136,7 +138,21 @@ score, items, profile_items = compute_worker_breakdown(
 - **FastAPI dep:** `AdminUser = Annotated[AuthenticatedUser, Depends(require_admin)]` in `auth/middleware.py`
 - **Env var:** `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (new Supabase format `sb_publishable_...`)
 
-### Next Migration: `0031`
+### Latest Migration: `0032_public_profile_slug`
+Adds `profiles.public_slug` UNIQUE, backfilled as `{firstname}-{last6ofid}`. Powers `trykria.com/p/{slug}` shareable profiles.
+
+### Next Migration: `0033`
+
+### Matching Engine — read this before touching
+- Live path: `backend/api/app/recommendations/engine.py` (`match_gigs_for_worker`, `_fetch_open_gigs`, `_fetch_host_summaries`)
+- **Dead code:** `backend/api/app/services/matching.py` — nothing imports it, but it defines nearly-identical functions. Do not fix bugs there. See `features/recommendations.md`.
+
+### Gig Expiry Rule (canonical SQL)
+```sql
+(event_date::timestamp + shift_end_time::time)
+    > (NOW() AT TIME ZONE 'Asia/Kolkata')
+```
+Used by `_fetch_open_gigs`, `/assignments/finalize-expired`, and Grid pause/unpause guards. **Never fall back to `event_date >= CURRENT_DATE`** — that misses gigs ending earlier today (2026-08-05 bug).
 
 ### SMS Notifications Quick Ref
 - **Module:** `backend/api/app/sms_notifications/` — `templates.py` (registry), `sender.py` (Fast2SMS), `hook.py` (GoTrue endpoint)

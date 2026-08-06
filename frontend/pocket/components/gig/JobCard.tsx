@@ -75,7 +75,13 @@ function SpotsChipOverlay({ spotsLeft }: { spotsLeft: number }) {
     </View>
   );
 
-  return urgent ? <Animated.View style={{ opacity: pulse }}>{Content}</Animated.View> : Content;
+  // alignSelf: "flex-end" is defensive — the parent coverBadgeStack sets
+  // alignItems: "flex-end" but some RN versions don't propagate that through
+  // Animated.View, causing the chip to stretch full-width and appear detached
+  // from the top-right stack. Explicit alignSelf pins it back to the right.
+  return urgent ? (
+    <Animated.View style={{ opacity: pulse, alignSelf: "flex-end" }}>{Content}</Animated.View>
+  ) : Content;
 }
 
 /** Shows "Starts in Xh Ym" or "Starts in Xm" when the shift is within 24h. Otherwise renders nothing. */
@@ -209,9 +215,13 @@ export const JobCard = memo(function JobCard({ gig, variant, applicationCount, p
         />
       )}
 
-      {/* Top-right stack: momentum + boost + live spots */}
+      {/* Top-right stack: momentum + boost + live spots. Only shown when they
+          carry real signal — 0-momentum newcomers get no chip (avoids showing
+          "0" as if it were a bad score). */}
       <View style={styles.coverBadgeStack}>
-        {posterMomentum !== undefined && <MomentumBadge score={posterMomentum} variant="chip" />}
+        {posterMomentum !== undefined && posterMomentum > 0 && (
+          <MomentumBadge score={posterMomentum} variant="chip" />
+        )}
         {gig.momentum_boost > 0 && (
           <View style={styles.boostBadge}>
             <Feather name="zap" size={11} color={T.momentum} />
@@ -228,8 +238,11 @@ export const JobCard = memo(function JobCard({ gig, variant, applicationCount, p
         </View>
       )}
 
-      {/* Bottom-left floating: host avatar chip */}
-      {host && (
+      {/* Bottom-left floating: host avatar chip. ONLY on the fallback branch —
+          the compositor bakes host_name into the cover PNG's bottom text zone,
+          so overlaying a chip there duplicates content and clips the baked
+          text (2026-08-06 fix). */}
+      {host && !gig.cover_image_url && (
         <View style={styles.coverHostChipWrap}>
           <HostAvatarChip host={host} />
         </View>

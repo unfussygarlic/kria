@@ -6,6 +6,16 @@ type: project
 
 # Mobile App — Screen UX Decisions
 
+## Auth Flow
+
+### Intro Carousel (`app/(auth)/intro.tsx`, new 2026-08-05)
+Pre-login. 3 swipeable slides: "Welcome to Kria" (lime), "Build your Momentum" (amber), "Verify once" (cobalt). Each slide has eyebrow label, huge two-line title, body copy, big icon-in-ring with colored radial glow behind. Bottom: progress dots (active widens + turns lime) + gradient "Next"/"Get Started" CTA. Skip top-right.
+
+**Persistence:** `intro_seen_v1` flag in SecureStore. Returning users bypass immediately (component `useEffect` redirects to `/login` before render). Auth gate (`app/index.tsx`) sends new visitors to `/(auth)/intro`, not `/login`.
+
+### Login (`login.tsx`, updated 2026-08-05)
+Existing lime gradient hero + phone-input card. **Trust row** (Secure OTP · Verified hosts · Paid weekly) in a lime-tinted card above the terms footer. Placeholder cleaned up to `98XXXX1234`.
+
 ## Home Screen (`home.tsx`)
 
 **Completely revamped.** Sections in order (Runner view):
@@ -16,8 +26,10 @@ type: project
 - Score: 52pt bold in band color
 - Band pill: colored dot + band label, tinted background + matching border
 - Progress track: 3px height, fills in band color, shows pts to next band
-- Stats row: gigs done · streak days · "Full breakdown →" → Arena
+- Stats row: gigs done · **StreakStat** · "Full breakdown →" → Arena
 - `getBandProgress(score)` → `{ band, nextBand, fraction, ptsToNext }`
+
+**StreakStat (new 2026-08-05):** dedicated inline component. When `streak > 0` → amber pill with pulsing 🔥 emoji (opacity loop 0.7↔1.0, 900ms each via `Animated.loop`) + amber "N day streak" text (in `#FFC83D`). When `streak === 0` → muted "Start a streak" prompt.
 
 ### 2. "Hot Near You" GigMarquee
 - Uses same recommendation engine as Explore (location-based, `matchGigs({ limit: 5, ...coords })`)
@@ -40,6 +52,7 @@ type: project
 - Shows both pending applications and accepted gigs
 - Category pill (tinted bg, colored dot + label) + status pill (tinted bg, colored text)
 - Shows title, pay, event date
+- **Filters expired applications** (2026-08-05) — `activeApplications` memo computes `(event_date + shift_end_time) >= now` client-side so expired items don't linger
 
 **Host layout:** hidden, code preserved (quick actions 2×2).
 
@@ -63,11 +76,14 @@ Accessible from profile screen (badge count link) or direct navigation.
 
 **Header:** Dark gradient + pill switcher (🔥 Flames | 🔍 Search). Search tab hidden for Hosts.
 
-**Flames tab (Runners):**
-- SwipeableJobCard for current gig
-- City pill below card (map-pin icon + `profile.city`)
-- Prefetch when ≤10 cards remaining (`PREFETCH_THRESHOLD = 10`)
-- Swipe up → apply; swipe left/right → navigate prev/next
+**Flames tab (Runners) — v3 2026-08-05:**
+- **Deck depth:** 2 peek cards render behind the front `SwipeableJobCard` — `peekCardMid` (N+1, scale 0.96 opacity 0.65 translateY 12), `peekCardBack` (N+2, scale 0.92 opacity 0.35 translateY 24). Only front card catches gestures. `deckCenter` is `position: relative`.
+- Front card catches gestures — swipe up → apply, left/right → navigate.
+- Overlay stack on every card (both cover branch + FallbackHero): TimeToStartPill top-left (within 24h), MomentumBadge + Boost + SpotsChipOverlay top-right, HostAvatarChip bottom-left. See `features/gig_card.md`.
+- **Threshold-crossing haptics:** `Haptics.selectionAsync()` fires the moment drag crosses apply/nav commit line (arms/disarms via refs).
+- **Celebratory apply overlay:** icon springs 0.6 → 1.15, backed by scaling white radial glow. Icon bumped 52 → 64px.
+- City pill below card (map-pin icon + `profile.city`).
+- Prefetch when ≤10 cards remaining.
 - Empty state: check-circle icon + "You're all caught up!"
 
 **Flames tab (Hosts):**
@@ -85,10 +101,23 @@ Accessible from profile screen (badge count link) or direct navigation.
 **Header:** Dark gradient + role label (no tab switcher).
 
 **Runner view:**
-- Accepted gigs list
+- Upcoming / History sub-tabs
 - Status chips per gig (assigned/checked_in/completed/no_show)
-- OTP entry field for check-in
+- OTP entry field for check-in (4-box)
 - "Rate Host" button after completion
+
+**Upcoming vs History split (updated 2026-08-05):** `isUpcoming(item, now)` compares `(event_date + shift_end_time) >= now`, not `event_date >= today`. Fixes items ending earlier today lingering in Upcoming.
+
+**History cards elevated (2026-08-05):** removed 0.85 opacity fade. Full-color accent bar. Adds lime **checkmark dot** for `completed` or coral **X dot** for `no_show` in the top row. Reads as accomplishment, not "old news".
+
+**Post-OTP check-in celebration (added 2026-08-05):** on successful `verifyOtp`, the GigDetailSheet renders a full-cover overlay (`celebrationOverlay`) for 1500ms:
+- Lime radial halo scales 0.4 → 1.3 (spring)
+- Center: lime circle with 46px black check icon
+- "You're checked in!" + "Nice work. Now go crush the shift."
+- Success haptic (`Haptics.notificationAsync(Success)`)
+- After timeout: `onOtpSuccess` proceeds to rating flow
+
+**Empty state copy rewritten (2026-08-05):** "Nothing on the calendar" / "No track record yet" with motivational subtext, replacing flat "No upcoming gigs".
 
 **Host view (hidden, code preserved):**
 - Posted gigs + events list (newest first)
@@ -122,6 +151,12 @@ Accessible from profile screen (badge count link) or direct navigation.
 - Explanation text at bottom
 - No raw numbers or formulas shown
 
+**Band level-up celebration (added 2026-08-05):** on data update, compares current band label to `prevBandRef.current`. If it advanced by band index (using `BAND_ORDER` array), fires `Haptics.notificationAsync(Success)` + shows `<LevelUpModal>`.
+
+`LevelUpModal` — full-screen dark backdrop with animated band-color halo (`Animated.loop` scale 0.6 ↔ 1.2 over 900ms each). Center: eyebrow "PROMOTED" (band color), "You're now", huge band name (48px, band color), sub-copy, band-color pill CTA "Nice" to dismiss.
+
+**First-load guard:** `prevBandRef.current === null` on mount → just seeds the baseline, never celebrates. Prevents "celebrating" data we didn't watch happen. Purely in-memory — no persistence.
+
 ## Event Detail Screen (`event/[id].tsx`)
 
 **isHost detection:** `event.poster_id === profile?.id`
@@ -140,13 +175,38 @@ Per-applicant card:
 - Worker Momentum badge (`MomentumBadge variant="stat"`)
 - Accept / Reject buttons (pending), Mark No-Show (assigned)
 
-## Profile Screen (`(tabs)/profile.tsx`)
+**2026-08-05 fixes:**
+- **Momentum score bug fixed** — was `const workerMomentum = (p as any).worker_momentum ?? 500;` (nonexistent field, always fell back to hardcoded 500). Now `item.momentum_score ?? 0` — reads the backend-returned live score at the `ApplicantListItem` level.
+- **`styles.actionText` bug fixed** — the 5-week-old open issue. Style was referenced 4× (lines 596/610/629/639) but never defined, causing broken Text rendering. Added: `{ fontSize: 14, fontWeight: "700", fontFamily: "SpaceGrotesk_700Bold" }`.
+- **Skeleton loader** replaces `ActivityIndicator`. Renders 4 avatar-and-text row skeletons.
+- **Empty state copy** rewritten: "Waiting for applicants" + "Runners nearby will see your gig in Explore. First applications usually land within a few hours."
 
-Accessible via avatar button on Home. Has X close button (navigates back). Optional profile fields editing.
+## Profile Screen (`(tabs)/profile.tsx`) — v2 2026-08-05
+
+Accessible via avatar button on Home. Has X close button (navigates back).
+
+**Header (extended 2026-08-05):**
+- Avatar circle (initials, lime bg) + name + phone
+- Verified badge (green pill) if `is_verified`
+- **NEW: Bio** — 3-line max, centered, textSub color
+- **NEW: Skills chips** — top 5 skills as pill chips (surface2 bg). Overflow shown as "+N" chip.
+
+**Stats row (was 2, now 3):**
+- Gigs Done · Momentum (band color) · **Day Streak** (with 🔥 emoji when streak > 0, amber color)
+
+**Quick grid (2×2):**
+- Edit Profile · **Share Profile (new)** · My Badges · Settings
+- Share Profile handler: `Share.share({ url: "https://trykria.com/p/${profile.public_slug ?? profile.id}", ... })` — native share sheet, no new deps. See `features/public_profile.md`.
+
+**Verify Identity menu item + Sign Out unchanged.**
 
 ## Gig Detail Screen (`gig/[id].tsx`)
 
 Shown to Runners. Full gig info + apply button. OTP entry for check-in.
+
+**2026-08-05 additions:**
+- **Skeleton loader** (`components/ui/Skeleton`) replaces the old `ActivityIndicator` spinner. Renders faux hero + text lines while gig loads.
+- **HostAvatarChip** rendered below title/company. Reads from `useGigStore((s) => s.hosts)`. On cold-load (deep link), `getGig()` calls `fetchHost(poster_id)` in the background to populate. See `features/gig_card.md`.
 
 ## Onboarding (`onboarding/profile.tsx`)
 

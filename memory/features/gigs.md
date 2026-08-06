@@ -1,5 +1,32 @@
 # Gigs Feature
 
+## Matching engine location (READ FIRST)
+
+Live matching path is `backend/api/app/recommendations/engine.py`, NOT `services/matching.py`. See `features/recommendations.md` — the services file is dead code and should not be edited.
+
+## Canonical gig expiry rule (2026-08-05)
+
+```sql
+(event_date::timestamp + shift_end_time::time)
+    > (NOW() AT TIME ZONE 'Asia/Kolkata')
+```
+
+Used by:
+- `_fetch_open_gigs()` in `recommendations/engine.py` (backend match)
+- `/assignments/finalize-expired` in `routers/applicants.py`
+- Pause/unpause guards in `routers/gigs.py` (`_assert_gig_owner` computes `is_expired` for the pause guard using `COALESCE(event_end_date, event_date) < (NOW() AT TIME ZONE 'Asia/Kolkata')::date` — day granularity is intentional there since Grid's `isExpired` helper also works day-granularity)
+
+Client mirrors:
+- Pocket Space `isUpcoming()` — same rule with `shift_end_time` fallback `"23:59"`
+- Pocket Home `activeApplications` memo — filters expired applications
+- Grid `isExpired(gig)` — day-granularity check for the "Expired" badge
+
+**Never fall back to `event_date >= CURRENT_DATE` alone** — that misses gigs ending earlier today. Original bug fixed 2026-08-05.
+
+## Host summary on match response
+
+`ScoredGig.host: HostSummary | null` — new field added 2026-08-05. Powers the swipe-card `HostAvatarChip`. See `features/gig_card.md`.
+
 ## Gig Lifecycle
 
 ```

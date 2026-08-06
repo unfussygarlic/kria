@@ -1,14 +1,17 @@
 """
-Static layout + category mapping for gig cover images.
+Layout + category mapping for gig cover images.
 
-Two independent layouts — "portrait" (the primary 4:5 card) and "square"
-(1080x1080, its own composition for OG/WhatsApp previews and thumbnails —
-NOT a crop of the portrait one; see memory/features/gig_cover_images.md for
-why). Geometry is identical across every category within a given layout
-(only accent color and icon motif differ), so this is two shared layouts,
-not a manifest per category. Coordinates below are the exact values baked
-into the foreground SVGs — see frontend/master-assets/generate_foregrounds.py
-— keep in sync if the templates are regenerated with a different frame.
+**v2 (2026-08-07):** compositor is now fully programmatic — no more baked
+PNG assets. The old `foreground.png` rectangular frame overlapped the title
+text on some device sizes; that whole layer is gone. `background_file` /
+`foreground_file` fields are retained on the Layout dataclass only so the
+existing `_load_layer` codepath doesn't blow up if anyone re-imports the
+old compositor — the new compositor ignores them.
+
+Layout coordinates below reflect the new hero/text split: hero zone at the
+top (accent gradient + icon or photo), text zone at the bottom (title, pay,
+venue, host). Numbers are the canonical layout — do not tweak without
+regenerating existing gig covers on Supabase Storage.
 """
 from dataclasses import dataclass
 
@@ -17,14 +20,16 @@ from dataclasses import dataclass
 class Layout:
     canvas_w: int
     canvas_h: int
-    background_file: str
-    foreground_file: str
-    photo_slot: tuple[int, int, int, int]  # x, y, w, h
+    hero_h: int                        # bottom Y of hero zone; text zone begins here
+    photo_slot: tuple[int, int, int, int]  # x, y, w, h — inside the hero zone
     photo_slot_radius: int
-    chip: tuple[int, int, int, int]  # x, y, w, h
-    text_zone_x: int
-    text_zone_right: int
-    title_y: int
+    icon_center: tuple[int, int]       # rendered when no host photo is supplied
+    icon_size: int                     # bounding-box side length in px
+    text_zone_x: int                   # left margin of text zone
+    text_zone_right: int               # right margin (for wrapping)
+    chip_y: int                        # top Y of the category chip (inside text zone)
+    chip_h: int
+    title_y: int                       # top-left anchor of the first title line
     title_line_height: int
     title_max_lines: int
     pay_y: int
@@ -33,73 +38,79 @@ class Layout:
     title_font_size: int
     pay_font_size: int
     meta_font_size: int
+    # Legacy fields — kept so old code that imports these doesn't break; the
+    # new compositor doesn't use them.
+    background_file: str = ""
+    foreground_file: str = ""
+    chip: tuple[int, int, int, int] = (0, 0, 0, 0)
 
 
+# Portrait — the primary 4:5 card runners see on the Explore deck.
 PORTRAIT = Layout(
     canvas_w=1080, canvas_h=1350,
-    background_file="background.png", foreground_file="foreground.png",
-    photo_slot=(118, 100, 843, 850), photo_slot_radius=20,
-    chip=(118, 50, 180, 40),
-    text_zone_x=118, text_zone_right=962,
-    title_y=970, title_line_height=58, title_max_lines=2,
-    pay_y=1090, venue_y=1160, host_y=1210,
-    title_font_size=52, pay_font_size=42, meta_font_size=28,
+    hero_h=780,
+    photo_slot=(60, 60, 960, 700), photo_slot_radius=32,
+    icon_center=(540, 360), icon_size=340,
+    text_zone_x=60, text_zone_right=1020,
+    chip_y=820, chip_h=40,
+    title_y=890, title_line_height=68, title_max_lines=2,
+    pay_y=1070, venue_y=1170, host_y=1240,
+    title_font_size=60, pay_font_size=52, meta_font_size=28,
 )
 
-# Own composition, not a crop of PORTRAIT — see module docstring.
+# Square — 1:1 for OG/WhatsApp link previews + list thumbnails.
 SQUARE = Layout(
     canvas_w=1080, canvas_h=1080,
-    background_file="background_square.png", foreground_file="foreground_square.png",
-    photo_slot=(118, 86, 844, 540), photo_slot_radius=20,
-    chip=(118, 40, 180, 36),
-    text_zone_x=118, text_zone_right=962,
-    title_y=670, title_line_height=56, title_max_lines=2,
-    pay_y=780, venue_y=830, host_y=875,
-    title_font_size=52, pay_font_size=42, meta_font_size=28,
+    hero_h=600,
+    photo_slot=(60, 60, 960, 520), photo_slot_radius=32,
+    icon_center=(540, 270), icon_size=260,
+    text_zone_x=60, text_zone_right=1020,
+    chip_y=630, chip_h=36,
+    title_y=700, title_line_height=60, title_max_lines=2,
+    pay_y=850, venue_y=940, host_y=1000,
+    title_font_size=52, pay_font_size=44, meta_font_size=26,
 )
-
-WHITE = (255, 255, 255, 255)
-BLACK = (0, 0, 0, 255)
 
 
 @dataclass(frozen=True)
 class CategoryGroup:
     slug: str
     label: str
-    color: str  # hex, matches the template's accent color
+    color: str      # hex accent, matches Pocket's category colour
+    icon_key: str   # key into _draw_icon() in compositor.py
 
 
 # Mirrors frontend/grid ROLE_GROUPS in app/(dashboard)/gigs/new/page.tsx —
 # update both if the wizard's groups ever change.
 GROUPS: dict[str, CategoryGroup] = {
-    "event-promotion": CategoryGroup("event-promotion", "Event & Promotion", "#D4FF00"),
-    "hospitality": CategoryGroup("hospitality", "Hospitality", "#ff7351"),
-    "technical-support": CategoryGroup("technical-support", "Technical Support", "#8097ff"),
-    "media-content": CategoryGroup("media-content", "Media & Content", "#FFC83D"),
-    "stage-hosting": CategoryGroup("stage-hosting", "Stage & Hosting", "#D4FF00"),
-    "other": CategoryGroup("other", "Other", "#8097ff"),
+    "event-promotion":   CategoryGroup("event-promotion",   "Event & Promotion", "#D4FF00", "sparkle"),
+    "hospitality":       CategoryGroup("hospitality",       "Hospitality",       "#ff7351", "plate"),
+    "technical-support": CategoryGroup("technical-support", "Technical Support", "#8097ff", "waveform"),
+    "media-content":     CategoryGroup("media-content",     "Media & Content",   "#FFC83D", "camera"),
+    "stage-hosting":     CategoryGroup("stage-hosting",     "Stage & Hosting",   "#D4FF00", "microphone"),
+    "other":             CategoryGroup("other",             "Other",             "#8097ff", "bolt"),
 }
 
 # gigs.category (GigCategory, the specific role — e.g. "usher") -> group slug.
 # Keep in sync with the `value` fields in frontend/grid ROLE_GROUPS.
 CATEGORY_TO_GROUP: dict[str, str] = {
-    "event_registration": "event-promotion",
-    "usher": "event-promotion",
-    "booth_staff": "event-promotion",
-    "promoter": "event-promotion",
-    "sampling_promoter": "event-promotion",
-    "lead_collection": "event-promotion",
-    "event_helper": "event-promotion",
-    "hospitality_staff": "hospitality",
-    "guest_management": "hospitality",
-    "front_desk": "hospitality",
-    "event_tech_support": "technical-support",
+    "event_registration":    "event-promotion",
+    "usher":                 "event-promotion",
+    "booth_staff":           "event-promotion",
+    "promoter":              "event-promotion",
+    "sampling_promoter":     "event-promotion",
+    "lead_collection":       "event-promotion",
+    "event_helper":          "event-promotion",
+    "hospitality_staff":     "hospitality",
+    "guest_management":      "hospitality",
+    "front_desk":            "hospitality",
+    "event_tech_support":    "technical-support",
     "sound_light_assistant": "technical-support",
-    "photographer": "media-content",
-    "videographer": "media-content",
-    "social_media_creator": "media-content",
-    "emcee": "stage-hosting",
-    "other": "other",
+    "photographer":          "media-content",
+    "videographer":          "media-content",
+    "social_media_creator":  "media-content",
+    "emcee":                 "stage-hosting",
+    "other":                 "other",
 }
 
 DEFAULT_GROUP_SLUG = "other"

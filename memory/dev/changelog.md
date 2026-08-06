@@ -6,6 +6,97 @@ type: project
 
 # Changelog
 
+## 2026-08-07 — Gig Cover Compositor v2 (fully programmatic)
+
+**Root cause of the frame overlap:** the compositor loaded `foreground.png` per category — a rectangular border + triangle corner mark baked around the icon area. Its bottom edge sat ~20 px above the title anchor and overlapped the title text on many device sizes (user screenshot 2026-08-06 confirmed).
+
+**Fix:** rewrote `backend/api/app/covers/compositor.py` + `manifest.py` to be **100 % programmatic** — no PNG assets loaded at all. New render pipeline:
+1. Obsidian base
+2. Two accent-colour Gaussian-blurred glow blobs in the hero zone (upper 55–60 %)
+3. Host photo (if uploaded) or programmatic category icon centred in hero
+4. Vertical fade transition into text zone
+5. Text zone: category chip → title → pay → venue+city → host name, with generous spacing
+
+**Six new programmatic icons** drawn in the compositor: sparkle (event), plate (hospitality), waveform (tech), camera (media), microphone (stage), bolt (other). All stroke-based, consistent weight.
+
+**Bulk regen script** at `backend/api/app/scripts/regenerate_covers.py`. Run once on EC2 after deploy to refresh existing gigs' covers:
+```bash
+docker exec kriya_kria-api_1 python -m app.scripts.regenerate_covers
+```
+
+Old asset PNGs at `backend/api/app/covers/assets/{slug}/*.png` are orphaned — safe to delete in a hygiene commit. Old generation scripts at `frontend/master-assets/generate_*.py` are historical, do not run.
+
+Full doc: `features/gig_cover_images.md` under "v2 — 2026-08-07 rewrite".
+
+---
+
+## 2026-08-05 — Reviewer Bug Fixes + Gig Card Upgrade + App-Wide Design Polish
+
+Three back-to-back sessions in one day. Massive diff across Pocket / Grid / backend / landing-page. Full context in `product/status.md`.
+
+### Session 1 — Reviewer bugs
+
+- **Momentum inconsistency** (Pocket applicants sheet): `frontend/pocket/app/(main)/gig/applicants/[gigId].tsx:377` read `(p as any).worker_momentum ?? 500` — nonexistent field, always fell back to hardcoded 500. Fixed to `item.momentum_score ?? 0`. Grid was already correct. Added `momentum_score: number | null` to Pocket's `ApplicantListItem` interface.
+- **Expired gigs shown in Pocket Explore + Home**: backend `_fetch_open_gigs()` filtered `event_date >= CURRENT_DATE` only, missing gigs ending earlier today. Fixed to `(event_date::timestamp + shift_end_time::time) > (NOW() AT TIME ZONE 'Asia/Kolkata')`. **CRITICAL trap caught:** the fix was initially applied to `backend/api/app/services/matching.py` — **dead code!** The live path is `backend/api/app/recommendations/engine.py` (imported by `routers/gigs.py`). Would have deployed with the bug still present. Both files got the fix in the end (belt-and-suspenders); services file should be deleted in a hygiene commit. See `features/recommendations.md` warning.
+- **Pocket client-side expiry filters** to match backend: Space `isUpcoming` now compares against `now` (not midnight-today) and uses `shift_end_time`. Home `activeApplications` memo filters expired applications.
+- **Grid pause/resume worked on expired gigs**: UI hides pause button when `expired`; backend `pause_gig`/`unpause_gig` in `routers/gigs.py` return 400. `_assert_gig_owner` selects `is_expired` computed via `COALESCE(event_end_date, event_date) < (NOW() AT TIME ZONE 'Asia/Kolkata')::date`.
+- **Grid showed "Open" for expired gigs/events**: status badge now shows single `<ExpiredBadge>` instead of appending "Open + Expired" side-by-side. Applied to `gigs/page.tsx`, `gigs/[id]/page.tsx`, `events/page.tsx`, `events/[id]/page.tsx` (event JobCard receives `eventExpired` prop from parent).
+
+### Session 2 — Gig Card Upgrade (Phase 1 + Phase 2)
+
+Full anatomy in `features/gig_card.md`.
+
+**Phase 1 — Rich card overlays:**
+- Backend: `HostSummary` Pydantic model (id, display_name, avatar_url, is_verified, poster_reputation). `_fetch_host_summaries()` in `recommendations/engine.py` batch-fetches host profiles alongside momentum scores. Populates new `ScoredGig.host` field.
+- Frontend: `HostSummary` type in `lib/api/gigs.ts`. `gigStore` gets `hosts: Record<posterId, HostSummary>` map (parallel to `posterScores`), populated by `fetchGigs`/`fetchMoreGigs`. New `fetchHost(posterId)` action for cold-load hydration (Supabase profiles select).
+- New component: `HostAvatarChip.tsx` — 32px avatar (or initial), verified-blue check overlay, star rating chip when `poster_reputation != null`.
+- Inline in `JobCard.tsx`: `SpotsChipOverlay` (pulses ≤3 spots, amber→coral escalation), `TimeToStartPill` (renders only when shift within 24h).
+- Overlay stack: host chip bottom-left, momentum+boost+spots top-right, time pill top-left.
+- Explore + `SwipeableJobCard` plumb the `host` prop through to `JobCard`.
+
+**Phase 2 — Deck feel:**
+- Deck depth: 2 peek cards render behind the front `SwipeableJobCard` (scale 0.96/opacity 0.65 and scale 0.92/opacity 0.35, translateY offsets). `deckCenter` becomes `position: relative`.
+- Threshold-crossing haptics: `Haptics.selectionAsync()` fires the moment drag crosses apply/nav commit line, via a listener on `Animated.ValueXY` position. Refs (`applyArmed`, `rightArmed`, `leftArmed`) prevent spam.
+- Celebratory apply overlay: icon springs from 0.6 → 1.15 as user commits, backed by scaling white radial glow. Icon bumped 52 → 64px.
+
+### Session 3 — App-Wide Design Overhaul
+
+Following a 4-agent design audit across auth/onboarding, main tabs, identity surfaces, and detail flows.
+
+**Phase 3a — Fallback card redesign** (`JobCard.tsx`):
+- New `<FallbackHero>` inline component. Full 4:5 aspect, category-color gradient bg, huge tinted watermark of category label, bottom text zone mirroring compositor's baked layout (chip → title → pay → venue). Same overlay positions as cover branch — both look intentional.
+
+**Phase 3b — Grid host-photo upload:**
+- Basic Info step of `gigs/new/page.tsx` now has optional cover photo picker. JPEG/PNG/WebP, 10 MB cap, preview + Change/Remove. Uploaded photo passed to `generateGigCover(id, photo)` — compositor renders it into the photo slot.
+
+**PKG-D — Fit & Finish:**
+- `styles.actionText` bugfix in applicants screen — the 5-week-old open issue. Added missing style (fontSize 14, fontWeight 700, fontFamily SpaceGrotesk_700Bold).
+- Skeleton loaders replace bare `<ActivityIndicator>` on gig detail, applicants list, event detail.
+- Empty state copy rewritten: applicants "Waiting for applicants…" + subtext, Space "Nothing on the calendar" / "No track record yet".
+
+**PKG-A — Trust surfaces:**
+- Host chip on gig detail — reads from `hosts[gig.poster_id]`. Store's `fetchHost` populates via Supabase profiles select on cold-load.
+
+**PKG-B — Celebrations:**
+- Streak flame on Home hero (`StreakStat` component) — 🔥 emoji pulses (opacity 0.7↔1.0, 900ms each) + amber pill when streak > 0. "Start a streak" prompt at 0.
+- Band level-up celebration on Arena — detects mid-session promotion via `prevBandRef` + `BAND_ORDER` comparison. `<LevelUpModal>` with band-color halo pulse, spring-in icon, "PROMOTED · You're now Trusted", success haptic. First load never fires (baseline seeding only).
+- Post-OTP check-in celebration in Space GigDetailSheet — 1.5s full-sheet overlay: lime check ring + halo + "You're checked in!" + success haptic. Then `onOtpSuccess` proceeds to rating flow.
+
+**PKG-C — First impression:**
+- New `app/(auth)/intro.tsx` — 3-slide swipeable pre-login carousel (What is Kria / Momentum / Verify). Skip + Get Started, progress dots. Persists `intro_seen_v1` flag in SecureStore. Auth gate updated to send new visitors to `/(auth)/intro` first. Auto-skip via `useEffect` for returning users.
+- Login trust row — Secure OTP · Verified hosts · Paid weekly in lime-tinted card above terms footer. Placeholder `9876543210` → `98XXXX1234`.
+
+**Profile — Career Passport:**
+- History cards: removed 0.85 opacity fade; added lime checkmark dot for `completed` and coral X dot for `no_show`. Past work reads as accomplishment.
+- Profile tab surfaced: bio (3-line), skills chips (top 5 + overflow), streak stat with 🔥 (was 2 stats, now 3). Share Profile quick box → native `Share.share` with `https://trykria.com/p/${slug}`.
+- **Migration `0032_public_profile_slug.py`** — `profiles.public_slug TEXT UNIQUE`, backfilled as `{firstname_alphanumeric}-{last 6 chars of id}`, indexed.
+- `/api/v1/public/runners/{slug}` no-auth endpoint at `backend/api/app/routers/public.py`. Returns curated public fields only (never phone/email/DOB). Registered in `main.py`.
+- `landing-page/app/p/[slug]/page.tsx` — server-rendered profile page at trykria.com/p/{slug}. Band-color hero, avatar, verified check, stats (Gigs / Streak with 🔥 / Momentum), skills chips, languages chips, "Discover Kria" CTA. OG meta for WhatsApp previews. 5-min ISR revalidation. Custom `not-found.tsx`.
+
+Full feature docs: `features/gig_card.md`, `features/public_profile.md`, `apps/mobile/screens.md` (updated per screen).
+
+---
+
 ## 2026-07-20 — Grid Login Page Redesign (Scroll-Story Landing)
 
 ### Grid: `/login` rebuilt as landing page + sign-in

@@ -6,7 +6,37 @@ type: project
 
 # Todo & Open Issues
 
-Last updated: 2026-06-21
+Last updated: 2026-08-06
+
+## Recently Completed (2026-08-05)
+
+### Reviewer bug fixes
+- ✅ Momentum inconsistency between Grid and Pocket applicants (Pocket was reading nonexistent field, defaulting to 500)
+- ✅ Expired events/gigs shown in Pocket Explore + Home (backend `_fetch_open_gigs` now uses `(event_date + shift_end_time) > NOW() IST`; client mirrors added)
+- ✅ Pause/resume expired gigs in Grid (UI hidden + backend 400 guard)
+- ✅ Expired gigs/events showing "Open" status in Grid (single `<ExpiredBadge>` now replaces it)
+
+### Gig Card Phase 1 + 2
+- ✅ HostAvatarChip + pulsing SpotsChipOverlay + TimeToStartPill overlays
+- ✅ Backend HostSummary + `_fetch_host_summaries()` + `ScoredGig.host` field
+- ✅ Deck depth (peek cards behind current)
+- ✅ Threshold haptics + celebratory apply overlay
+
+### Gig Card Phase 3 + App Polish
+- ✅ Fallback card redesign (FallbackHero) mirroring compositor layout
+- ✅ Grid host-photo upload in gig-creation wizard (Basic Info step)
+- ✅ `styles.actionText` bugfix in Pocket applicants (was open 5+ weeks)
+- ✅ Skeleton loaders on gig detail / applicants / event detail
+- ✅ Empty state copy pass (applicants + Space)
+- ✅ Host chip on gig detail (`fetchHost` for cold-load hydration)
+- ✅ Streak flame on Home hero (`StreakStat` with pulsing 🔥)
+- ✅ Band level-up celebration on Arena (`LevelUpModal`)
+- ✅ Post-OTP check-in celebration in Space GigDetailSheet
+- ✅ Pre-login intro carousel (`app/(auth)/intro.tsx`, SecureStore persistence)
+- ✅ Login trust row (Secure OTP · Verified hosts · Paid weekly)
+- ✅ Profile: bio + skills chips + streak stat + Share Profile button surfaced
+- ✅ History cards elevated (opacity fade removed, completed/no-show dots)
+- ✅ Public runner profile: migration 0032 + `/api/v1/public/runners/{slug}` + `trykria.com/p/{slug}` landing page
 
 ## Backend Optimisation Backlog
 
@@ -66,6 +96,12 @@ Audited 2026-05-30. Fix in priority order.
 | Enable anti-spoof in prod | `perceptrons/inspector/docker-compose.yml` env + Kria `docker-compose.dev.yml` | Set `ANTISPOOF_MODEL_ENABLED=True`; test with real selfies first to check for false positives |
 | Grid: Host rating form (sub-scores) | Grid gig detail | After gig complete: collect punctuality/communication/professionalism sub-scores when rating runner |
 | Chat: receiver real-time broken | `frontend/pocket/app/(main)/chat/[id].tsx` | See `features/chat.md` for investigation steps |
+| **Delete dead `services/matching.py`** | `backend/api/app/services/matching.py` | Dead code, superseded by `recommendations/engine.py`. Both queries currently match (belt-and-suspenders), but the services file should be removed in a standalone hygiene commit. See `features/recommendations.md`. |
+| Regenerate covers on gig edit | Grid gigs edit flow (doesn't exist yet) | Covers freeze at post-creation. If a host edits title/pay/venue after posting, cover PNG stays stale. Add regen call on edit. |
+| Public profile: opt-out toggle | `features/public_profile.md` | Some runners may not want a public profile visible. Add boolean + gate the endpoint. |
+| Public profile: vanity slug edits | `features/public_profile.md` | Let runners pick their slug (with uniqueness check). |
+| Grid host-side "view public profile" link | Grid applicants list | Let hosts see the runner's shareable card before hiring. |
+| Preview-as-runner in Grid post-gig wizard | Grid `gigs/new/page.tsx` | Show the runner-facing card while composing the gig (design-audit callout). |
 | ~~Grid: Host onboarding flow~~ | ~~`grid/app/(dashboard)/layout.tsx`~~ | ✅ Done 2026-05-28 — `/onboarding` page created, dashboard layout guard added |
 
 ## Low Priority

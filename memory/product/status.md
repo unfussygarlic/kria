@@ -6,7 +6,33 @@ type: project
 
 # Kria — Current Product Status
 
-Last updated: 2026-07-20
+Last updated: 2026-08-06
+
+## 2026-08-05 — Big session (three back-to-back rounds)
+
+**Reviewer bug fixes:**
+- Pocket applicants momentum was hardcoded to 500 (wrong field name) — now reads `item.momentum_score`
+- Expired gigs shown in Pocket Explore / Home / Space — backend `_fetch_open_gigs` in `recommendations/engine.py` now uses `(event_date + shift_end_time) > NOW() IST`. Client filters in Space + Home added.
+- Grid pause/resume worked on expired gigs — hidden client-side + backend 400 guard in `pause_gig`/`unpause_gig`.
+- Grid showed "Open" for expired gigs — now single `<ExpiredBadge>` replaces the badge instead of appending. Applied to gigs list/detail + events list + event JobCard.
+- **Critical trap caught:** `services/matching.py` is dead code. Live path is `recommendations/engine.py`. Both got the fix; dead file should be deleted in a hygiene commit.
+
+**Gig Card v3 (Phase 1 + 2):** rich cover overlays (HostAvatarChip, pulsing SpotsChipOverlay, TimeToStartPill), backend `HostSummary` on `/gigs/match`, deck depth (peek cards), threshold haptics, celebratory apply overlay. See `features/gig_card.md`.
+
+**App-wide design overhaul (Phase 3 + PKG-A/B/C/D):**
+- Fallback card redesigned to mirror compositor layout (`FallbackHero` inline in JobCard)
+- Grid host-photo upload in gig-creation wizard (Basic Info step)
+- `styles.actionText` bug in applicants finally fixed (was open 5+ weeks)
+- Skeleton loaders on gig detail / applicants / event detail
+- Empty state copy pass (applicants + Space)
+- Host chip on gig detail
+- Streak flame on Home hero (`StreakStat` with pulsing 🔥)
+- Band level-up celebration on Arena (`LevelUpModal`, first-load-guarded)
+- Post-OTP check-in celebration in Space GigDetailSheet (1.5s full-sheet)
+- Pre-login intro carousel (`app/(auth)/intro.tsx`, 3 slides, SecureStore persistence)
+- Login trust row (Secure OTP · Verified hosts · Paid weekly)
+- Profile tab: bio + skills chips + streak stat with 🔥 surfaced; history cards elevated (removed opacity fade, added completed/no-show dots)
+- Public runner profile: migration 0032, `/api/v1/public/runners/{slug}` endpoint, `trykria.com/p/{slug}` landing page, native Share sheet from Profile → "Share Profile"
 
 ## Mobile App (Runners)
 

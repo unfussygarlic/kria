@@ -1,4 +1,36 @@
-# Gig Cover Images (Grid: built + deployed on EC2. Pocket: built incl. Explore card redesign, pending visual test — no-photo path on both)
+# Gig Cover Images
+
+## v2 — 2026-08-07 rewrite (fully programmatic)
+
+The compositor is now **100% programmatic** — no more pre-baked PNG assets. `backend/api/app/covers/assets/{slug}/{background,foreground}[_square].png` still exist on disk but nothing reads them. Can be deleted in a hygiene commit.
+
+**Why the rewrite:** the old `foreground.png` per category was a coral/accent rectangular frame + triangle corner mark. Its bottom edge sat ~20 px above the title anchor and overlapped the title text on many device sizes (user screenshot 2026-08-06 confirmed the collision on hospitality). The whole frame layer is gone.
+
+**New render pipeline:**
+1. Obsidian base (`#0e0e0e`)
+2. Two accent-colour radial "glow" blobs in the hero zone (primary upper-centre-left, secondary offset upper-right) — rendered via filled ellipses with `ImageFilter.GaussianBlur`, cheap and naturally soft
+3. Either the host photo (rounded, cover-fit into `photo_slot`) OR a programmatic category icon centred at `layout.icon_center` in the accent colour
+4. Vertical fade from hero into text zone (transparent → dark, 100 px band)
+5. Text zone at the bottom: chip (auto-sized pill with accent outline + tinted fill) → title (60 px bold white, 2 lines) → pay (52 px bold, accent) → venue+city (28 px semibold, 80 % white) → host name (24 px semibold, 55 % white)
+
+**No chrome around the hero.** No rectangular frame, no corner marks, no floating pills. Hero and text zone separated purely by the vertical fade.
+
+## Programmatic icons
+
+Six icon draws in `compositor.py`, keyed by `CategoryGroup.icon_key`:
+
+| Group | Icon key | Shape |
+|-------|----------|-------|
+| Event & Promotion | `sparkle` | Central filled 4-point diamond + 4 cardinal rays + 4 orbiting mini-diamonds at 45° |
+| Hospitality | `plate` | Plate outline (ring + inner rim, faint fill) + fork (handle + 3 prongs) left + knife right |
+| Technical Support | `waveform` | 5 rounded-cap pill bars, heights [35, 75, 55, 85, 42]% of icon size (symmetric-ish EQ) |
+| Media & Content | `camera` | Rounded body + top viewfinder hump + centred lens (outer circle + inner "iris" cutout in base colour) + flash square top-right |
+| Stage & Hosting | `microphone` | Fully-rounded pill head + 3 grille lines cut in base colour + U-arc stand + vertical stem + horizontal base |
+| Other | `bolt` | Kria zap motif — two joined triangle polygons forming a lightning shape |
+
+All use a consistent `stroke = max(10, size // 22)` weight so the set feels cohesive. Icons are drawn in the accent colour at 100% alpha; where they use fills for readability (plate rim, camera body) it's `(*accent, 46)` — a faint tint of the same colour.
+
+## Decisions Locked
 
 ## Concept
 
@@ -6,9 +38,9 @@ Every gig posted gets an auto-generated cover image, composited server-side from
 
 ## Decisions Locked
 
-- **Assets:** pre-made per-category-group templates, authored directly by Claude (Python/cairosvg), not Stitch — see [[gig_cover_asset_pipeline]] for why (Stitch's Round 1 backgrounds had baked-in text and an edgy blueprint aesthetic) and for the regeneration scripts.
+- **Assets: superseded (2026-08-07).** Old approach was pre-made per-category-group PNGs, authored by Claude (Python/cairosvg). Replaced by the fully programmatic v2 renderer above. `[[gig_cover_asset_pipeline]]` and the `frontend/master-assets/generate_*.py` scripts are historical — do not run them. The `backend/api/app/covers/assets/{slug}/*.png` files can be deleted.
 - **Categories:** **6 groups, not 14.** Mid-build, discovered the earlier 14-category list (Retail/Delivery/Security/etc.) didn't match the actual product — Kria's gig wizard uses 6 role-groups (Event & Promotion, Hospitality, Technical Support, Media & Content, Stage & Hosting, Other), since Kria is specifically an **event-staffing** marketplace. Re-scoped: reused 4 of the 14 originals, built 2 new (Media & Content — camera icon; Stage & Hosting — microphone icon), dropped the other 8. See [[gigs]] "Categories" section for the corrected `GigCategory` → group mapping (this was also stale there and got fixed in the same pass).
-- **Customization:** light — host can optionally upload their own photo, which drops into a **framed photo slot** within the template. No full custom editor. Backend supports this (`POST /gigs/{id}/cover` accepts an optional `photo` multipart field); **not yet wired into Grid's wizard UI** (see Next Steps).
+- **Customization:** light — host can optionally upload their own photo, which drops into a **framed photo slot** within the template. No full custom editor. Backend supports this (`POST /gigs/{id}/cover` accepts an optional `photo` multipart field). **Grid wizard UI wired 2026-08-05** — Basic Info step now has an optional cover photo picker (JPEG/PNG/WebP, 10 MB cap, preview + Change/Remove). Uploaded photo passes to `generateGigCover(id, photo)`. See `apps/grid/overview.md` "Cover Photo Upload" section.
 - **Rendering:** server-side, Python/Pillow (`backend/api/app/covers/compositor.py`). Generated via `POST /api/v1/gigs/{id}/cover`, called fire-and-forget by Grid right after gig creation (mirrors the existing `updateGigLocation` post-insert pattern — gig creation itself is still a direct Supabase insert from Grid, not a FastAPI call).
 - **Storage:** Supabase Storage, bucket `gig-covers` (public). Uploaded via `app/covers/storage.py` using `httpx` directly against the Storage REST API (not the `supabase` Python package — avoids blocking the event loop with its synchronous client). **The bucket must be created manually in Supabase Studio (Storage → New bucket → public) — not created by any migration**, since storage buckets aren't a Postgres object.
 - **Aspect ratio / square variant:** portrait 4:5 (1080×1350px) is the primary canvas. The 1080×1080 square variant is a **fully independent composition, not a crop of the portrait one** — see "Square is its own render" below for why that matters and what changed.
@@ -59,16 +91,21 @@ Geometry is identical **within** a layout across all 6 groups (only accent color
 - `frontend/pocket/types/database.ts` `gigs.Row` — `cover_image_url` / `cover_image_square_url` added (flows through automatically on Explore since it fetches full rows via `supabase.from("gigs").select("*")`, not the trimmed `ScoredGig`/`MatchedGig` matching-endpoint model — no backend model change needed).
 - **Rendered — gig detail screen** (`app/(main)/gig/[id].tsx`): 4:5 hero image (`cover_image_url`) above the category badge, `aspectRatio: 4/5` (not a fixed height — learned that lesson on Grid already, applied correctly here from the start).
 
-#### Explore swipe-deck card — redesigned to use the cover as the whole card (changed 2026-07-30)
+#### Explore swipe-deck card — redesigned to use the cover as the whole card (changed 2026-07-30, extended 2026-08-05)
 
 First pass (superseded) squeezed a sliver of `cover_image_square_url` behind the existing 116px `categoryHeader` gradient strip — technically an improvement over nothing, but still an awkward crop of a design meant to be seen in full. User's call: the cover art *is* the card, not a decoration on it.
 
-`JobCard.tsx` "explore" variant now branches on `gig.cover_image_url`:
-- **Has a cover:** the card is just the full portrait image (`aspectRatio: 4/5`, no `minHeight` — the deck's `deckArea`/`deckCenter` in `explore.tsx` already centers its child via `flex:1, justifyContent:center, alignItems:center` regardless of height, so a variable-height card needed no changes there) plus a small badge stack overlaid top-right (`position: absolute`, over the template's intentionally-clear icon zone): live poster momentum (`MomentumBadge`), boost badge, and a spots-left chip (turns solid `T.tertiary` when ≤3 left, matching the existing urgency treatment). **Static facts (title/pay/venue/host) are baked into the art at generation time; anything that can change after posting (spots filled, boost, live momentum score) is a React Native overlay so it's never stale** — this split was the whole point of expanding the compositor's text zone to include venue rather than putting everything in one or the other.
-- **No cover** (pre-feature gigs, or generation failed): falls through to the original hand-built layout (category header, title, description, pay, details grid, tags, footer) completely unchanged.
-- `SwipeableJobCard.tsx`'s Apply/Nav swipe overlays are separate siblings of `<JobCard>`, not nested inside it — confirmed before touching anything, so this redesign couldn't have affected swipe gesture handling either way.
+`JobCard.tsx` "explore" variant is a **cover-shaped canvas** regardless of whether a photo exists:
+- **Has a cover** (`cover_image_url` present): full portrait image (`aspectRatio: 4/5`) as the canvas.
+- **No cover** (2026-08-05 fallback redesign): `<FallbackHero>` inline component — category-color gradient background with a huge tinted watermark of the category label + a bottom text zone mirroring the compositor's baked layout (chip → title → pay → venue). Same 4:5 aspect. Feels intentional, not "second-class". Old hand-built centered card (title/description/pay/details/tags) is retired for the explore variant.
+- **Both branches share the same overlay stack** (see `features/gig_card.md`):
+  - Top-left: `TimeToStartPill` (only within 24h)
+  - Top-right stack: `MomentumBadge` + Boost + `SpotsChipOverlay` (pulses when ≤3, amber → coral escalation)
+  - Bottom-left: `HostAvatarChip` (avatar + verified check + rating)
+- **Static facts (title/pay/venue/host name) are baked at generation time; anything that can change after posting (spots filled, boost, live momentum, host verified status, time-to-start) is a React Native overlay** so it's never stale.
+- `SwipeableJobCard.tsx`'s Apply/Nav swipe overlays are separate siblings of `<JobCard>`, not nested inside it.
 
-Compact list card (Space/Event lists) unchanged from the prior round: 40×40 `cover_image_square_url` thumbnail in `headerRow` via `marginLeft: "auto"`, in-flow, non-intrusive.
+Compact list card (Space/Event lists) unchanged: 40×40 `cover_image_square_url` thumbnail in `headerRow`.
 
 ## Verified
 
@@ -77,6 +114,18 @@ Compact list card (Space/Event lists) unchanged from the prior round: 40×40 `co
 - **Round 3** (Pocket wiring): `generateGigCover` calls added to Pocket's `createGig`; Pocket `tsc --noEmit` re-checked, all errors traced to pre-existing issues.
 - **Round 4** (venue text zone + Explore card redesign — this round): backend re-tested directly (Pillow) with real venue/city/host data on both layouts — venue and host lines render cleanly with correct hierarchy (see the rendered samples generated during this session). Pocket `tsc --noEmit` re-checked clean (same one pre-existing `formatTime` error, nothing new). Confirmed by reading the code that `SwipeableJobCard`'s swipe overlays are separate from `<JobCard>` before making changes, and that `explore.tsx`'s deck container centers children regardless of height (so a variable-height cover card needed no container changes).
 - **Not yet done for any Pocket round:** visual testing in the actual Expo app (no way to run/screenshot Expo Go from this environment), and deployment (Pocket changes ship via app build/OTA update, not the EC2 backend — nothing to "deploy" here yet, this is still local/uncommitted as of this round).
+
+## Regenerating existing covers after a compositor change
+
+Covers stored in Supabase Storage don't auto-regenerate. After deploying a compositor change, run the one-off:
+
+```bash
+docker exec kriya_kria-api_1 python -m app.scripts.regenerate_covers
+```
+
+Flags: `--only-null` (skip gigs that already have a URL), `--limit N` (smoke test). Safe to re-run — each cover overwrites the previous `{gig_id}/cover.png` + `{gig_id}/cover-square.png` via `x-upsert`.
+
+**Photo caveat:** the regen script doesn't re-upload host photos (we never stored the raw photo bytes — only the composed PNG). Regenerated covers become template-only until the host re-uploads via Grid's wizard photo picker.
 
 ## Next Steps
 
