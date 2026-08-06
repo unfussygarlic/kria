@@ -6,6 +6,53 @@ type: project
 
 # Changelog
 
+## 2026-08-07 — Home Revamp (Pocket, earnings-first)
+
+Full Home redesign following a code audit + web research on DoorDash / Uber Driver / Instacart. Three problems the old Home had: no money signal, no primary CTA, home collapses for new runners. Full doc: `features/home_revamp.md`.
+
+**New layout (top → bottom):**
+1. Top bar (unchanged)
+2. **EarningsCard** — hero position. `₹2,400 this week · 3 gigs · Payout Friday`. Trend chip (`+18% vs last week`). Brand-new runner state: "Ready to earn?" invite.
+3. **PrimaryCTA** — big lime "Find gigs nearby" with social proof: `12 new near Bengaluru today`.
+4. Hot near you (unchanged)
+5. **MomentumChipRow** — Momentum shrunk from full hero to compact row: score badge + band pill + progress bar + streak emoji. Full experience one tap away on Arena.
+6. **GrowthNudge** — dynamic single-item nudge with priority: Verify ID → Complete profile → Next band (within 150 pts) → Streak (≥3 days). Returns null if none apply.
+7. Badges + Recent gigs (unchanged, still conditional)
+
+Pull-to-refresh added.
+
+**Backend:**
+- New `/api/v1/earnings/summary` endpoint at `routers/earnings.py`. Aggregates completed `gig_assignments` × `gigs.pay_amount`. Week starts Monday IST. Next-payout date hardcoded to next Friday (no payouts table yet).
+
+**New Pocket files:**
+- `lib/api/earnings.ts`, `stores/earningsStore.ts` (5-min TTL)
+- `components/home/EarningsCard.tsx`
+- `components/home/PrimaryCTA.tsx`
+- `components/home/MomentumChipRow.tsx`
+- `components/home/GrowthNudge.tsx`
+
+**Deploy order:** backend first (Pocket's earnings store fetches on mount), then Pocket EAS update. `BandHeroCard` + `HeroSkeleton` still defined in home.tsx but no longer rendered — safe to delete in a hygiene commit.
+
+---
+
+## 2026-08-07 — Gig Cover v2.1 (taller canvas + bigger fonts)
+
+Same day as v2 rewrite. Portrait canvas grew from **1080×1350 (4:5)** to **1080×1620 (2:3)** — card is ~20 % taller in the Explore deck.
+
+Font bumps for attention:
+- Title 60 → **84 pt**
+- Pay 52 → **76 pt**
+- Venue / host 28 → 36 pt / 24 → 32 pt
+- Chip auto-scales from `chip_h` (~26 pt now)
+
+Client-side `aspectRatio` bumped to `2/3` on both `coverImage` and `fallbackHero` in `JobCard.tsx`. FallbackHero fonts scaled up proportionally (title 26 → 34, pay 28 → 34, watermark 62 → 78) so the no-cover branch matches.
+
+Square canvas untouched — mostly used for 40 px thumbnails and OG previews, big fonts don't help.
+
+**Deploy note:** the bulk regen script (`app.scripts.regenerate_covers`) MUST run after the backend rebuild — old 4:5 covers will letterbox on the new 2:3 client until regenerated.
+
+---
+
 ## 2026-08-07 — Gig Cover Compositor v2 (fully programmatic)
 
 **Root cause of the frame overlap:** the compositor loaded `foreground.png` per category — a rectangular border + triangle corner mark baked around the icon area. Its bottom edge sat ~20 px above the title anchor and overlapped the title text on many device sizes (user screenshot 2026-08-06 confirmed).

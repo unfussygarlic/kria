@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import {
   ScrollView, View, Text, Pressable, StyleSheet,
-  FlatList, ActivityIndicator, Animated, Easing, PanResponder,
+  FlatList, ActivityIndicator, Animated, Easing, PanResponder, RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -11,6 +11,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useMomentumStore } from "@/stores/momentumStore";
 import { useGigStore } from "@/stores/gigStore";
 import { useBadgeStore, type Badge } from "@/stores/badgeStore";
+import { useEarningsStore } from "@/stores/earningsStore";
 import { T, CategoryColors } from "@/constants/colors";
 import { GigCategories } from "@/constants/config";
 import { getBand } from "@/constants/momentum";
@@ -18,6 +19,10 @@ import { matchGigs, type MatchedGig } from "@/lib/api/gigs";
 import { rf, rw } from "@/constants/responsive";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PressableScale } from "@/components/ui/PressableScale";
+import { EarningsCard } from "@/components/home/EarningsCard";
+import { PrimaryCTA } from "@/components/home/PrimaryCTA";
+import { MomentumChipRow } from "@/components/home/MomentumChipRow";
+import { GrowthNudge } from "@/components/home/GrowthNudge";
 import { scrollRegistry } from "@/lib/scrollRegistry";
 import * as Location from "expo-location";
 
@@ -613,9 +618,13 @@ export default function HomeScreen() {
   const fetchMyApplications = useGigStore((s) => s.fetchMyApplications);
   const badges = useBadgeStore((s) => s.badges);
   const fetchBadges = useBadgeStore((s) => s.fetchBadges);
+  const earningsSummary = useEarningsStore((s) => s.summary);
+  const fetchEarnings = useEarningsStore((s) => s.fetchSummary);
 
   const [nearbyGigs, setNearbyGigs] = useState<MatchedGig[]>([]);
+  const [nearbyGigsCount, setNearbyGigsCount] = useState<number | null>(null);
   const [gigsLoading, setGigsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const onMarqueeGrab = useCallback(() => {
@@ -639,38 +648,58 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Morning" : hour < 17 ? "Afternoon" : "Evening";
 
+  const loadNearbyGigs = useCallback(async () => {
+    try {
+      // Show gigs immediately — don't block on GPS.
+      const initial = await matchGigs({ limit: 5 });
+      setNearbyGigs(initial.data?.gigs ?? []);
+      setNearbyGigsCount(initial.data?.total ?? null);
+      setGigsLoading(false);
+
+      // Try to get location in background; refresh cards with distance info if available.
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") return;
+
+      const last = await Location.getLastKnownPositionAsync();
+      const coords = last?.coords ?? (
+        await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low })
+      ).coords;
+
+      const located = await matchGigs({
+        limit: 5,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
+      if (located.data) {
+        setNearbyGigs(located.data.gigs);
+        setNearbyGigsCount(located.data.total);
+      }
+    } catch {
+      setGigsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchMyMomentum();
     fetchMyApplications();
     fetchBadges();
-
-    (async () => {
-      try {
-        // Show gigs immediately — don't block on GPS.
-        const initial = await matchGigs({ limit: 5 });
-        setNearbyGigs(initial.data?.gigs ?? []);
-        setGigsLoading(false);
-
-        // Try to get location in background; refresh cards with distance info if available.
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") return;
-
-        const last = await Location.getLastKnownPositionAsync();
-        const coords = last?.coords ?? (
-          await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low })
-        ).coords;
-
-        const located = await matchGigs({
-          limit: 5,
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        });
-        if (located.data) setNearbyGigs(located.data.gigs);
-      } catch {
-        setGigsLoading(false);
-      }
-    })();
+    fetchEarnings();
+    loadNearbyGigs();
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    // momentum/applications/badges stores honour their own TTL; earnings + nearby
+    // gigs get force-refreshed so a PTR actually surfaces new data on demand.
+    await Promise.all([
+      fetchMyMomentum(),
+      fetchMyApplications(),
+      fetchBadges(),
+      fetchEarnings(true),
+      loadNearbyGigs(),
+    ]);
+    setRefreshing(false);
+  }, [fetchMyMomentum, fetchMyApplications, fetchBadges, fetchEarnings, loadNearbyGigs]);
 
   const momentumData = myMomentum?.worker;
   const score = momentumData?.score ?? 0;
@@ -702,6 +731,14 @@ export default function HomeScreen() {
       style={styles.screen}
       contentContainerStyle={{ paddingBottom: rw(40) }}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={T.primary}
+          colors={[T.primary]}
+        />
+      }
     >
       {/* ── Top bar ── */}
       <View style={[styles.topBar, { paddingTop: insets.top + rw(10) }]}>
@@ -717,13 +754,21 @@ export default function HomeScreen() {
         </PressableScale>
       </View>
 
-      {/* ── Band hero card ── */}
+      {/* ── Earnings hero (NEW) — sets the tone: this app makes you money ── */}
       <View style={styles.section}>
-        {myMomentum == null ? (
-          <HeroSkeleton />
-        ) : (
-          <BandHeroCard score={score} gigsDone={gigsDone} streak={streak} />
-        )}
+        <EarningsCard
+          summary={earningsSummary}
+          onPress={() => router.push("/(main)/(tabs)/space")}
+        />
+      </View>
+
+      {/* ── Primary CTA (NEW) — answers "what do I do next?" ── */}
+      <View style={styles.sectionTight}>
+        <PrimaryCTA
+          nearbyCount={nearbyGigsCount}
+          cityLabel={profile?.city ?? null}
+          onPress={() => router.push("/(main)/(tabs)/explore")}
+        />
       </View>
 
       {/* ── Hot near you ── */}
@@ -749,6 +794,26 @@ export default function HomeScreen() {
         ) : (
           <GigMarquee gigs={nearbyGigs} onGrab={onMarqueeGrab} onRelease={onMarqueeRelease} />
         )}
+      </View>
+
+      {/* ── Momentum snapshot (SHRUNK) — was the full hero, now a chip row ── */}
+      {myMomentum != null && (
+        <View style={styles.sectionTight}>
+          <MomentumChipRow
+            score={score}
+            streak={streak}
+            onPress={() => router.push("/(main)/(tabs)/arena")}
+          />
+        </View>
+      )}
+
+      {/* ── Growth nudge (NEW) — one actionable next step, priority-based ── */}
+      <View style={styles.sectionTight}>
+        <GrowthNudge
+          profile={profile}
+          momentumScore={myMomentum != null ? score : null}
+          streakCount={streak}
+        />
       </View>
 
       {/* ── Recent badges ── */}
@@ -830,6 +895,13 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: rw(16),
     marginBottom: rw(24),
+  },
+  // Tighter vertical rhythm for the new card-per-section components
+  // (EarningsCard, PrimaryCTA, MomentumChipRow, GrowthNudge) — the taller
+  // hero card doesn't need to be followed by 28 px of dead space.
+  sectionTight: {
+    paddingHorizontal: rw(16),
+    marginBottom: rw(14),
   },
   stripSection: {
     marginBottom: rw(28),

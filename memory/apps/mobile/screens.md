@@ -18,7 +18,24 @@ Existing lime gradient hero + phone-input card. **Trust row** (Secure OTP · Ver
 
 ## Home Screen (`home.tsx`)
 
-**Completely revamped.** Sections in order (Runner view):
+**Revamped again 2026-08-07 (earnings-first).** Full doc: `features/home_revamp.md`. New order:
+
+1. Top bar (greeting + avatar)
+2. **`<EarningsCard />`** — hero. This-week ₹ big, `N gigs · Payout Friday` subtitle, trend chip vs last week. Brand-new runner state: "Ready to earn?" invite.
+3. **`<PrimaryCTA />`** — big lime "Find gigs nearby" with `12 new near Bengaluru today` social-proof subtitle. Taps → Explore.
+4. Hot near you (unchanged GigMarquee)
+5. **`<MomentumChipRow />`** — Momentum shrunk from full BandHeroCard to compact row: score badge + band pill + progress bar + streak emoji. Taps → Arena.
+6. **`<GrowthNudge />`** — dynamic single-item priority nudge: Verify ID → Complete profile → Next band (within 150 pts) → Streak (≥3 days). Returns null if none.
+7. BadgeMarquee (unchanged, only if earned > 0)
+8. Recent gigs FlatList (unchanged, only if activeApplications > 0)
+
+**Pull-to-refresh added.** `<RefreshControl>` on the ScrollView refreshes momentum + applications + badges + earnings + nearby gigs in parallel.
+
+**Deprecated (still in file, not rendered):** `BandHeroCard`, `HeroSkeleton`, `StreakStat` — the former hero components. Safe to delete in a hygiene commit.
+
+---
+
+**Old layout (pre-2026-08-07) — for reference only:**
 
 ### 1. BandHeroCard
 - Full-width card (T.surface1 bg + subtle border)

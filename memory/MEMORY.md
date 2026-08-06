@@ -22,6 +22,7 @@
 - [Landing Page](apps/landing-page/overview.md) — trykria.com, i18n, inline styles, gotchas
 
 ## Features
+- [Home Revamp (Pocket)](features/home_revamp.md) — 2026-08-07 Home redesign: earnings hero, primary CTA with nearby-count social proof, shrunk Momentum, dynamic growth nudge, pull-to-refresh
 - [Gig Card](features/gig_card.md) — Pocket swipe card v3: overlays (host chip, pulsing spots, time pill), fallback hero, deck depth, threshold haptics, celebratory apply (2026-08-05)
 - [Public Runner Profile](features/public_profile.md) — Career passport at trykria.com/p/{slug}, no-auth backend endpoint, Pocket share sheet (2026-08-05)
 - [Momentum](features/momentum.md) — 0–1000 scale, 6 bands, profile completion bonus, skill graph, signals, backend module, formula; Grid-vs-Pocket stale-score bug fixed 2026-07-31

@@ -1,5 +1,22 @@
 # Gig Cover Images
 
+## v2.1 — 2026-08-07 (taller card + bigger fonts)
+
+Same day as the v2 rewrite, bumped the portrait canvas from **1080×1350 (4:5)** → **1080×1620 (2:3)** so the card is ~20 % taller in the swipe deck and the text zone has room for bigger, more attention-grabbing typography. Font stack now:
+
+| Element | Old | New |
+|---------|-----|-----|
+| Title | 60 pt | 84 pt |
+| Pay | 52 pt | 76 pt |
+| Venue / host | 28 / 24 pt | 36 / 32 pt |
+| Category chip | 20 pt | auto-sized from `chip_h` (~26 pt at 48 px chip) |
+
+**Client-side aspect must match:** `frontend/pocket/components/gig/JobCard.tsx` `coverImage` and `fallbackHero` both use `aspectRatio: 2/3`. If you ever change the compositor canvas ratio, change these too — a mismatch stretches or letterboxes existing covers.
+
+FallbackHero fonts also bumped proportionally (title 26→34, pay 28→34, watermark 62→78) so no-cover cards feel matched.
+
+SQUARE canvas unchanged (1080×1080) — square is mostly OG previews + 40 px list thumbnails, big fonts don't help there.
+
 ## v2 — 2026-08-07 rewrite (fully programmatic)
 
 The compositor is now **100% programmatic** — no more pre-baked PNG assets. `backend/api/app/covers/assets/{slug}/{background,foreground}[_square].png` still exist on disk but nothing reads them. Can be deleted in a hygiene commit.

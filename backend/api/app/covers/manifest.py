@@ -45,17 +45,20 @@ class Layout:
     chip: tuple[int, int, int, int] = (0, 0, 0, 0)
 
 
-# Portrait — the primary 4:5 card runners see on the Explore deck.
+# Portrait — the primary 2:3 card runners see on the Explore deck.
+# Canvas grew 1080×1350 → 1080×1620 (2026-08-07) so the hero art gets more
+# breathing room and the text zone can host larger, more attention-grabbing
+# typography. Client-side aspectRatio in JobCard.tsx must match (2/3).
 PORTRAIT = Layout(
-    canvas_w=1080, canvas_h=1350,
-    hero_h=780,
-    photo_slot=(60, 60, 960, 700), photo_slot_radius=32,
-    icon_center=(540, 360), icon_size=340,
+    canvas_w=1080, canvas_h=1620,
+    hero_h=960,
+    photo_slot=(60, 60, 960, 900), photo_slot_radius=32,
+    icon_center=(540, 460), icon_size=440,
     text_zone_x=60, text_zone_right=1020,
-    chip_y=820, chip_h=40,
-    title_y=890, title_line_height=68, title_max_lines=2,
-    pay_y=1070, venue_y=1170, host_y=1240,
-    title_font_size=60, pay_font_size=52, meta_font_size=28,
+    chip_y=1000, chip_h=48,
+    title_y=1090, title_line_height=92, title_max_lines=2,
+    pay_y=1330, venue_y=1450, host_y=1530,
+    title_font_size=84, pay_font_size=76, meta_font_size=36,
 )
 
 # Square — 1:1 for OG/WhatsApp link previews + list thumbnails.

@@ -378,21 +378,21 @@ def _wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFon
 
 
 def _draw_chip(draw: ImageDraw.ImageDraw, label: str, layout: Layout, rgb: tuple[int, int, int]) -> None:
-    """Small pill at the top-left of the text zone. Auto-sized to text."""
-    font = _font(_FONT_SEMIBOLD, 20)
+    """Small pill at the top-left of the text zone. Auto-sized to text.
+    Chip font scales with chip_h so it stays visually proportional on
+    both the 1080×1620 portrait and the 1080×1080 square canvases."""
+    font_size = max(18, int(layout.chip_h * 0.54))
+    font = _font(_FONT_SEMIBOLD, font_size)
     label = label.upper()
     text_w = draw.textlength(label, font=font)
-    pad_x = 14
-    pad_y = 8
+    pad_x = int(layout.chip_h * 0.36)
     x = layout.text_zone_x
     y = layout.chip_y
     w = int(text_w + pad_x * 2)
     h = layout.chip_h
-    # Tinted background with a coloured outline
     bg = (*rgb, 40)
     outline = (*rgb, 200)
     draw.rounded_rectangle([x, y, x + w, y + h], radius=h // 2, fill=bg, outline=outline, width=2)
-    # Text vertically centred
     draw.text((x + pad_x, y + h / 2), label, font=font, fill=(*rgb, 255), anchor="lm")
 
 

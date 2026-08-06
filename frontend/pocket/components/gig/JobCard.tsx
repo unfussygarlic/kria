@@ -421,7 +421,10 @@ const styles = StyleSheet.create({
   },
   coverImage: {
     width: "100%",
-    aspectRatio: 4 / 5,
+    // 2:3 aspect matches the compositor's 1080×1620 output (2026-08-07). If
+    // the compositor's PORTRAIT canvas changes, this must change too — a
+    // mismatch stretches or letterboxes existing covers.
+    aspectRatio: 2 / 3,
     backgroundColor: T.surface2,
   },
   coverBadgeStack: {
@@ -473,17 +476,19 @@ const styles = StyleSheet.create({
   // ── Fallback hero (no cover image) ─────────────────────────────
   fallbackHero: {
     width: "100%",
-    aspectRatio: 4 / 5,
+    // Must mirror the compositor's PORTRAIT aspectRatio so the FallbackHero
+    // and photo branches feel like the same card. See coverImage above.
+    aspectRatio: 2 / 3,
     backgroundColor: "#0e0e0e",
     overflow: "hidden",
   },
   fallbackWatermark: {
     position: "absolute",
-    top: 60,
+    top: 80,
     left: -20,
     right: -20,
     textAlign: "center",
-    fontSize: 62,
+    fontSize: 78,
     fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: 3,
@@ -493,44 +498,44 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 20,
-    paddingBottom: 24,
-    gap: 6,
+    padding: 24,
+    paddingBottom: 28,
+    gap: 8,
   },
   fallbackChip: {
     alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
     borderWidth: 1,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   fallbackChipText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
-    letterSpacing: 0.6,
+    letterSpacing: 0.7,
     textTransform: "uppercase",
   },
   fallbackTitle: {
-    fontSize: 26,
+    fontSize: 34,
     fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
     color: "#ffffff",
-    lineHeight: 30,
+    lineHeight: 38,
   },
   fallbackPay: {
-    fontSize: 28,
+    fontSize: 34,
     fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
-    marginTop: 4,
+    marginTop: 6,
   },
   fallbackVenue: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: "500",
     fontFamily: "SpaceGrotesk_500Medium",
     color: "rgba(255,255,255,0.7)",
-    marginTop: 2,
+    marginTop: 4,
   },
 
   // ── Category header (explore only) ──────────────────────────
