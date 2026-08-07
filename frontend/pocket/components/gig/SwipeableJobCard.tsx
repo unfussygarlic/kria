@@ -16,7 +16,7 @@ import {
   PanResponder,
   Text,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -26,10 +26,7 @@ import type { HostSummary } from "@/lib/api/gigs";
 import { JobCard } from "./JobCard";
 import { T } from "@/constants/colors";
 
-const { width: W, height: H } = Dimensions.get("window");
-
 const APPLY_THRESHOLD = -120;      // upward px to trigger apply
-const NAV_THRESHOLD   = W * 0.25;  // horizontal px to trigger navigation
 
 interface SwipeableJobCardProps {
   gig: Gig;
@@ -50,6 +47,8 @@ export const SwipeableJobCard = memo(function SwipeableJobCard({
   onNext,
   onPrev,
 }: SwipeableJobCardProps) {
+  const { width: W, height: H } = useWindowDimensions();
+  const NAV_THRESHOLD = W * 0.25;
   const position = useRef(new Animated.ValueXY()).current;
 
   // Threshold-crossing haptics — fire ONCE when the user drags past the
@@ -93,7 +92,7 @@ export const SwipeableJobCard = memo(function SwipeableJobCard({
         outputRange: ["-8deg", "0deg", "8deg"],
         extrapolate: "clamp",
       }),
-    [position.x]
+    [position.x, W]
   );
 
   const applyOpacity = useMemo(
@@ -137,7 +136,7 @@ export const SwipeableJobCard = memo(function SwipeableJobCard({
         outputRange: [0, 1],
         extrapolate: "clamp",
       }),
-    [position.x]
+    [position.x, NAV_THRESHOLD]
   );
 
   const prevOpacity = useMemo(
@@ -147,7 +146,7 @@ export const SwipeableJobCard = memo(function SwipeableJobCard({
         outputRange: [1, 0],
         extrapolate: "clamp",
       }),
-    [position.x]
+    [position.x, NAV_THRESHOLD]
   );
 
   // ── Animation Helpers (Memoized) ──────────────────────────────────────────
@@ -185,7 +184,7 @@ export const SwipeableJobCard = memo(function SwipeableJobCard({
         }
       });
     },
-    [position]
+    [position, H]
   );
 
   const slideOff = useCallback(
@@ -210,7 +209,7 @@ export const SwipeableJobCard = memo(function SwipeableJobCard({
         }
       });
     },
-    [position]
+    [position, W]
   );
 
   // ── Memoized Transform Style ──────────────────────────────────────────────
@@ -274,7 +273,7 @@ export const SwipeableJobCard = memo(function SwipeableJobCard({
 
         onPanResponderTerminate: () => snapBack(),
       }),
-    [position, onApply, onNext, onPrev, snapBack, applyBounce, slideOff]
+    [position, onApply, onNext, onPrev, snapBack, applyBounce, slideOff, NAV_THRESHOLD]
   );
 
   // ── Cleanup ────────────────────────────────────────────────────────────────
@@ -338,7 +337,9 @@ export const SwipeableJobCard = memo(function SwipeableJobCard({
 const styles = StyleSheet.create({
   card: {
     width: "100%",
-    minHeight: H * 0.62,
+    // No minHeight — the inner JobCard's aspectRatio: 2/3 defines the height.
+    // Forcing a minHeight caused overflow on small phones and left gaps on
+    // very tall ones.
   },
   applyOverlay: {
     ...StyleSheet.absoluteFillObject,

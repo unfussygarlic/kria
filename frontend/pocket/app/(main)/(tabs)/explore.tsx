@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
   Pressable,
   Linking,
+  useWindowDimensions,
 } from "react-native";
 import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,47 +22,34 @@ import { MatchGigsParams } from "@/lib/api/gigs";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PressableScale } from "@/components/ui/PressableScale";
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
-const CARD_W = SCREEN_W * 0.93;
 const PREFETCH_THRESHOLD = 15;
+// Chrome around the deck (header, hint row, tab bar, gaps). Used to cap the
+// card height on small phones so the 2:3 hero doesn't overflow into the tab
+// bar. Tab bar height is device-approximated (~60) since useBottomTabBarHeight
+// would require this screen to be a direct child of Tabs — it is, but the
+// hook adds one more dependency for the same 60px value.
+const DECK_CHROME_V = 64 /* header */ + 44 /* hint row */ + 32 /* gaps */ + 60 /* tab bar */;
 
 // ── Card skeleton shown while gigs load ───────────────────────────────────────
+// Matches the real JobCard shape (aspectRatio 2/3 hero) so the deck size
+// doesn't jump when gigs arrive.
 function CardSkeleton() {
   return (
     <View style={cardSkStyles.card}>
-      <Skeleton width="100%" height={116} borderRadius={0} style={{ borderRadius: 0 }} />
-      <View style={cardSkStyles.body}>
-        <Skeleton width="70%" height={rw(28)} borderRadius={rw(6)} />
-        <Skeleton width="45%" height={rw(16)} borderRadius={rw(4)} style={{ marginTop: rw(8) }} />
-        <Skeleton width="55%" height={rw(32)} borderRadius={rw(6)} style={{ marginTop: rw(14) }} />
-        <View style={cardSkStyles.detailsRow}>
-          <Skeleton width="80%" height={rw(14)} borderRadius={rw(4)} />
-          <Skeleton width="65%" height={rw(14)} borderRadius={rw(4)} />
-          <Skeleton width="75%" height={rw(14)} borderRadius={rw(4)} />
-        </View>
-        <Skeleton width="100%" height={1} borderRadius={0} style={{ marginTop: rw(16), opacity: 0.3 }} />
-        <Skeleton width="30%" height={rw(20)} borderRadius={rw(10)} style={{ marginTop: rw(14), alignSelf: "center" }} />
-      </View>
+      <Skeleton width="100%" height="100%" borderRadius={rw(24)} />
     </View>
   );
 }
 
 const cardSkStyles = StyleSheet.create({
   card: {
+    width: "100%",
+    aspectRatio: 2 / 3,
     backgroundColor: "#1a1919",
-    borderRadius: 24,
+    borderRadius: rw(24),
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.07)",
     overflow: "hidden",
-    minHeight: SCREEN_H * 0.62,
-  },
-  body: {
-    padding: rw(20),
-    gap: rw(6),
-  },
-  detailsRow: {
-    gap: rw(10),
-    marginTop: rw(16),
   },
 });
 
@@ -70,6 +57,20 @@ type LocationState = "loading" | "denied" | "ready";
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
+  const { width: SCREEN_W, height: SCREEN_H } = useWindowDimensions();
+
+  // Card width normally 93% of screen width, but cap by available vertical
+  // space so the 2:3 hero doesn't overflow into the tab bar on short devices.
+  // On small phones (360w × 640h) the card was cut off ~50px at the bottom.
+  const CARD_W = useMemo(() => {
+    const widthCap = SCREEN_W * 0.93;
+    const availableH = SCREEN_H - insets.top - insets.bottom - DECK_CHROME_V;
+    // 2:3 aspect ratio → height = width × 1.5. If the width-derived height
+    // exceeds available, shrink the width to fit.
+    const heightFromWidth = widthCap * 1.5;
+    return heightFromWidth <= availableH ? widthCap : availableH / 1.5;
+  }, [SCREEN_W, SCREEN_H, insets.top, insets.bottom]);
+
   const {
     gigs,
     myApplications,
@@ -234,7 +235,7 @@ export default function ExploreScreen() {
         <View style={styles.header}>
           <Skeleton width={rw(90)} height={rw(28)} borderRadius={rw(14)} />
         </View>
-        <View style={styles.deckArea}>
+        <View style={[styles.deckArea, { paddingBottom: Math.max(rw(16), insets.bottom + rw(8)) }]}>
           <View style={[styles.deckCenter, { width: CARD_W }]}>
             <CardSkeleton />
           </View>
@@ -268,7 +269,7 @@ export default function ExploreScreen() {
         <View style={styles.header}>
           <Skeleton width={rw(90)} height={rw(28)} borderRadius={rw(14)} />
         </View>
-        <View style={styles.deckArea}>
+        <View style={[styles.deckArea, { paddingBottom: Math.max(rw(16), insets.bottom + rw(8)) }]}>
           <View style={[styles.deckCenter, { width: CARD_W }]}>
             <CardSkeleton />
           </View>
@@ -304,7 +305,7 @@ export default function ExploreScreen() {
           )}
         </View>
       ) : (
-        <View style={styles.deckArea}>
+        <View style={[styles.deckArea, { paddingBottom: Math.max(rw(16), insets.bottom + rw(8)) }]}>
           <View style={[styles.deckCenter, { width: CARD_W }]}>
             {/* Peek: card N+2 (deepest, smallest) */}
             {availableGigs[currentIndex + 2] && (
@@ -342,7 +343,7 @@ export default function ExploreScreen() {
           </View>
 
           {/* Counter + swipe hints */}
-          <View style={styles.hintRow}>
+          <View style={[styles.hintRow, { width: CARD_W }]}>
             <View style={styles.hintItem}>
               <Feather name="chevron-left" size={13} color={T.textMuted} />
               <Text style={styles.hintText}>Prev</Text>
@@ -486,12 +487,12 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }, { translateY: 12 }],
   },
 
-  // Swipe hints
+  // Swipe hints (width injected inline from CARD_W in the component so it
+  // stays in sync with the responsive card sizing above)
   hintRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    width: CARD_W,
   },
   hintItem: {
     flexDirection: "row",

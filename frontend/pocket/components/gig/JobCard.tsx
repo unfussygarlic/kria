@@ -6,17 +6,16 @@
  */
 
 import { memo, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Pressable, Dimensions, Image, Animated, Easing } from "react-native";
+import { View, Text, StyleSheet, Pressable, Image, Animated, Easing } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { MomentumBadge } from "@/components/momentum/MomentumBadge";
 import { HostAvatarChip } from "@/components/gig/HostAvatarChip";
 import type { HostSummary } from "@/lib/api/gigs";
-
-const SCREEN_H = Dimensions.get("window").height;
 import { Gig, GigCategory } from "@/types/database";
 import { T, CategoryColors } from "@/constants/colors";
 import { GigCategories } from "@/constants/config";
+import { rf, rw } from "@/constants/responsive";
 
 export type JobCardVariant = "explore" | "space" | "event";
 
@@ -116,17 +115,25 @@ function computeTimeToStart(eventDate: string, shiftStart: string | null): strin
 /**
  * FallbackHero — typography-first hero shown when a gig has no compositor
  * cover image. Mirrors the compositor's layout (gradient background + text
- * zone at bottom) so the overlay stack (host chip, momentum, spots, time
- * pill) lands in the same places on both branches.
+ * zone at bottom) so the overlay stack (momentum, spots, time pill) lands
+ * in the same places on both branches.
+ *
+ * The host chip lives INSIDE the text zone (above the category chip) rather
+ * than as a bottom-left absolute overlay — otherwise it collides with the
+ * venue text (fixed 2026-08-07, mirrors the 2026-08-06 fix on the cover
+ * branch that removed the chip because the compositor already bakes the
+ * host name in).
  */
 function FallbackHero({
   gig,
   categoryColor,
   categoryLabel,
+  host,
 }: {
   gig: Gig;
   categoryColor: string;
   categoryLabel: string;
+  host?: HostSummary;
 }) {
   return (
     <View style={styles.fallbackHero}>
@@ -141,8 +148,14 @@ function FallbackHero({
         {categoryLabel.toUpperCase()}
       </Text>
 
-      {/* Bottom text zone — mirrors compositor's baked layout (chip → title → pay → venue) */}
+      {/* Bottom text zone — mirrors compositor's baked layout
+          (host → chip → title → pay → venue) */}
       <View style={styles.fallbackTextZone}>
+        {host && (
+          <View style={styles.fallbackHostRow}>
+            <HostAvatarChip host={host} />
+          </View>
+        )}
         <View style={[styles.fallbackChip, { borderColor: categoryColor, backgroundColor: categoryColor + "22" }]}>
           <Text style={[styles.fallbackChipText, { color: categoryColor }]}>{categoryLabel}</Text>
         </View>
@@ -212,6 +225,7 @@ export const JobCard = memo(function JobCard({ gig, variant, applicationCount, p
           gig={gig}
           categoryColor={categoryColor}
           categoryLabel={getCategoryLabel(gig.category)}
+          host={host}
         />
       )}
 
@@ -237,143 +251,75 @@ export const JobCard = memo(function JobCard({ gig, variant, applicationCount, p
           <TimeToStartPill eventDate={gig.event_date} shiftStart={gig.shift_start_time} />
         </View>
       )}
-
-      {/* Bottom-left floating: host avatar chip. ONLY on the fallback branch —
-          the compositor bakes host_name into the cover PNG's bottom text zone,
-          so overlaying a chip there duplicates content and clips the baked
-          text (2026-08-06 fix). */}
-      {host && !gig.cover_image_url && (
-        <View style={styles.coverHostChipWrap}>
-          <HostAvatarChip host={host} />
-        </View>
-      )}
+      {/* Host chip: baked into cover on the photo branch; embedded inside
+          FallbackHero's text zone on the fallback branch. Either way it's
+          not an absolute overlay anymore — was colliding with venue text. */}
     </View>
   ) : (
-    <View
-      style={[styles.card, styles.cardCompact]}
-      pointerEvents="auto"
-    >
-
-      {/* ── Compact variant header row ── */}
-      {!isExplore && (
-        <View style={styles.headerRow}>
-          <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
-            <Text style={styles.categoryText}>{getCategoryLabel(gig.category)}</Text>
-          </View>
-          {gig.momentum_boost > 0 && (
-            <View style={styles.boostBadge}>
-              <Feather name="zap" size={11} color={T.momentum} />
-              <Text style={styles.boostText}>Boosted</Text>
-            </View>
-          )}
-          {/* marginLeft: "auto" pushes this to the row's far end without
-              disturbing the badges' own layout — stays in-flow, no absolute
-              positioning, so it can't overlap the title text below. */}
-          {gig.cover_image_square_url && (
-            <Image source={{ uri: gig.cover_image_square_url }} style={styles.thumbnail} />
-          )}
+    <View style={[styles.card, styles.cardCompact]} pointerEvents="auto">
+      {/* Header row */}
+      <View style={styles.headerRow}>
+        <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+          <Text style={styles.categoryText}>{getCategoryLabel(gig.category)}</Text>
         </View>
-      )}
+        {gig.momentum_boost > 0 && (
+          <View style={styles.boostBadge}>
+            <Feather name="zap" size={11} color={T.momentum} />
+            <Text style={styles.boostText}>Boosted</Text>
+          </View>
+        )}
+        {gig.cover_image_square_url && (
+          <Image source={{ uri: gig.cover_image_square_url }} style={styles.thumbnail} />
+        )}
+      </View>
 
-      {/* ── Body content ── */}
-      <View style={isExplore ? styles.body : undefined}>
-        {/* Title */}
-        <Text style={[styles.title, isExplore && styles.titleExplore]} numberOfLines={isExplore ? 3 : 2}>
-          {gig.title}
-        </Text>
+      {/* Body */}
+      <Text style={styles.title} numberOfLines={2}>{gig.title}</Text>
+      {gig.company_name ? (
+        <Text style={styles.company} numberOfLines={1}>{gig.company_name}</Text>
+      ) : null}
 
-        {/* Company */}
-        {gig.company_name ? (
-          <Text style={[styles.company, isExplore && styles.companyExplore]} numberOfLines={1}>
-            {gig.company_name}
-          </Text>
-        ) : null}
+      <View style={styles.payRow}>
+        <Text style={styles.payAmount}>{formatPay(gig.pay_amount, gig.pay_type)}</Text>
+      </View>
 
-        {/* Description (explore only) */}
-        {isExplore && gig.description ? (
-          <Text style={styles.description} numberOfLines={4}>{gig.description}</Text>
-        ) : null}
-
-        {/* Pay */}
-        <View style={[styles.payRow, isExplore && styles.payRowExplore]}>
-          <Text style={[styles.payAmount, isExplore && styles.payAmountExplore]}>
-            {formatPay(gig.pay_amount, gig.pay_type)}
+      <View style={styles.details}>
+        <View style={styles.detailItem}>
+          <Feather name="calendar" size={13} color={T.textMuted} />
+          <Text style={styles.detailText}>
+            {formatDate(gig.event_date)}
+            {gig.is_multi_day && gig.event_end_date ? ` – ${formatDate(gig.event_end_date)}` : ""}
           </Text>
         </View>
+        <View style={styles.detailItem}>
+          <Feather name="clock" size={13} color={T.textMuted} />
+          <Text style={styles.detailText}>
+            {formatTime(gig.shift_start_time)} – {formatTime(gig.shift_end_time)}
+            {gig.report_time ? ` · Report ${formatTime(gig.report_time)}` : ""}
+          </Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Feather name="map-pin" size={13} color={T.textMuted} />
+          <Text style={styles.detailText} numberOfLines={1}>
+            {gig.venue_name}, {gig.city}
+          </Text>
+        </View>
+      </View>
 
-        {/* Details grid */}
-        <View style={[styles.details, isExplore && styles.detailsExplore]}>
-          <View style={[styles.detailItem, isExplore && styles.detailItemExplore]}>
-            <Feather name="calendar" size={isExplore ? 15 : 13} color={isExplore ? T.primary : T.textMuted} />
-            <Text style={[styles.detailText, isExplore && styles.detailTextExplore]}>
-              {formatDate(gig.event_date)}
-              {gig.is_multi_day && gig.event_end_date ? ` – ${formatDate(gig.event_end_date)}` : ""}
-            </Text>
-          </View>
-          <View style={[styles.detailItem, isExplore && styles.detailItemExplore]}>
-            <Feather name="clock" size={isExplore ? 15 : 13} color={isExplore ? T.primary : T.textMuted} />
-            <Text style={[styles.detailText, isExplore && styles.detailTextExplore]}>
-              {formatTime(gig.shift_start_time)} – {formatTime(gig.shift_end_time)}
-              {gig.report_time ? ` · Report ${formatTime(gig.report_time)}` : ""}
-            </Text>
-          </View>
-          <View style={[styles.detailItem, isExplore && styles.detailItemExplore]}>
-            <Feather name="map-pin" size={isExplore ? 15 : 13} color={isExplore ? T.primary : T.textMuted} />
-            <Text style={[styles.detailText, isExplore && styles.detailTextExplore]} numberOfLines={1}>
-              {gig.venue_name}, {gig.city}
-            </Text>
-          </View>
+      <View style={styles.footer}>
+        <View style={styles.slotsChip}>
+          <Feather name="users" size={12} color={spotsLeft <= 3 ? T.tertiary : T.textMuted} />
+          <Text style={[styles.slotsText, spotsLeft <= 3 && styles.slotsUrgent]}>
+            {spotsLeft} {spotsLeft === 1 ? "spot" : "spots"} left
+          </Text>
         </View>
 
-        {/* Footer */}
-        <View style={[styles.footer, isExplore && styles.footerExplore]}>
-          <View style={[styles.slotsChip, isExplore && styles.slotsChipExplore]}>
-            <Feather name="users" size={isExplore ? 15 : 12} color={spotsLeft <= 3 ? T.tertiary : (isExplore ? T.text : T.textMuted)} />
-            <Text style={[styles.slotsText, isExplore && styles.slotsTextExplore, spotsLeft <= 3 && styles.slotsUrgent]}>
-              {spotsLeft} {spotsLeft === 1 ? "spot" : "spots"} left
+        {applicationCount !== undefined ? (
+          <View style={styles.applicantsChip}>
+            <Feather name="user-check" size={12} color={T.primary} />
+            <Text style={styles.applicantsText}>
+              {applicationCount} {applicationCount === 1 ? "applicant" : "applicants"}
             </Text>
-          </View>
-
-          {(variant === "space" || variant === "event") && applicationCount !== undefined ? (
-            <View style={styles.applicantsChip}>
-              <Feather name="user-check" size={12} color={T.primary} />
-              <Text style={styles.applicantsText}>
-                {applicationCount} {applicationCount === 1 ? "applicant" : "applicants"}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Tags + requirements (explore only) */}
-        {isExplore ? (
-          <View style={[styles.tagsRow, styles.tagsRowExplore]}>
-            {gig.languages_required.slice(0, 3).map((lang) => (
-              <View key={lang} style={styles.tag}>
-                <Text style={styles.tagText}>{lang}</Text>
-              </View>
-            ))}
-            {gig.gender_preference !== "any" ? (
-              <View style={[styles.tag, styles.tagGender]}>
-                <Text style={[styles.tagText, styles.tagGenderText]}>{gig.gender_preference} only</Text>
-              </View>
-            ) : null}
-            {gig.dress_code ? (
-              <View style={styles.tagReq}>
-                <Feather name="scissors" size={10} color={T.textMuted} />
-                <Text style={styles.tagReqText}>{gig.dress_code}</Text>
-              </View>
-            ) : null}
-            {gig.experience_required ? (
-              <View style={styles.tagReq}>
-                <Feather name="award" size={10} color={T.textMuted} />
-                <Text style={styles.tagReqText}>Experience required</Text>
-              </View>
-            ) : null}
-            {gig.requirements_note ? (
-              <View style={[styles.tagReq, styles.tagReqNote]}>
-                <Text style={styles.tagReqText} numberOfLines={2}>{gig.requirements_note}</Text>
-              </View>
-            ) : null}
           </View>
         ) : null}
       </View>
@@ -391,28 +337,19 @@ export const JobCard = memo(function JobCard({ gig, variant, applicationCount, p
 const styles = StyleSheet.create({
   card: {
     backgroundColor: T.surface,
-    borderRadius: 20,
+    borderRadius: rw(20),
     borderWidth: 1,
     borderColor: T.border,
     overflow: "hidden",
   },
-  cardExplore: {
-    borderRadius: 24,
-    minHeight: SCREEN_H * 0.65,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 12,
-  },
   cardCompact: {
-    padding: 16,
-    borderRadius: 14,
+    padding: rw(16),
+    borderRadius: rw(14),
   },
 
   // ── Explore variant, cover-art card (gig.cover_image_url present) ──
   cardExploreCover: {
-    borderRadius: 24,
+    borderRadius: rw(24),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
@@ -429,48 +366,43 @@ const styles = StyleSheet.create({
   },
   coverBadgeStack: {
     position: "absolute",
-    top: 16,
-    right: 16,
-    gap: 8,
+    top: rw(16),
+    right: rw(16),
+    gap: rw(8),
     alignItems: "flex-end",
   },
   coverSlotsChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    gap: rw(6),
+    paddingHorizontal: rw(10),
+    paddingVertical: rw(6),
+    borderRadius: rw(20),
   },
   coverSlotsText: {
-    fontSize: 12,
+    fontSize: rf(12),
     fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
   },
   coverTimePillWrap: {
     position: "absolute",
-    top: 16,
-    left: 16,
+    top: rw(16),
+    left: rw(16),
   },
   timeToStartPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    gap: rw(5),
+    paddingHorizontal: rw(10),
+    paddingVertical: rw(6),
+    borderRadius: rw(20),
     backgroundColor: T.primary,
   },
   timeToStartText: {
-    fontSize: 12,
+    fontSize: rf(12),
     fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     color: "#0e0e0e",
-  },
-  coverHostChipWrap: {
-    position: "absolute",
-    left: 16,
-    bottom: 16,
   },
 
   // ── Fallback hero (no cover image) ─────────────────────────────
@@ -484,11 +416,14 @@ const styles = StyleSheet.create({
   },
   fallbackWatermark: {
     position: "absolute",
-    top: 80,
-    left: -20,
-    right: -20,
+    // Percentage keeps the watermark visually centered in the upper third
+    // regardless of card size (small phones vs large). aspectRatio: 2/3 gives
+    // the parent a definite height so % values resolve correctly.
+    top: "12%",
+    left: rw(-20),
+    right: rw(-20),
     textAlign: "center",
-    fontSize: 78,
+    fontSize: rf(78),
     fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: 3,
@@ -498,269 +433,146 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
-    paddingBottom: 28,
-    gap: 8,
+    padding: rw(24),
+    paddingBottom: rw(28),
+    gap: rw(8),
+  },
+  fallbackHostRow: {
+    alignSelf: "flex-start",
+    marginBottom: rw(2),
   },
   fallbackChip: {
     alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
+    paddingHorizontal: rw(12),
+    paddingVertical: rw(5),
+    borderRadius: rw(20),
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: rw(8),
   },
   fallbackChipText: {
-    fontSize: 13,
+    fontSize: rf(13),
     fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: 0.7,
     textTransform: "uppercase",
   },
   fallbackTitle: {
-    fontSize: 34,
+    fontSize: rf(34),
     fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
     color: "#ffffff",
-    lineHeight: 38,
+    lineHeight: rf(38),
   },
   fallbackPay: {
-    fontSize: 34,
+    fontSize: rf(34),
     fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
-    marginTop: 6,
+    marginTop: rw(6),
   },
   fallbackVenue: {
-    fontSize: 17,
+    fontSize: rf(17),
     fontWeight: "500",
     fontFamily: "SpaceGrotesk_500Medium",
     color: "rgba(255,255,255,0.7)",
-    marginTop: 4,
+    marginTop: rw(4),
   },
 
-  // ── Category header (explore only) ──────────────────────────
-  categoryHeader: {
-    height: 116,
-    justifyContent: "flex-end",
-    padding: 14,
-    paddingTop: 16,
-    gap: 8,
-  },
-  categoryHeroLabel: {
-    fontSize: 22,
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
-    letterSpacing: 2,
-    opacity: 0.22,
-    alignSelf: "center",
-    marginBottom: 2,
-  },
-  categoryGradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  categoryBadgesRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    justifyContent: "center",
-  },
-  categoryPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    backgroundColor: "rgba(19,19,19,0.7)",
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  categoryDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  categoryPillText: {
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: T.text,
-    letterSpacing: 0.3,
-  },
-
-  // ── Compact variant header ───────────────────────────────────
+  // ── Compact variant styles (space/event) ────────────────────
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 10,
+    gap: rw(8),
+    marginBottom: rw(10),
   },
   thumbnail: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: rw(40),
+    height: rw(40),
+    borderRadius: rw(10),
     marginLeft: "auto",
     backgroundColor: T.surface2,
   },
   categoryBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: rw(10),
+    paddingVertical: rw(4),
+    borderRadius: rw(6),
   },
   categoryText: {
     color: "#fff",
-    fontSize: 11,
+    fontSize: rf(11),
     fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: 0.3,
   },
-
-  // ── Boost badge ─────────────────────────────────────────────
   boostBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    gap: rw(3),
+    paddingHorizontal: rw(7),
+    paddingVertical: rw(3),
     backgroundColor: T.momentumLight,
-    borderRadius: 6,
+    borderRadius: rw(6),
   },
   boostText: {
-    fontSize: 11,
+    fontSize: rf(11),
     fontWeight: "600",
     fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.momentum,
   },
-
-  // ── Body ─────────────────────────────────────────────────────
-  body: {
-    padding: 20,
-    paddingBottom: 24,
-    gap: 0,
-  },
-
-  // ── Title ────────────────────────────────────────────────────
   title: {
-    fontSize: 18,
+    fontSize: rf(18),
     fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
-    lineHeight: 24,
+    lineHeight: rf(24),
   },
-  titleExplore: {
-    fontSize: 24,
-    lineHeight: 31,
-    textAlign: "center",
-    fontFamily: "SpaceGrotesk_700Bold",
-    marginBottom: 4,
-  },
-
-  // ── Company ──────────────────────────────────────────────────
   company: {
-    fontSize: 13,
+    fontSize: rf(13),
     fontFamily: "SpaceGrotesk_400Regular",
     color: T.textSub,
-    marginTop: 2,
+    marginTop: rw(2),
   },
-  companyExplore: {
-    textAlign: "center",
-    color: T.textMuted,
-    marginBottom: 4,
-  },
-
-  // ── Description ──────────────────────────────────────────────
-  description: {
-    fontSize: 14,
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textSub,
-    lineHeight: 20,
-    marginTop: 8,
-    textAlign: "center",
-  },
-
-  // ── Pay ──────────────────────────────────────────────────────
   payRow: {
-    marginTop: 10,
-  },
-  payRowExplore: {
-    alignItems: "center",
-    marginTop: 12,
+    marginTop: rw(10),
   },
   payAmount: {
-    fontSize: 22,
+    fontSize: rf(22),
     fontWeight: "bold",
     fontFamily: "SpaceGrotesk_700Bold",
     color: T.success,
   },
-  payAmountExplore: {
-    fontSize: 30,
-    textAlign: "center",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.success,
-  },
-
-  // ── Details ──────────────────────────────────────────────────
   details: {
-    marginTop: 14,
-    gap: 8,
-  },
-  detailsExplore: {
-    gap: 10,
-    marginTop: 14,
+    marginTop: rw(14),
+    gap: rw(8),
   },
   detailItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-  },
-  detailItemExplore: {
-    justifyContent: "center",
+    gap: rw(8),
   },
   detailText: {
-    fontSize: 13,
+    fontSize: rf(13),
     fontFamily: "SpaceGrotesk_400Regular",
     color: T.textSub,
     flex: 1,
   },
-  detailTextExplore: {
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: T.text,
-    flex: 0,
-    textAlign: "center",
-  },
-
-  // ── Footer ───────────────────────────────────────────────────
   footer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 16,
-    paddingTop: 12,
+    marginTop: rw(16),
+    paddingTop: rw(12),
     borderTopWidth: 1,
     borderTopColor: T.border,
-  },
-  footerExplore: {
-    justifyContent: "center",
   },
   slotsChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-  },
-  slotsChipExplore: {
-    gap: 7,
+    gap: rw(5),
   },
   slotsText: {
-    fontSize: 13,
+    fontSize: rf(13),
     fontFamily: "SpaceGrotesk_400Regular",
     color: T.textSub,
-  },
-  slotsTextExplore: {
-    fontSize: 16,
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
   },
   slotsUrgent: {
     color: T.tertiary,
@@ -769,66 +581,12 @@ const styles = StyleSheet.create({
   applicantsChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: rw(5),
   },
   applicantsText: {
-    fontSize: 13,
+    fontSize: rf(13),
     color: T.primary,
     fontWeight: "600",
     fontFamily: "SpaceGrotesk_600SemiBold",
-  },
-
-  // ── Tags ─────────────────────────────────────────────────────
-  tagsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 14,
-  },
-  tagsRowExplore: {
-    justifyContent: "center",
-  },
-  tag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    backgroundColor: "rgba(212,255,0,0.10)",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(212,255,0,0.18)",
-  },
-  tagGender: {
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderColor: "rgba(255,255,255,0.15)",
-  },
-  tagText: {
-    fontSize: 12,
-    color: T.primary,
-    fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
-  },
-  tagGenderText: {
-    color: T.textSub,
-  },
-  tagReq: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    backgroundColor: T.surface2,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: T.border,
-  },
-  tagReqNote: {
-    flex: 1,
-    flexShrink: 1,
-  },
-  tagReqText: {
-    fontSize: 12,
-    color: T.textSub,
-    fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
-    textTransform: "capitalize",
   },
 });
