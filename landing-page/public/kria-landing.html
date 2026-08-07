@@ -25,6 +25,9 @@
     @keyframes krise { 0% { transform: translateY(6vh); opacity: 0; } 12% { opacity: 0.7; } 80% { opacity: 0.4; } 100% { transform: translateY(-94vh); opacity: 0; } }
     @keyframes kglow { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
     @keyframes kline { 0% { transform: scaleY(0); transform-origin: top; } 45% { transform: scaleY(1); transform-origin: top; } 55% { transform: scaleY(1); transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+    @keyframes kdot { 0%, 100% { transform: scale(1); opacity: 0.55; } 50% { transform: scale(1.55); opacity: 1; } }
+    @keyframes klive { 0%, 100% { box-shadow: 0 0 0 0 rgba(212,255,0,0.55), 0 0 22px 4px rgba(212,255,0,0.35); } 50% { box-shadow: 0 0 0 8px rgba(212,255,0,0), 0 0 30px 6px rgba(212,255,0,0.45); } }
+    @keyframes kcount { 0% { opacity: 0.4; } 100% { opacity: 1; } }
     input, select, button { font-family: inherit; }
     @media (max-width: 859px) {
       /* Copy blocks sit below the phone — compact text to fit in the lower portion */
@@ -45,6 +48,12 @@
       .kria-waitlist-row { flex-direction: column !important; align-items: stretch !important; }
       .kria-waitlist-row select,
       .kria-waitlist-row input { min-width: unset !important; width: 100% !important; }
+      /* Bottom-of-page grids collapse to a single column on mobile */
+      .kria-map-grid,
+      .kria-waitlist-grid,
+      .kria-foot-top { grid-template-columns: 1fr !important; gap: 40px !important; }
+      .kria-foot-links { grid-template-columns: 1fr 1fr !important; }
+      .kria-foot-bottom { justify-content: center !important; text-align: center !important; }
     }
   </style>
 </helmet>
@@ -64,8 +73,7 @@
   <div id="kria-story" style="height:700vh; position:relative">
     <div style="position:sticky; top:0; height:100vh; overflow:hidden">
 
-      <!-- city grid backdrop -->
-      <div style="position:absolute; inset:0; z-index:1; background-image:linear-gradient(rgba(244,239,227,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(244,239,227,0.045) 1px, transparent 1px); background-size:54px 54px"></div>
+      <!-- soft radial vignette (city grid backdrop removed 2026-08-07) -->
       <div style="position:absolute; inset:0; z-index:1; background:radial-gradient(ellipse 90% 75% at 55% 45%, transparent 40%, #0B0F0A 92%)"></div>
 
       <!-- chapter-reactive glows -->
@@ -483,79 +491,322 @@
     </div>
   </div>
 
-  <!-- ======================= CITY TICKER ======================= -->
-  <section data-screen-label="Live city strip" style="border-top:1px solid rgba(244,239,227,0.08); border-bottom:1px solid rgba(244,239,227,0.08); background:#0E120D; padding:26px 0; overflow:hidden; position:relative">
-    <div style="display:flex; width:max-content; animation:kticker 30s linear infinite">
-      <div style="display:flex; align-items:center; gap:28px; padding-right:28px">
-        <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:0.14em; color:rgba(244,239,227,0.45)">NOW LIVE IN</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Bengaluru</span><span style="color:#D4FF00; font-size:18px">✦</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Mumbai</span><span style="color:#D4FF00; font-size:18px">✦</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Hyderabad</span><span style="color:#D4FF00; font-size:18px">✦</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Chennai</span><span style="color:#D4FF00; font-size:18px">✦</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Pune</span><span style="color:#D4FF00; font-size:18px">✦</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#D4FF00; text-shadow:0 0 30px rgba(212,255,0,0.4)">your city next →</span><span style="color:#D4FF00; font-size:18px">✦</span>
+  <!-- ======================= FIELD MAP (was: city ticker) ======================= -->
+  <section data-screen-label="Field map" style="border-top:1px solid rgba(244,239,227,0.08); background:#0E120D; padding:clamp(70px,10vw,120px) 24px; overflow:hidden; position:relative">
+    <!-- soft warm wash to separate from the black scroll story above -->
+    <div style="position:absolute; left:50%; top:0; transform:translateX(-50%); width:1400px; height:400px; background:radial-gradient(closest-side, rgba(255,200,61,0.05), transparent 75%); pointer-events:none"></div>
+
+    <div style="position:relative; max-width:1180px; margin:0 auto">
+      <!-- kicker -->
+      <div style="display:inline-flex; align-items:center; gap:9px; font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:0.14em; color:rgba(244,239,227,0.5); text-transform:uppercase; margin-bottom:22px">
+        <span style="width:7px; height:7px; border-radius:99px; background:#D4FF00; box-shadow:0 0 10px rgba(212,255,0,0.8); animation:kflick 3.4s ease-in-out infinite"></span>
+        Field report · Q3 2026
       </div>
-      <div style="display:flex; align-items:center; gap:28px; padding-right:28px">
-        <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:0.14em; color:rgba(244,239,227,0.45)">NOW LIVE IN</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Bengaluru</span><span style="color:#D4FF00; font-size:18px">✦</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Mumbai</span><span style="color:#D4FF00; font-size:18px">✦</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Hyderabad</span><span style="color:#D4FF00; font-size:18px">✦</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Chennai</span><span style="color:#D4FF00; font-size:18px">✦</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3">Pune</span><span style="color:#D4FF00; font-size:18px">✦</span>
-        <span style="font-size:26px; font-weight:800; letter-spacing:-0.02em; color:#D4FF00; text-shadow:0 0 30px rgba(212,255,0,0.4)">your city next →</span><span style="color:#D4FF00; font-size:18px">✦</span>
+
+      <!-- editorial headline -->
+      <h2 style="margin:0 0 14px; font-size:clamp(38px,6.4vw,84px); font-weight:900; letter-spacing:-0.035em; line-height:1.02; color:#F4EFE3; max-width:900px">Five cities live.<br><em style="font-style:normal; color:#D4FF00; text-shadow:0 0 44px rgba(212,255,0,0.45)">Six more</em> queued up.</h2>
+      <p style="margin:0 0 clamp(48px,5vw,72px); font-size:17px; line-height:1.6; color:rgba(244,239,227,0.6); max-width:540px">kria goes city by city, on foot. Below is where we&rsquo;re running today &mdash; and the next round of cities we&rsquo;re opening in.</p>
+
+      <!-- two-column: map (left) + city columns (right) -->
+      <div class="kria-map-grid" style="display:grid; grid-template-columns:1.05fr 0.95fr; gap:clamp(40px,6vw,80px); align-items:center">
+
+        <!-- ============ MAP ============ -->
+        <div style="position:relative; width:100%; max-width:460px; margin:0 auto">
+          <svg viewBox="0 0 320 400" width="100%" style="display:block; overflow:visible" xmlns="http://www.w3.org/2000/svg">
+            <!-- soft glow behind the country outline -->
+            <defs>
+              <radialGradient id="kria-map-glow" cx="50%" cy="50%" r="55%">
+                <stop offset="0%" stop-color="rgba(212,255,0,0.16)"/>
+                <stop offset="60%" stop-color="rgba(212,255,0,0.03)"/>
+                <stop offset="100%" stop-color="rgba(212,255,0,0)"/>
+              </radialGradient>
+              <filter id="kria-dot-glow" x="-100%" y="-100%" width="300%" height="300%">
+                <feGaussianBlur stdDeviation="4"/>
+              </filter>
+            </defs>
+            <ellipse cx="160" cy="215" rx="180" ry="200" fill="url(#kria-map-glow)"/>
+
+            <!-- Stylized India silhouette (approx.) -->
+            <path d="M 140 30
+                     C 165 26, 200 40, 218 62
+                     C 236 80, 244 108, 240 132
+                     C 236 158, 250 190, 262 224
+                     C 268 250, 258 282, 244 308
+                     C 226 340, 210 362, 195 380
+                     C 180 388, 168 386, 158 372
+                     C 140 348, 118 342, 100 330
+                     C 82 316, 72 292, 68 260
+                     C 62 228, 60 196, 66 164
+                     C 70 130, 78 96, 96 70
+                     C 112 48, 124 32, 140 30 Z"
+                  fill="rgba(244,239,227,0.02)"
+                  stroke="rgba(244,239,227,0.18)"
+                  stroke-width="1"
+                  stroke-dasharray="3 4"/>
+
+            <!-- ─── LIVE cities (lime, pulsing) ─── -->
+            <!-- Mumbai (west coast) -->
+            <g transform="translate(96 218)">
+              <circle r="10" fill="rgba(212,255,0,0.14)"><animate attributeName="r" values="8;16;8" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.6;0;0.6" dur="2.4s" repeatCount="indefinite"/></circle>
+              <circle r="4.5" fill="#D4FF00"/>
+              <text x="-14" y="6" text-anchor="end" fill="#F4EFE3" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700">Mumbai</text>
+            </g>
+            <!-- Pune -->
+            <g transform="translate(120 244)">
+              <circle r="10" fill="rgba(212,255,0,0.14)"><animate attributeName="r" values="8;16;8" dur="2.6s" repeatCount="indefinite" begin="0.4s"/><animate attributeName="opacity" values="0.6;0;0.6" dur="2.6s" repeatCount="indefinite" begin="0.4s"/></circle>
+              <circle r="4.5" fill="#D4FF00"/>
+              <text x="-14" y="4" text-anchor="end" fill="#F4EFE3" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700">Pune</text>
+            </g>
+            <!-- Hyderabad (central) -->
+            <g transform="translate(172 270)">
+              <circle r="10" fill="rgba(212,255,0,0.14)"><animate attributeName="r" values="8;16;8" dur="2.2s" repeatCount="indefinite" begin="0.8s"/><animate attributeName="opacity" values="0.6;0;0.6" dur="2.2s" repeatCount="indefinite" begin="0.8s"/></circle>
+              <circle r="4.5" fill="#D4FF00"/>
+              <text x="14" y="4" fill="#F4EFE3" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700">Hyderabad</text>
+            </g>
+            <!-- Bengaluru (south) -->
+            <g transform="translate(160 315)">
+              <circle r="12" fill="rgba(212,255,0,0.18)"><animate attributeName="r" values="10;20;10" dur="2.8s" repeatCount="indefinite" begin="1.2s"/><animate attributeName="opacity" values="0.7;0;0.7" dur="2.8s" repeatCount="indefinite" begin="1.2s"/></circle>
+              <circle r="5.5" fill="#D4FF00"/>
+              <text x="-14" y="5" text-anchor="end" fill="#F4EFE3" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700">Bengaluru</text>
+            </g>
+            <!-- Chennai (east coast) -->
+            <g transform="translate(206 320)">
+              <circle r="10" fill="rgba(212,255,0,0.14)"><animate attributeName="r" values="8;16;8" dur="2.5s" repeatCount="indefinite" begin="0.6s"/><animate attributeName="opacity" values="0.6;0;0.6" dur="2.5s" repeatCount="indefinite" begin="0.6s"/></circle>
+              <circle r="4.5" fill="#D4FF00"/>
+              <text x="14" y="4" fill="#F4EFE3" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700">Chennai</text>
+            </g>
+
+            <!-- ─── COMING cities (dim, outlined) ─── -->
+            <!-- Delhi NCR (north) -->
+            <g transform="translate(155 84)" opacity="0.7">
+              <circle r="4" fill="none" stroke="rgba(244,239,227,0.55)" stroke-width="1.2"><animate attributeName="opacity" values="0.4;1;0.4" dur="3.2s" repeatCount="indefinite"/></circle>
+              <text x="0" y="-10" text-anchor="middle" fill="rgba(244,239,227,0.7)" font-family="ui-monospace,Menlo,monospace" font-size="10" font-style="italic">Delhi NCR</text>
+            </g>
+            <!-- Jaipur -->
+            <g transform="translate(128 118)" opacity="0.6">
+              <circle r="3.5" fill="none" stroke="rgba(244,239,227,0.45)" stroke-width="1.2"><animate attributeName="opacity" values="0.35;0.9;0.35" dur="3.6s" repeatCount="indefinite" begin="0.5s"/></circle>
+              <text x="-8" y="4" text-anchor="end" fill="rgba(244,239,227,0.55)" font-family="ui-monospace,Menlo,monospace" font-size="10" font-style="italic">Jaipur</text>
+            </g>
+            <!-- Ahmedabad -->
+            <g transform="translate(90 168)" opacity="0.6">
+              <circle r="3.5" fill="none" stroke="rgba(244,239,227,0.45)" stroke-width="1.2"><animate attributeName="opacity" values="0.35;0.9;0.35" dur="3.4s" repeatCount="indefinite" begin="1s"/></circle>
+              <text x="-8" y="4" text-anchor="end" fill="rgba(244,239,227,0.55)" font-family="ui-monospace,Menlo,monospace" font-size="10" font-style="italic">Ahmedabad</text>
+            </g>
+            <!-- Indore -->
+            <g transform="translate(148 186)" opacity="0.6">
+              <circle r="3.5" fill="none" stroke="rgba(244,239,227,0.45)" stroke-width="1.2"><animate attributeName="opacity" values="0.35;0.9;0.35" dur="3.8s" repeatCount="indefinite" begin="1.4s"/></circle>
+              <text x="10" y="4" fill="rgba(244,239,227,0.55)" font-family="ui-monospace,Menlo,monospace" font-size="10" font-style="italic">Indore</text>
+            </g>
+            <!-- Kolkata (east) -->
+            <g transform="translate(232 210)" opacity="0.6">
+              <circle r="3.5" fill="none" stroke="rgba(244,239,227,0.45)" stroke-width="1.2"><animate attributeName="opacity" values="0.35;0.9;0.35" dur="3.5s" repeatCount="indefinite" begin="0.2s"/></circle>
+              <text x="10" y="4" fill="rgba(244,239,227,0.55)" font-family="ui-monospace,Menlo,monospace" font-size="10" font-style="italic">Kolkata</text>
+            </g>
+            <!-- Kochi (south) -->
+            <g transform="translate(150 368)" opacity="0.6">
+              <circle r="3.5" fill="none" stroke="rgba(244,239,227,0.45)" stroke-width="1.2"><animate attributeName="opacity" values="0.35;0.9;0.35" dur="3.3s" repeatCount="indefinite" begin="1.8s"/></circle>
+              <text x="0" y="14" text-anchor="middle" fill="rgba(244,239,227,0.55)" font-family="ui-monospace,Menlo,monospace" font-size="10" font-style="italic">Kochi</text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- ============ CITY COLUMNS ============ -->
+        <div style="display:flex; flex-direction:column; gap:38px">
+          <!-- LIVE NOW -->
+          <div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px">
+              <span style="width:6px; height:6px; border-radius:99px; background:#D4FF00; box-shadow:0 0 10px rgba(212,255,0,0.7)"></span>
+              <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:0.16em; color:rgba(244,239,227,0.5); text-transform:uppercase">Live now</span>
+            </div>
+            <div style="display:flex; flex-direction:column">
+              <div style="display:flex; justify-content:space-between; align-items:baseline; padding:11px 0; border-bottom:1px solid rgba(244,239,227,0.07)">
+                <span style="font-size:17px; font-weight:700; color:#F4EFE3; letter-spacing:-0.01em">Bengaluru</span>
+                <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.5)">4,120 runners</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; padding:11px 0; border-bottom:1px solid rgba(244,239,227,0.07)">
+                <span style="font-size:17px; font-weight:700; color:#F4EFE3; letter-spacing:-0.01em">Mumbai</span>
+                <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.5)">3,280 runners</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; padding:11px 0; border-bottom:1px solid rgba(244,239,227,0.07)">
+                <span style="font-size:17px; font-weight:700; color:#F4EFE3; letter-spacing:-0.01em">Hyderabad</span>
+                <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.5)">1,940 runners</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; padding:11px 0; border-bottom:1px solid rgba(244,239,227,0.07)">
+                <span style="font-size:17px; font-weight:700; color:#F4EFE3; letter-spacing:-0.01em">Chennai</span>
+                <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.5)">1,720 runners</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; padding:11px 0">
+                <span style="font-size:17px; font-weight:700; color:#F4EFE3; letter-spacing:-0.01em">Pune</span>
+                <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.5)">1,358 runners</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- OPENING NEXT -->
+          <div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px">
+              <span style="width:6px; height:6px; border-radius:99px; border:1px solid rgba(244,239,227,0.35); background:transparent"></span>
+              <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:0.16em; color:rgba(244,239,227,0.5); text-transform:uppercase">Opening next</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px">
+              <span style="padding:6px 12px; border-radius:99px; border:1px solid rgba(244,239,227,0.14); font-size:13px; color:rgba(244,239,227,0.75); font-style:italic">Delhi NCR</span>
+              <span style="padding:6px 12px; border-radius:99px; border:1px solid rgba(244,239,227,0.14); font-size:13px; color:rgba(244,239,227,0.75); font-style:italic">Kolkata</span>
+              <span style="padding:6px 12px; border-radius:99px; border:1px solid rgba(244,239,227,0.14); font-size:13px; color:rgba(244,239,227,0.75); font-style:italic">Ahmedabad</span>
+              <span style="padding:6px 12px; border-radius:99px; border:1px solid rgba(244,239,227,0.14); font-size:13px; color:rgba(244,239,227,0.75); font-style:italic">Jaipur</span>
+              <span style="padding:6px 12px; border-radius:99px; border:1px solid rgba(244,239,227,0.14); font-size:13px; color:rgba(244,239,227,0.75); font-style:italic">Kochi</span>
+              <span style="padding:6px 12px; border-radius:99px; border:1px solid rgba(244,239,227,0.14); font-size:13px; color:rgba(244,239,227,0.75); font-style:italic">Indore</span>
+            </div>
+            <p style="margin:18px 0 0; font-size:13px; line-height:1.6; color:rgba(244,239,227,0.5); max-width:380px">Not seeing yours? Drop your city below &mdash; we route each week&rsquo;s expansion by demand.</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ======================= WAITLIST ======================= -->
-  <section data-screen-label="Waitlist" style="position:relative; padding:140px 24px 150px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:22px; overflow:hidden">
-    <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:900px; height:600px; background:radial-gradient(closest-side, rgba(255,200,61,0.07), transparent 70%); pointer-events:none"></div>
-    <h2 style="margin:0; font-size:clamp(34px, 6vw, 76px); font-weight:900; letter-spacing:-0.035em; color:#F4EFE3">Your city next?</h2>
-    <p style="margin:0; font-size:17px; line-height:1.6; color:rgba(244,239,227,0.6); max-width:440px">Tell us where you are. We&rsquo;ll let you know the moment kria lands there.</p>
+  <!-- ======================= WAITLIST (two-column: manifesto + form / live stats) ======================= -->
+  <section data-screen-label="Waitlist" style="position:relative; padding:clamp(90px,10vw,140px) 24px clamp(110px,12vw,160px); border-top:1px solid rgba(244,239,227,0.07); overflow:hidden">
+    <!-- warm center wash -->
+    <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:1100px; height:600px; background:radial-gradient(closest-side, rgba(255,200,61,0.06), transparent 70%); pointer-events:none"></div>
 
-    <sc-if value="{{ d.notSent }}" hint-placeholder-val="{{ true }}">
-      <div class="kria-waitlist-row" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:10px; width:100%; max-width:620px">
-        <select value="{{ d.city }}" onChange="{{ d.onCity }}" style="padding:15px 18px; border-radius:13px; background:#111510; border:1px solid rgba(244,239,227,0.14); color:#F4EFE3; font-size:14px; outline:none; min-width:160px">
-          <option value="Delhi NCR">Delhi NCR</option>
-          <option value="Kolkata">Kolkata</option>
-          <option value="Ahmedabad">Ahmedabad</option>
-          <option value="Jaipur">Jaipur</option>
-          <option value="Kochi">Kochi</option>
-          <option value="Indore">Indore</option>
-          <option value="Somewhere else">Somewhere else</option>
-        </select>
-        <input type="email" placeholder="your@email.com" value="{{ d.email }}" onChange="{{ d.onEmail }}" style="flex:1; min-width:220px; padding:15px 18px; border-radius:13px; background:#111510; border:1px solid rgba(244,239,227,0.14); color:#F4EFE3; font-size:14px; outline:none" style-focus="border:1px solid rgba(212,255,0,0.5)">
-        <button onClick="{{ d.onSubmit }}" style="padding:15px 28px; border-radius:13px; border:none; background:#D4FF00; color:#0B0F0A; font-size:14px; font-weight:800; cursor:pointer; box-shadow:0 0 30px rgba(212,255,0,0.3)" style-hover="transform:translateY(-2px); box-shadow:0 0 48px rgba(212,255,0,0.5)">Notify me</button>
-      </div>
-      <sc-if value="{{ d.err }}" hint-placeholder-val="{{ false }}">
-        <span style="font-size:12px; color:#ff7351">Enter a valid email address.</span>
-      </sc-if>
-    </sc-if>
-    <sc-if value="{{ d.sent }}" hint-placeholder-val="{{ false }}">
-      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-top:10px">
-        <span style="width:54px; height:54px; border-radius:99px; background:#D4FF00; color:#0B0F0A; font-size:24px; font-weight:900; display:flex; align-items:center; justify-content:center; box-shadow:0 0 50px rgba(212,255,0,0.5)">✓</span>
-        <span style="font-size:20px; font-weight:800; color:#F4EFE3">You&rsquo;re on the list.</span>
-        <span style="font-size:13px; color:rgba(244,239,227,0.55)">We&rsquo;ll come find you, {{ d.city }}.</span>
-      </div>
-    </sc-if>
+    <div class="kria-waitlist-grid" style="position:relative; max-width:1180px; margin:0 auto; display:grid; grid-template-columns:1.1fr 0.9fr; gap:clamp(48px,6vw,90px); align-items:center">
 
-    <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.4); margin-top:8px">runners across India are already waiting</span>
+      <!-- LEFT: manifesto + form -->
+      <div style="display:flex; flex-direction:column; gap:26px">
+        <div style="display:inline-flex; align-items:center; gap:9px; font-family:ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:0.14em; color:rgba(244,239,227,0.5); text-transform:uppercase">
+          <span style="width:7px; height:7px; border-radius:99px; background:#FFC83D; box-shadow:0 0 10px rgba(255,200,61,0.7)"></span>
+          Stay in the loop
+        </div>
+
+        <h2 style="margin:0; font-size:clamp(40px,7vw,88px); font-weight:900; letter-spacing:-0.04em; line-height:0.98; color:#F4EFE3">we show up<br><em style="font-style:italic; color:#D4FF00; text-shadow:0 0 44px rgba(212,255,0,0.4)">before you do.</em></h2>
+
+        <p style="margin:0; font-size:17px; line-height:1.65; color:rgba(244,239,227,0.66); max-width:480px">Tell us where you are. When kria lands there we&rsquo;ll route the first ten gigs to your inbox before the app is public.</p>
+
+        <sc-if value="{{ d.notSent }}" hint-placeholder-val="{{ true }}">
+          <div class="kria-waitlist-row" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; width:100%; max-width:560px">
+            <select value="{{ d.city }}" onChange="{{ d.onCity }}" style="padding:15px 18px; border-radius:13px; background:#111510; border:1px solid rgba(244,239,227,0.14); color:#F4EFE3; font-size:14px; outline:none; min-width:160px">
+              <option value="Delhi NCR">Delhi NCR</option>
+              <option value="Kolkata">Kolkata</option>
+              <option value="Ahmedabad">Ahmedabad</option>
+              <option value="Jaipur">Jaipur</option>
+              <option value="Kochi">Kochi</option>
+              <option value="Indore">Indore</option>
+              <option value="Somewhere else">Somewhere else</option>
+            </select>
+            <input type="email" placeholder="your@email.com" value="{{ d.email }}" onChange="{{ d.onEmail }}" style="flex:1; min-width:220px; padding:15px 18px; border-radius:13px; background:#111510; border:1px solid rgba(244,239,227,0.14); color:#F4EFE3; font-size:14px; outline:none" style-focus="border:1px solid rgba(212,255,0,0.5)">
+            <button onClick="{{ d.onSubmit }}" style="padding:15px 28px; border-radius:13px; border:none; background:#D4FF00; color:#0B0F0A; font-size:14px; font-weight:800; cursor:pointer; box-shadow:0 0 30px rgba(212,255,0,0.3)" style-hover="transform:translateY(-2px); box-shadow:0 0 48px rgba(212,255,0,0.5)">Notify me</button>
+          </div>
+          <sc-if value="{{ d.err }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:12px; color:#ff7351">Enter a valid email address.</span>
+          </sc-if>
+        </sc-if>
+        <sc-if value="{{ d.sent }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; align-items:flex-start; gap:10px; margin-top:6px">
+            <div style="display:inline-flex; align-items:center; gap:12px; padding:14px 20px; border-radius:14px; background:rgba(212,255,0,0.09); border:1px solid rgba(212,255,0,0.3)">
+              <span style="width:32px; height:32px; border-radius:99px; background:#D4FF00; color:#0B0F0A; font-size:16px; font-weight:900; display:flex; align-items:center; justify-content:center">✓</span>
+              <div style="display:flex; flex-direction:column; gap:2px">
+                <span style="font-size:15px; font-weight:800; color:#F4EFE3">You&rsquo;re on the list.</span>
+                <span style="font-size:12px; color:rgba(244,239,227,0.6)">We&rsquo;ll come find you, {{ d.city }}.</span>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.42); margin-top:4px">no spam · no pitch decks · one email when we&rsquo;re live</span>
+      </div>
+
+      <!-- RIGHT: live stats card (editorial "on the wire") -->
+      <aside style="position:relative">
+        <div style="position:absolute; top:-14px; left:20px; padding:5px 12px; border-radius:6px; background:#D4FF00; color:#0B0F0A; font-family:ui-monospace,Menlo,monospace; font-size:10px; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; box-shadow:0 0 20px rgba(212,255,0,0.35); z-index:2">On the wire</div>
+
+        <div style="border:1px solid rgba(244,239,227,0.14); border-radius:20px; padding:36px 28px 28px; background:linear-gradient(180deg, #14180F, #0F130D); box-shadow:0 24px 60px rgba(0,0,0,0.5)">
+          <!-- stat 1 -->
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding-bottom:20px; border-bottom:1px solid rgba(244,239,227,0.08)">
+            <div>
+              <div style="font-family:'Space Grotesk',Inter,sans-serif; font-size:44px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3; line-height:1">12,418</div>
+              <div style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.5); margin-top:6px; letter-spacing:0.04em">runners already on the platform</div>
+            </div>
+            <span style="font-family:ui-monospace,Menlo,monospace; font-size:10px; color:#D4FF00; letter-spacing:0.1em">LIVE</span>
+          </div>
+          <!-- stat 2 -->
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding:20px 0; border-bottom:1px solid rgba(244,239,227,0.08)">
+            <div>
+              <div style="font-family:'Space Grotesk',Inter,sans-serif; font-size:34px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3; line-height:1">6 cities</div>
+              <div style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.5); margin-top:6px; letter-spacing:0.04em">queued for the next expansion</div>
+            </div>
+            <span style="font-family:ui-monospace,Menlo,monospace; font-size:10px; color:rgba(255,200,61,0.9); letter-spacing:0.1em">SOON</span>
+          </div>
+          <!-- stat 3 -->
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding:20px 0; border-bottom:1px solid rgba(244,239,227,0.08)">
+            <div>
+              <div style="font-family:'Space Grotesk',Inter,sans-serif; font-size:34px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3; line-height:1">₹2.8 Cr</div>
+              <div style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.5); margin-top:6px; letter-spacing:0.04em">wages settled in the last 30 days</div>
+            </div>
+            <span style="font-family:ui-monospace,Menlo,monospace; font-size:10px; color:rgba(244,239,227,0.4); letter-spacing:0.1em">30D</span>
+          </div>
+          <!-- stat 4 -->
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding-top:20px">
+            <div>
+              <div style="font-family:'Space Grotesk',Inter,sans-serif; font-size:34px; font-weight:800; letter-spacing:-0.02em; color:#F4EFE3; line-height:1">8 min 12 sec</div>
+              <div style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.5); margin-top:6px; letter-spacing:0.04em">median time from apply to accept</div>
+            </div>
+            <span style="font-family:ui-monospace,Menlo,monospace; font-size:10px; color:rgba(244,239,227,0.4); letter-spacing:0.1em">7D</span>
+          </div>
+        </div>
+
+        <!-- signature under the card -->
+        <div style="display:flex; align-items:center; gap:10px; margin-top:16px; padding-left:6px">
+          <span style="width:24px; height:1px; background:rgba(244,239,227,0.3)"></span>
+          <span style="font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:0.14em; color:rgba(244,239,227,0.4); text-transform:uppercase">filed from Bengaluru</span>
+        </div>
+      </aside>
+    </div>
   </section>
 
-  <!-- ======================= FOOTER ======================= -->
-  <footer data-screen-label="Footer" style="position:relative; padding:90px 24px 36px; overflow:hidden; border-top:1px solid rgba(244,239,227,0.07)">
-    <div style="position:absolute; left:50%; bottom:-35%; transform:translateX(-50%); width:1100px; height:700px; background:radial-gradient(closest-side, rgba(212,255,0,0.09), transparent 70%); pointer-events:none"></div>
-    <div style="position:relative; display:flex; flex-direction:column; align-items:center; gap:18px; text-align:center">
-      <span style="font-family:Comfortaa,cursive; font-weight:700; font-size:clamp(90px, 20vw, 260px); line-height:0.9; color:#D4FF00; letter-spacing:-0.02em; text-shadow:0 0 90px rgba(212,255,0,0.35)">kria</span>
-      <span style="font-size:15px; font-weight:600; letter-spacing:0.28em; color:rgba(244,239,227,0.6)">WORK · EARN · GROW</span>
-      <div style="display:flex; align-items:center; gap:26px; margin-top:18px; flex-wrap:wrap; justify-content:center">
-        <a href="/terms" style="color:rgba(244,239,227,0.55); font-size:13px; text-decoration:none" style-hover="color:#D4FF00">Terms</a>
-        <a href="/privacy" style="color:rgba(244,239,227,0.55); font-size:13px; text-decoration:none" style-hover="color:#D4FF00">Privacy</a>
-        <a href="#" style="color:rgba(244,239,227,0.55); font-size:13px; text-decoration:none" style-hover="color:#D4FF00">Contact</a>
-        <a href="#" style="width:36px; height:36px; border-radius:99px; border:1px solid rgba(244,239,227,0.15); color:rgba(244,239,227,0.55); font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; font-family:ui-monospace,Menlo,monospace" style-hover="border-color:#D4FF00; color:#D4FF00">IG</a>
-        <a href="#" style="width:36px; height:36px; border-radius:99px; border:1px solid rgba(244,239,227,0.15); color:rgba(244,239,227,0.55); font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; font-family:ui-monospace,Menlo,monospace" style-hover="border-color:#D4FF00; color:#D4FF00">X</a>
+  <!-- ======================= FOOTER (editorial refresh) ======================= -->
+  <footer data-screen-label="Footer" style="position:relative; padding:80px 24px 40px; overflow:hidden; border-top:1px solid rgba(244,239,227,0.07); background:#0B0F0A">
+    <!-- soft glow anchoring the wordmark -->
+    <div style="position:absolute; left:50%; bottom:-45%; transform:translateX(-50%); width:1200px; height:640px; background:radial-gradient(closest-side, rgba(212,255,0,0.06), transparent 70%); pointer-events:none"></div>
+
+    <div style="position:relative; max-width:1180px; margin:0 auto; display:flex; flex-direction:column; gap:56px">
+
+      <!-- Top row: manifesto (left) + links (right) -->
+      <div class="kria-foot-top" style="display:grid; grid-template-columns:1.2fr 0.8fr; gap:48px; align-items:start">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div style="display:flex; align-items:center; gap:10px">
+            <span style="font-family:Comfortaa,cursive; font-weight:700; font-size:26px; color:#D4FF00; letter-spacing:-0.01em; text-shadow:0 0 26px rgba(212,255,0,0.4)">kria</span>
+            <span style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:rgba(244,239,227,0.45); letter-spacing:0.14em">WORK · EARN · GROW</span>
+          </div>
+          <p style="margin:0; font-size:15px; line-height:1.6; color:rgba(244,239,227,0.55); max-width:440px">A field paper for the 12 million daily-wage workers in India who can&rsquo;t put <em>reliable</em> on a CV. We&rsquo;re building the receipt book that proves it for them.</p>
+        </div>
+
+        <div class="kria-foot-links" style="display:grid; grid-template-columns:1fr 1fr; gap:30px">
+          <div style="display:flex; flex-direction:column; gap:12px">
+            <span style="font-family:ui-monospace,Menlo,monospace; font-size:10px; color:rgba(244,239,227,0.35); letter-spacing:0.16em; text-transform:uppercase">Product</span>
+            <a href="https://grid.trykria.com" target="_blank" rel="noopener noreferrer" style="color:rgba(244,239,227,0.75); font-size:14px; text-decoration:none" style-hover="color:#D4FF00">Grid — for Hosts</a>
+            <span style="color:rgba(244,239,227,0.4); font-size:14px">Pocket — coming soon</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px">
+            <span style="font-family:ui-monospace,Menlo,monospace; font-size:10px; color:rgba(244,239,227,0.35); letter-spacing:0.16em; text-transform:uppercase">Company</span>
+            <a href="/terms" style="color:rgba(244,239,227,0.75); font-size:14px; text-decoration:none" style-hover="color:#D4FF00">Terms</a>
+            <a href="/privacy" style="color:rgba(244,239,227,0.75); font-size:14px; text-decoration:none" style-hover="color:#D4FF00">Privacy</a>
+            <a href="#" style="color:rgba(244,239,227,0.75); font-size:14px; text-decoration:none" style-hover="color:#D4FF00">Contact</a>
+          </div>
+        </div>
       </div>
-      <span style="font-family:ui-monospace,Menlo,monospace; font-size:10.5px; color:rgba(244,239,227,0.3); margin-top:26px">© 2026 kria · made with hustle in India</span>
+
+      <!-- Giant wordmark, kept as a visual anchor -->
+      <div style="position:relative; text-align:center; margin:0 -24px">
+        <span style="font-family:Comfortaa,cursive; font-weight:700; font-size:clamp(96px, 22vw, 280px); line-height:0.9; color:#D4FF00; letter-spacing:-0.02em; text-shadow:0 0 90px rgba(212,255,0,0.35); display:inline-block">kria</span>
+      </div>
+
+      <!-- Bottom row: copyright + socials -->
+      <div class="kria-foot-bottom" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding-top:24px; border-top:1px solid rgba(244,239,227,0.07)">
+        <span style="font-family:ui-monospace,Menlo,monospace; font-size:10.5px; color:rgba(244,239,227,0.35); letter-spacing:0.06em">© 2026 kria · made with hustle in India</span>
+        <div style="display:flex; align-items:center; gap:10px">
+          <a href="#" style="width:34px; height:34px; border-radius:99px; border:1px solid rgba(244,239,227,0.15); color:rgba(244,239,227,0.55); font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; font-family:ui-monospace,Menlo,monospace" style-hover="border-color:#D4FF00; color:#D4FF00">IG</a>
+          <a href="#" style="width:34px; height:34px; border-radius:99px; border:1px solid rgba(244,239,227,0.15); color:rgba(244,239,227,0.55); font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; font-family:ui-monospace,Menlo,monospace" style-hover="border-color:#D4FF00; color:#D4FF00">X</a>
+        </div>
+      </div>
     </div>
   </footer>
 
