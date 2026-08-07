@@ -159,6 +159,41 @@ WORKER_PENALTIES: dict[str, int] = {
     "repeated_dispute":   75,
 }
 
+# ── Time-decay & smoothing constants ──────────────────────────────────────────
+# Half-life in DAYS. weight(t) = 2^(-days_since / T).
+#
+# Penalties (T=90d): a no-show costs 100 today, 50 in 3 months, 25 in 6 months,
+#   ~6 in a year. Users who reformed can recover; recent misbehaviour still bites.
+# Ratings (T=180d): a 1-star rating from a year ago is worth ~0.25 of a fresh
+#   1-star. Prevents users from being trapped by early bad reviews forever.
+# Reliability (T=90d): the last quarter's punctuality/show-up matters most —
+#   what a runner did before Kria was ever a habit doesn't define them today.
+#
+# All three lengths are informed by reputation-system literature (Aberer &
+# Despotovic 2001; Airbnb/Uber worker-rating studies). Half-life is the
+# knob most worth iterating on — start conservative, tune with data.
+
+PENALTY_HALF_LIFE_DAYS: int = 90
+RATING_HALF_LIFE_DAYS:  int = 180
+RATE_HALF_LIFE_DAYS:    int = 90
+
+# Bayesian prior for rate signals (show_rate, on_time_rate).
+# Beta-Binomial: rate = (successes + alpha) / (total + alpha + beta).
+# Prior mean = alpha / (alpha + beta) = 0.85 (baseline: most users are decent).
+# Prior strength (alpha + beta) = 5 pseudo-observations, so 5 real gigs are
+# enough to move the score meaningfully. Prevents "1 no-show out of 2 gigs =
+# 50% reliability = massive drop" — new users need a runway.
+
+RATE_PRIOR_ALPHA: float = 4.25
+RATE_PRIOR_BETA:  float = 0.75
+
+# Bayesian prior for rating signals (performance / communication / professionalism).
+# Same idea, on a 5-point scale. Prior mean 4.0 with strength 3 pseudo-ratings.
+# Effect: "1 rating of 2/5" gives (2 + 4×3) / (1 + 3) = 3.5 instead of 2.0.
+
+RATING_PRIOR_MEAN:     float = 4.0
+RATING_PRIOR_STRENGTH: float = 3.0
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

@@ -6,7 +6,7 @@
 
 ## Architecture
 - [Stack](architecture/stack.md) — Expo, FastAPI, Supabase, Next.js, Inspector, ports, Docker networking
-- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (0001–0033 applied; next: 0034)
+- [Domain Model](architecture/domain_model.md) — all DB tables, relationships, migrations (0001–0033 applied; 0034 written, not yet applied; next: 0035)
 - [Data Access](architecture/data_access.md) — Supabase direct vs FastAPI, auth patterns, key utils
 
 ## Apps
@@ -142,10 +142,13 @@ score, items, profile_items = compute_worker_breakdown(
 - **FastAPI dep:** `AdminUser = Annotated[AuthenticatedUser, Depends(require_admin)]` in `auth/middleware.py`
 - **Env var:** `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (new Supabase format `sb_publishable_...`)
 
-### Latest Migration: `0032_public_profile_slug`
-Adds `profiles.public_slug` UNIQUE, backfilled as `{firstname}-{last6ofid}`. Powers `trykria.com/p/{slug}` shareable profiles.
+### Latest Migration: `0034_momentum_robustness` (written, not yet applied)
+Adds `momentum_penalties` table (row-per-penalty, replaces monotonic `worker_penalty_points` integer with a time-decayed sum). Extends `momentum_events` with `score_before`, `signal_snapshot`, `penalty_snapshot`, `actor_id`. Backfills penalty rows from historical `gig_assignments`. After applying, run `docker exec kriya_kria-api_1 python -m app.scripts.recompute_all_momentum` to rescore all runners with the new time-decayed / Bayesian-smoothed formulas.
 
-### Next Migration: `0033`
+### Previous Migration: `0033_assignment_cancelled_status`
+Adds `'cancelled'` enum value so runners can drop an accepted shift before start (`POST /assignments/{id}/cancel`).
+
+### Next Migration: `0035`
 
 ### Matching Engine — read this before touching
 - Live path: `backend/api/app/recommendations/engine.py` (`match_gigs_for_worker`, `_fetch_open_gigs`, `_fetch_host_summaries`)

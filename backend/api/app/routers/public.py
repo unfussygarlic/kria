@@ -5,6 +5,7 @@ so runners can share their "career passport" with hosts. Read-only, returns
 only fields the runner has explicitly opted into displaying.
 """
 
+import json
 from datetime import datetime
 from typing import Optional
 
@@ -14,6 +15,10 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.momentum import config as mcfg
+from app.momentum.calculator import compute_worker_score
+
+_PROFILE_COL_LIST = ", ".join(f"p.{k}" for k in mcfg.PROFILE_SIGNALS.keys())
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -48,8 +53,12 @@ async def get_public_runner_profile(
     "career passport": name, city, bio, skills, verification badges,
     momentum, and gigs completed. Phone/email/DOB are never returned.
     """
+    # Compute momentum live from the stored signal_scores + fresh profile
+    # fields so the number matches what the runner sees in Pocket — the
+    # cached worker_score column can lag when the runner has just edited
+    # their profile without a subsequent gig event.
     result = await db.execute(
-        text("""
+        text(f"""
             SELECT
                 p.id,
                 p.public_slug,
@@ -66,7 +75,10 @@ async def get_public_runner_profile(
                 p.languages,
                 p.verified_id_types,
                 p.created_at,
-                mp.worker_score AS momentum_score
+                mp.signal_scores,
+                mp.worker_penalty_points,
+                mp.worker_gig_count,
+                {_PROFILE_COL_LIST}
             FROM profiles p
             LEFT JOIN momentum_profiles mp ON mp.user_id = p.id
             WHERE p.public_slug = :slug
@@ -81,6 +93,23 @@ async def get_public_runner_profile(
             detail="Runner not found.",
         )
 
+    momentum_score: Optional[int] = None
+    if row.get("worker_gig_count") is not None or row.get("signal_scores") is not None:
+        raw = row.get("signal_scores")
+        if raw is None:
+            signal_scores: dict = {}
+        elif isinstance(raw, str):
+            signal_scores = json.loads(raw)
+        else:
+            signal_scores = dict(raw)
+        profile_fields = {k: row.get(k) for k in mcfg.PROFILE_SIGNALS.keys()}
+        momentum_score = compute_worker_score(
+            signal_scores,
+            int(row["worker_penalty_points"] or 0),
+            int(row["worker_gig_count"] or 0),
+            profile_fields,
+        ).score
+
     return PublicRunnerProfile(
         slug=row["public_slug"],
         display_name=row["display_name"] or "",
@@ -92,7 +121,7 @@ async def get_public_runner_profile(
         id_verified=bool(row["id_verified"]),
         total_gigs_completed=int(row["total_gigs_completed"] or 0),
         streak_count=int(row["streak_count"] or 0),
-        momentum_score=int(row["momentum_score"]) if row["momentum_score"] is not None else None,
+        momentum_score=momentum_score,
         skills=list(row["skills"] or []),
         languages=list(row["languages"] or []),
         verified_id_types=list(row["verified_id_types"] or []),

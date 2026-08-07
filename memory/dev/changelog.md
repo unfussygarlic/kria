@@ -6,6 +6,36 @@ type: project
 
 # Changelog
 
+## 2026-08-07 — Momentum robustness overhaul (backend-only)
+
+Second forensic pass on Momentum after "scores decreasing over time" reports. Two real bugs plus structural fairness gaps. Full writeup in `features/momentum.md` under "Robustness Overhaul".
+
+**Bug 1 — debounce race:** `recalculate.py`'s 60s debounce interacted badly with `applicants.py`'s split-write pattern (`worker_penalty_points += 100` then `recalculate_momentum()`). Two no-shows inside 60s = penalty persisted twice, score updated once, next unrelated event triggered a big visible drop disconnected from any user action. Debounce removed.
+
+**Bug 2 — three-way score inconsistency:** applicants list computed live, `/public/runners/{slug}` read stored `worker_score`, `/momentum/me/percentile` did the same. Same user, three numbers. Public profile now computes live to match Pocket; percentile stays stored (peer-ranking cost too high otherwise) but is now always fresh because the debounce race is gone.
+
+**Structural — penalty half-life:** `worker_penalty_points` monotonic integer replaced with `momentum_penalties` (row per penalty, `UNIQUE(assignment_id, kind)` for idempotency). Effective total decays via `2^(-days_since / 90d)`. A no-show costs 100 today, 50 in 3 months, 25 in 6 months. Users can recover.
+
+**Structural — Bayesian smoothing + time-decay on all 5 signals:**
+- `show_rate` / `on_time_rate` — Beta-Binomial with prior α=4.25, β=0.75 (mean 0.85, strength 5). Each event weighted by `2^(-age/90d)`. Fixes "1 no-show out of 2 gigs = 50% reliability = crash".
+- `performance_score` / `communication_score` / `professionalism_score` — time-weighted mean with prior mean 4.0, strength 3. Half-life 180d.
+
+**Audit trail:** `momentum_events` gains `score_before`, `signal_snapshot`, `penalty_snapshot`, `actor_id`. Support can now reconstruct "why did my score drop last Tuesday" from one row.
+
+**Files:**
+- `alembic/versions/0034_momentum_robustness.py` — new tables + audit columns + backfill from historical assignments
+- `app/momentum/config.py` — half-life + prior constants
+- `app/momentum/penalties.py` — new module, `apply_penalty()` + `effective_penalty_points()`
+- `app/momentum/recalculate.py` — rewritten
+- `app/momentum/signals/*.py` — all 5 signals rewritten
+- `app/routers/{applicants,ratings}.py` — pass `actor_id`, use `apply_penalty()`
+- `app/routers/public.py` — computes momentum live
+- `app/scripts/recompute_all_momentum.py` — one-off rescore-everyone script
+
+**Deploy:** apply migration 0034 via Session Pooler → `docker-compose up --build kria-api` → run `recompute_all_momentum` script.
+
+---
+
 ## 2026-08-07 — Jobs + My Space + Arena revamps (research-driven)
 
 Full package A+B for all three tabs following deep code audits + web research on [DoorDash](https://dasher.doordash.com/en-us/blog/new-doordash-dasher-app), [Uber Driver](https://www.uber.com/us/en/deliver/driver-app/), [Instacart](https://www.instacart.com/company/shopper-community/new-tools-to-track-your-earnings), [LinkedIn Jobs](https://www.linkedin.com/blog/member/product/new-job-search-mobile-app), [Indeed](https://apps.apple.com/ca/app/indeed-job-search/id309735670), [Duolingo/Strava gamification](https://citrusbits.com/how-gamification-has-catapulted-duolingo-strava-and-forest-to-the-top-of-their-respective-app-categories/).

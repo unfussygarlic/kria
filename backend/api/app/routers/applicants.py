@@ -32,7 +32,7 @@ from app.models.applicant import (
     OtpVerifyRequest,
 )
 from app.momentum.recalculate import recalculate_momentum
-from app.momentum.config import WORKER_PENALTIES
+from app.momentum.penalties import apply_penalty
 from app.momentum.calculator import compute_worker_score
 
 # ---------------------------------------------------------------------------
@@ -569,7 +569,12 @@ async def verify_otp(
     )
     await db.commit()
 
-    await recalculate_momentum(str(asgn["worker_id"]), db, event_type="gig_complete", gig_id=str(asgn["gig_id"]))
+    await recalculate_momentum(
+        str(asgn["worker_id"]), db,
+        event_type="gig_complete",
+        gig_id=str(asgn["gig_id"]),
+        actor_id=current_user.user_id,
+    )
     await check_gig_badges(db, str(asgn["worker_id"]))
 
     return ApplicationActionResponse(
@@ -618,20 +623,25 @@ async def finalize_expired_assignments(
             text("UPDATE gig_assignments SET status = 'no_show' WHERE id = :asgn_id"),
             {"asgn_id": str(asgn["id"])},
         )
-        await db.execute(
-            text("""
-                UPDATE momentum_profiles
-                SET worker_penalty_points = worker_penalty_points + :penalty
-                WHERE user_id = :uid
-            """),
-            {"penalty": WORKER_PENALTIES["no_show"], "uid": str(asgn["worker_id"])},
+        # apply_penalty is idempotent on (assignment_id, kind), so re-runs of
+        # finalize-expired won't double-charge a runner who already had a
+        # penalty recorded for the same no-show.
+        await apply_penalty(
+            user_id=str(asgn["worker_id"]),
+            kind="no_show",
+            db=db,
+            assignment_id=str(asgn["id"]),
+            gig_id=str(asgn["gig_id"]),
+            notes="auto: gig ended without check-in",
         )
 
     await db.commit()
 
     for asgn in expired:
         await recalculate_momentum(
-            str(asgn["worker_id"]), db, event_type="no_show", gig_id=str(asgn["gig_id"])
+            str(asgn["worker_id"]), db, event_type="no_show",
+            gig_id=str(asgn["gig_id"]),
+            actor_id=current_user.user_id,
         )
 
     return {"processed": len(expired)}
@@ -767,18 +777,22 @@ async def no_show_assignment(
         {"asgn_id": assignment_id},
     )
 
-    # Write penalty to momentum_profiles before recalculating
-    await db.execute(
-        text("""
-            UPDATE momentum_profiles
-            SET worker_penalty_points = worker_penalty_points + :penalty
-            WHERE user_id = :uid
-        """),
-        {"penalty": WORKER_PENALTIES["no_show"], "uid": worker_id},
+    # apply_penalty is idempotent: if the poster taps "no-show" twice or a
+    # network retry duplicates the request, the second write is a no-op.
+    await apply_penalty(
+        user_id=worker_id,
+        kind="no_show",
+        db=db,
+        assignment_id=assignment_id,
+        gig_id=gig_id,
+        notes="poster marked as no-show",
     )
     await db.commit()
 
-    await recalculate_momentum(worker_id, db, event_type="no_show", gig_id=gig_id)
+    await recalculate_momentum(
+        worker_id, db, event_type="no_show", gig_id=gig_id,
+        actor_id=current_user.user_id,
+    )
 
     return ApplicationActionResponse(
         ok=True,

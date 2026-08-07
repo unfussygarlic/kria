@@ -137,7 +137,12 @@ async def submit_rating(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You have already rated this gig.")
 
     if payload.rating_type == "worker_rating":
-        await recalculate_momentum(payload.ratee_id, db, event_type="rating_received", gig_id=payload.gig_id)
+        await recalculate_momentum(
+            payload.ratee_id, db,
+            event_type="rating_received",
+            gig_id=payload.gig_id,
+            actor_id=current_user.user_id,
+        )
     else:
         # poster_rating: recompute AVG(score) on 1–5 scale and persist.
         # The DB trigger only fires when count ≥ 3; this ensures immediate update.

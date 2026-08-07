@@ -1,8 +1,11 @@
-"""Communication signal — communication_score: average host communication sub-rating (1–5)."""
+"""Communication signal — communication_score: time-decayed avg (1–5).
+
+Same shape as performance_score — see that file for the math rationale."""
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.momentum import config as cfg
 from app.momentum.signals._base import Signal
 
 SIGNAL = Signal(
@@ -20,14 +23,27 @@ SIGNAL = Signal(
 async def compute(user_id: str, db: AsyncSession) -> float | None:
     row = (await db.execute(
         text("""
-            SELECT COUNT(*) FILTER (WHERE communication_score IS NOT NULL) AS cnt,
-                   AVG(communication_score) AS avg
+            SELECT
+              SUM(
+                communication_score
+                * POWER(2, -EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400.0 / :hl)
+              ) AS w_sum,
+              SUM(
+                POWER(2, -EXTRACT(EPOCH FROM (NOW() - created_at)) / 86400.0 / :hl)
+              ) FILTER (WHERE communication_score IS NOT NULL) AS w_total,
+              COUNT(*) FILTER (WHERE communication_score IS NOT NULL) AS cnt
             FROM ratings
             WHERE ratee_id = :uid AND rating_type = 'worker_rating'
         """),
-        {"uid": user_id},
+        {"uid": user_id, "hl": cfg.RATING_HALF_LIFE_DAYS},
     )).mappings().first()
 
     if not row or int(row["cnt"] or 0) == 0:
         return None
-    return float(row["avg"])
+
+    w_sum = float(row["w_sum"] or 0)
+    w_total = float(row["w_total"] or 0)
+    prior_mean = cfg.RATING_PRIOR_MEAN
+    prior_strength = cfg.RATING_PRIOR_STRENGTH
+
+    return (w_sum + prior_mean * prior_strength) / (w_total + prior_strength)

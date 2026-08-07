@@ -337,6 +337,79 @@ Side effect: `GET /gigs/{gig_id}/applicants?sort=momentum_desc` could no longer 
 
 **Deploy note:** like every backend change this session, needs `docker-compose up --build kria-api` on EC2 — not deployed as of this writing.
 
+## Robustness Overhaul (2026-08-07) — migration 0034
+
+Second forensic pass on Momentum after reports that scores were "decreasing over time." Two real bugs plus a set of structural fairness gaps.
+
+### Bug 1: debounce race
+
+**Symptom:** score appears stable, then plunges by 100–300 pts "out of nowhere" on the next unrelated event.
+
+**Root cause:** `recalculate.py` had a 60-second debounce that silently no-oped. The callers in `applicants.py` (`finalize-expired`, poster-marks-no-show) wrote `worker_penalty_points += 100` to the DB *before* calling `recalculate_momentum()`. If two no-shows landed inside the 60s window (common — a host clearing out a batch of no-shows on their gig-detail page), the first recalc ran, the second was skipped. Penalty in DB reflected both no-shows; `worker_score` reflected only the first. Next event (a rating on some unrelated gig) triggered a recalc that finally picked up the stale penalty and produced a big visible drop disconnected from any visible action.
+
+**Fix:** debounce removed entirely from `recalculate.py`. Recalc is cheap (5 SQL reads + 2 writes) — just run every time. `worker_penalty_points` is now a *cached* copy of the decayed effective total, not the source of truth.
+
+### Bug 2: live vs stored score inconsistency
+
+**Symptom:** same user, three different momentum numbers across three surfaces.
+
+**Root cause:**
+- Applicants list (Pocket + Grid) → live-computed via `_live_momentum_score()` — includes profile fields freshly read.
+- Public profile at `trykria.com/p/{slug}` → read stored `worker_score` — could lag by any profile edit.
+- `/momentum/me/percentile` → read stored `worker_score` — same lag.
+
+**Fix:** `public.py` now computes live too (same helper shape as `applicants.py`). Percentile is left on the stored column — slight staleness is acceptable for a "top 23% of runners in your city" number and computing live for all peers would tank the query.
+
+### Structural fix: penalty half-life (row-per-penalty)
+
+**Old design:** `worker_penalty_points` was a monotonically-growing integer. A no-show 6 months ago still cost 100 pts forever. Zero recovery path.
+
+**New design:**
+- `momentum_penalties (id, user_id, assignment_id, gig_id, kind, points, occurred_at, notes)` — one row per penalty.
+- `UNIQUE(assignment_id, kind)` partial index → idempotent writes (retries can't double-charge).
+- `apply_penalty()` in `momentum/penalties.py` is the sole write API. Callers in `applicants.py` swapped over.
+- Effective total = `Σ points × 2^(-days_since_occurred / PENALTY_HALF_LIFE_DAYS)` where `PENALTY_HALF_LIFE_DAYS = 90`.
+- So a no-show costs 100 today, 50 in 3 months, 25 in 6 months, ~6 in a year. Recent misbehaviour still bites; ancient misbehaviour fades.
+- Migration 0034 backfills penalty rows from historical `gig_assignments` with `status IN ('no_show', 'left_early')`, dated to the gig's `event_date` so decay kicks in immediately. Any residual (users whose stored `worker_penalty_points` exceeded reconstructed history) becomes one `legacy_adjustment` row dated to today.
+
+### Structural fix: Bayesian smoothing + time-decayed signals
+
+All signals rewritten to be time-decayed and smoothed:
+
+**Rate signals (`show_rate`, `on_time_rate`):**
+- Beta-Binomial posterior: `(w_successes + α) / (w_total + α + β)` with prior mean 0.85, prior strength 5 (`α = 4.25`, `β = 0.75`).
+- Each event weighted by `2^(-age_days / RATE_HALF_LIFE_DAYS)` where `RATE_HALF_LIFE_DAYS = 90`.
+- Effect: 1 no-show out of 2 gigs used to give 50% reliability = massive drop. Now: `(1 + 4.25) / (2 + 5) = 0.75`. New users get a runway.
+
+**Rating signals (`performance_score`, `communication_score`, `professionalism_score`):**
+- Weighted mean with prior: `(Σ score × weight_i + prior_mean × prior_strength) / (Σ weight_i + prior_strength)`.
+- `RATING_PRIOR_MEAN = 4.0`, `RATING_PRIOR_STRENGTH = 3` pseudo-ratings.
+- `RATING_HALF_LIFE_DAYS = 180` — ratings decay slower than reliability (a fuller signal, more expensive to acquire).
+
+All constants live in `momentum/config.py` — the knobs most worth tuning with data.
+
+### Audit trail
+
+`momentum_events` extended with `score_before`, `signal_snapshot` (JSONB), `penalty_snapshot` (JSONB with per-kind counts + effective points), and `actor_id` (who caused this recalc). Support can now answer "why did my score drop from 620 to 540 last Tuesday" by reading one row.
+
+### Files
+
+- `backend/api/alembic/versions/0034_momentum_robustness.py` — new tables + audit columns + backfill
+- `backend/api/app/momentum/config.py` — half-life, prior constants
+- `backend/api/app/momentum/penalties.py` — `apply_penalty()` + `effective_penalty_points()` (new module)
+- `backend/api/app/momentum/recalculate.py` — rewritten: no debounce, uses penalty API, richer audit
+- `backend/api/app/momentum/signals/*.py` — all 5 signals rewritten with time-decay + Bayesian smoothing
+- `backend/api/app/routers/applicants.py` — two penalty writers swapped to `apply_penalty()`
+- `backend/api/app/routers/public.py` — computes momentum live so shared profile matches Pocket
+- `backend/api/app/routers/ratings.py` — passes `actor_id` to `recalculate_momentum()`
+- `backend/api/app/scripts/recompute_all_momentum.py` — one-off rescore-everyone script
+
+### Deploy sequence
+
+1. Apply migration 0034 (via Session Pooler; EC2 can't reach the direct DB — see setup notes).
+2. `docker-compose up --build kria-api` on EC2.
+3. `docker exec kriya_kria-api_1 python -m app.scripts.recompute_all_momentum` to align stored scores with the new formulas. Idempotent, safe to re-run.
+
 ## Host Rating (NOT Momentum)
 
 Hosts receive a `/10` rating from Runners. Simple average from `ratings` table (`rating_type = 'poster_rating'`, `score` 1–10). Not stored in `momentum_profiles`. Not shown in Momentum UI.
