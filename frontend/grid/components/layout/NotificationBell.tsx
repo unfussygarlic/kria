@@ -1,31 +1,109 @@
 "use client";
 
 /**
- * NotificationBell — small bell in the TopBar. Red dot when there's anything
- * in the host's work queue. On click, opens a compact dropdown listing:
+ * NotificationBell — small bell in the TopBar. Badge shows the count of
+ * *unseen* items. On click, opens a compact dropdown listing:
  *   • pending applications (top gig by pending_count)
  *   • urgent gigs (ending today/tomorrow, unfilled)
  *   • expired gigs (past date, still open)
  *
- * We deliberately don't build a full "notifications table" — this is derived
- * live from the same summary the sidebar dots use. If we ever ship real push
- * notifications (email/SMS delivery events, badge awards, etc.) this
- * component grows to consume those; for now it's the worklist digest.
+ * ── Seen / unseen state ────────────────────────────────────────────────────
+ * The bell shows *live derived state* (not a persisted notifications table),
+ * so the classic read/unread pattern needs a small helper: each item has a
+ * stable signature (`kind:id:extra`) — we persist the set of signatures the
+ * host has already seen in localStorage. Opening the bell marks the current
+ * set as seen; the badge only counts signatures NOT in that set. When a new
+ * pending application comes in (new signature) the badge lights up again.
+ *
+ * If the underlying condition later disappears naturally (host accepts the
+ * applicant → pending_count drops → signature vanishes from queue), it's
+ * also removed from the seen-set on the next render, so a *repeat* of the
+ * same condition later gets flagged as new again.
+ *
+ * Storage key is versioned (`kria:bell:seen:v1`) so we can invalidate later
+ * without a migration.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, ArrowRight, AlertTriangle, Inbox, TimerReset } from "lucide-react";
+import { Bell, ArrowRight, AlertTriangle, Inbox, TimerReset, CheckCheck } from "lucide-react";
 import { useHostQueue } from "./HostQueueProvider";
 import { TimeToEventPill } from "@/components/ui/TimeToEventPill";
+
+const SEEN_KEY = "kria:bell:seen:v1";
+
+/** Load seen signatures from localStorage. SSR-safe. */
+function loadSeen(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(SEEN_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw) as string[];
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveSeen(set: Set<string>) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SEEN_KEY, JSON.stringify([...set]));
+  } catch {
+    /* quota exceeded / private mode — silently ignore */
+  }
+}
 
 export function NotificationBell() {
   const { queue } = useHostQueue();
   const [open, setOpen] = useState(false);
+  const [seen, setSeen] = useState<Set<string>>(() => new Set());
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  const totalUrgent =
-    queue.urgent.length + queue.expired.length + queue.totalPendingApplications;
+  // Hydrate seen set from localStorage once on mount (avoids SSR mismatch).
+  useEffect(() => { setSeen(loadSeen()); }, []);
+
+  // Build the item list with stable signatures. Ordering mirrors the render
+  // order below (pending → urgent → expired).
+  interface BellItem { sig: string; }
+  const items: BellItem[] = useMemo(() => {
+    const list: BellItem[] = [];
+    if (queue.totalPendingApplications > 0) {
+      // Whole pending group is one signature; the number changes when it does.
+      list.push({ sig: `pending:${queue.totalPendingApplications}` });
+    }
+    for (const g of queue.urgent) list.push({ sig: `urgent:${g.id}:${g.slots_filled}/${g.slots_total}` });
+    for (const g of queue.expired.slice(0, 3)) list.push({ sig: `expired:${g.id}` });
+    return list;
+  }, [queue]);
+
+  const sigSet = useMemo(() => new Set(items.map((i) => i.sig)), [items]);
+
+  // Garbage-collect stale sigs (conditions that no longer exist). Prevents
+  // the seen-set from growing unbounded, and re-flags recurring conditions.
+  useEffect(() => {
+    if (seen.size === 0) return;
+    let changed = false;
+    const next = new Set<string>();
+    for (const s of seen) {
+      if (sigSet.has(s)) { next.add(s); } else { changed = true; }
+    }
+    if (changed) { setSeen(next); saveSeen(next); }
+  }, [sigSet, seen]);
+
+  // Unseen count = items whose signature isn't in the seen set.
+  const unseenCount = items.reduce((n, it) => n + (seen.has(it.sig) ? 0 : 1), 0);
+  const totalUrgent = items.length; // total items still requiring action (badge = unseen, dropdown lists all)
+  const urgentUnseen = queue.urgent.some((g) => !seen.has(`urgent:${g.id}:${g.slots_filled}/${g.slots_total}`));
+
+  const markAllSeen = () => {
+    setSeen((prev) => {
+      const next = new Set(prev);
+      for (const s of sigSet) next.add(s);
+      saveSeen(next);
+      return next;
+    });
+  };
 
   // Outside-click close (mirrors TopBar dropdown pattern).
   useEffect(() => {
@@ -37,6 +115,13 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
+  // Opening the bell marks the currently-displayed items as seen — matches
+  // Gmail/Slack style where opening the tray IS the "I saw it" signal.
+  useEffect(() => {
+    if (open) markAllSeen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   return (
     <div className="relative" ref={wrapRef}>
       <button
@@ -45,23 +130,22 @@ export function NotificationBell() {
         style={{ color: "var(--nav-inactive-text)" }}
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--hover-bg)")}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-        aria-label={totalUrgent > 0 ? `${totalUrgent} items need attention` : "No new notifications"}
+        aria-label={unseenCount > 0 ? `${unseenCount} unseen notifications` : "No new notifications"}
       >
         <Bell size={16} />
-        {totalUrgent > 0 && (
+        {unseenCount > 0 && (
           <span
             className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full text-[9px] font-black flex items-center justify-center px-1"
             style={{
-              backgroundColor: queue.urgent.length > 0 ? "#ff7351" : "var(--lime)",
-              color: queue.urgent.length > 0 ? "#fff" : "var(--lime-on)",
-              // Use the theme's lime token in the shadow so light mode gets an
-              // olive glow (never bright yellow-green on a white page).
-              boxShadow: queue.urgent.length > 0
+              // Coral only when a coral-tone (urgent) row is among the unseen.
+              backgroundColor: urgentUnseen ? "#ff7351" : "var(--lime)",
+              color: urgentUnseen ? "#fff" : "var(--lime-on)",
+              boxShadow: urgentUnseen
                 ? "0 0 8px rgba(255,115,81,0.55)"
                 : "0 0 8px color-mix(in srgb, var(--lime) 55%, transparent)",
             }}
           >
-            {totalUrgent > 99 ? "99+" : totalUrgent}
+            {unseenCount > 99 ? "99+" : unseenCount}
           </span>
         )}
       </button>
@@ -80,8 +164,12 @@ export function NotificationBell() {
             style={{ borderColor: "var(--border-color)" }}
           >
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Notifications</span>
-            {totalUrgent > 0 && (
-              <span className="text-[10px] font-bold text-primary">{totalUrgent} to review</span>
+            {totalUrgent > 0 ? (
+              <span className="text-[10px] font-bold text-text-muted">{totalUrgent} pending</span>
+            ) : (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-primary">
+                <CheckCheck size={11} /> All clear
+              </span>
             )}
           </div>
 

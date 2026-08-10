@@ -25,6 +25,7 @@ import { GigStatusBadge, PausedBadge, ExpiredBadge } from "@/components/ui/Badge
 import { TimeToEventPill } from "@/components/ui/TimeToEventPill";
 import { PageLoader } from "@/components/ui/Spinner";
 import { bucketGig, isExpired, timeToEvent, type GigBucket } from "@/lib/urgency";
+import { useHostQueue } from "@/components/layout/HostQueueProvider";
 import type { Gig, GigStatus } from "@/types";
 
 const STATUS_FILTERS: { label: string; value: GigStatus | "all" }[] = [
@@ -174,6 +175,7 @@ function BucketHeader({ bucket, count }: { bucket: GigBucket; count: number }) {
 
 export default function GigsPage() {
   const router = useRouter();
+  const { refresh: refreshGlobalQueue } = useHostQueue();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<GigStatus | "all">("all");
@@ -189,6 +191,9 @@ export default function GigsPage() {
       setGigs((prev) => prev.map((g) => g.id === gig.id ? { ...g, is_paused: res.data!.is_paused } : g));
     }
     setPauseLoading(null);
+    // A pause/unpause can move the gig in/out of the urgent bucket, so
+    // let the sidebar dots + bell reflect it immediately.
+    refreshGlobalQueue();
   };
 
   useEffect(() => {

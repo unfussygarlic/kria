@@ -44,6 +44,28 @@ html, body {
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
+/* Chrome autofill overlay
+   ─────────────────────────────────────────────────────────────────
+   Chrome paints a translucent yellow-ish tint on any input it thinks
+   should be autofilled, and layers a subtle overlay on focus for
+   its autofill picker. Both effects use an internal inset box-shadow
+   that we can override by painting our own transparent inset shadow
+   the same size. The `-internal-autofill-selected` selector covers
+   the newer Chromium variant that ignores the classic override.
+   Preserves the text color separately via `-webkit-text-fill-color`.
+   ───────────────────────────────────────────────────────────────── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:-internal-autofill-selected {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  box-shadow:         0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: var(--color-text) !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: var(--color-text);
+}
+
 /* ─────────────────────────────────────────────────────────────────
    Component-level semantic tokens (respond to data-theme switch)
    ─────────────────────────────────────────────────────────────────

@@ -163,6 +163,26 @@ export function CommandPalette() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search gigs, jump to a page…"
             className="flex-1 bg-transparent outline-none text-sm text-text placeholder:text-text-muted"
+            // Every autofill / password-manager / mobile tap-highlight source
+            // needs to be silenced explicitly, otherwise Chrome shows a
+            // translucent "autofill" overlay on top of the input the moment
+            // it gains focus (that's the "black translucent space" the user
+            // was seeing). Combining browser attributes with vendor hints
+            // (1Password / LastPass / Bitwarden) makes this reliable across
+            // extensions too.
+            type="text"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={results.length > 0}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            name="palette-search"
+            data-1p-ignore="true"
+            data-lpignore="true"
+            data-form-type="other"
+            style={{ WebkitTapHighlightColor: "transparent" }}
           />
           <kbd
             className="text-[10px] font-bold uppercase tracking-widest text-text-muted px-1.5 py-0.5 rounded"

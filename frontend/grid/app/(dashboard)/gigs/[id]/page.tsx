@@ -14,6 +14,7 @@ import { PageLoader } from "@/components/ui/Spinner";
 import { MomentumChip } from "@/components/ui/MomentumChip";
 import { TimeToEventPill } from "@/components/ui/TimeToEventPill";
 import { ApplicantProfileModal } from "@/components/applicants/ApplicantProfileModal";
+import { useHostQueue } from "@/components/layout/HostQueueProvider";
 import type { Gig, ApplicantListItem } from "@/types";
 
 function formatDate(d: string) {
@@ -37,6 +38,10 @@ function isExpired(gig: Gig): boolean {
 export default function GigDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  // Refresh the shared queue whenever we mutate applicants or pause state
+  // so the sidebar dots + notification bell reflect reality without waiting
+  // for the 90s polling tick.
+  const { refresh: refreshGlobalQueue } = useHostQueue();
   const [gig, setGig] = useState<Gig | null>(null);
   const [applicants, setApplicants] = useState<ApplicantListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +56,8 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
     const res = await fn(gig.id);
     if (res.data) setGig((prev) => prev ? { ...prev, is_paused: res.data!.is_paused } : prev);
     setPauseLoading(false);
+    // Pausing/unpausing shifts the gig in/out of the "urgent" bucket.
+    refreshGlobalQueue();
   };
   const [activeTab, setActiveTab] = useState<"pending" | "accepted" | "all">("pending");
   const [selectedApplicant, setSelectedApplicant] = useState<ApplicantListItem | null>(null);
@@ -71,6 +78,9 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
   const refreshApplicants = async () => {
     const res = await listApplicants(id);
     setApplicants(res.data?.applicants ?? []);
+    // Also refresh shared queue — pending/urgent counts across the sidebar
+    // + bell change any time we act on an applicant here.
+    refreshGlobalQueue();
   };
 
   const handleAccept = async (applicationId: string) => {

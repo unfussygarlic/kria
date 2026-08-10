@@ -12,6 +12,7 @@ import { AppStatusBadge, AsgnStatusBadge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { MomentumChip } from "@/components/ui/MomentumChip";
 import { ApplicantProfileModal } from "@/components/applicants/ApplicantProfileModal";
+import { useHostQueue } from "@/components/layout/HostQueueProvider";
 import type { ApplicantListItem, ApplicationStatus } from "@/types";
 import type { PostedGigSummary } from "@/lib/api/gigs";
 import type { ApplicantSort, ApplicantStatusFilter } from "@/lib/api/applicants";
@@ -219,6 +220,9 @@ function ApplicantCard({ app, gigCity, selected, actionLoading, onView, onAccept
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ApplicationsPage() {
+  // Shared queue lets sidebar dots + bell badge refresh in lockstep with
+  // this page's local state whenever an accept/reject/no-show fires.
+  const { refresh: refreshGlobalQueue } = useHostQueue();
   const [gigs, setGigs]                   = useState<PostedGigSummary[]>([]);
   const [gigsLoading, setGigsLoading]     = useState(true);
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
@@ -264,7 +268,10 @@ export default function ApplicationsPage() {
       const appsRes = await listApplicants(selectedGigId, sort, "all");
       setApplicants(appsRes.data?.applicants ?? []);
     }
-  }, [selectedGigId, sort]);
+    // Also refresh the shared queue so sidebar dots + bell badge update
+    // immediately for the accept/reject/no-show that just fired.
+    refreshGlobalQueue();
+  }, [selectedGigId, sort, refreshGlobalQueue]);
 
   // Re-fetch when the user switches back to this tab — catches external state
   // changes (e.g. a runner deleting their profile) without needing a full reload.
