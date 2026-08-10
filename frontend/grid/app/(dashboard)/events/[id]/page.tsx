@@ -71,8 +71,16 @@ function JobCard({
               onClick={onTogglePause}
               disabled={pauseLoading}
               style={job.is_paused
-                ? { border: "1px solid rgba(212,255,0,0.4)", color: "#D4FF00", backgroundColor: "rgba(212,255,0,0.06)" }
-                : { border: "1px solid rgba(255,199,61,0.5)", color: "#FFC83D", backgroundColor: "rgba(255,199,61,0.08)" }
+                ? {
+                    border: "1px solid color-mix(in srgb, var(--lime) 40%, transparent)",
+                    color: "var(--lime)",
+                    backgroundColor: "color-mix(in srgb, var(--lime) 6%, transparent)",
+                  }
+                : {
+                    border: "1px solid color-mix(in srgb, var(--color-amber) 50%, transparent)",
+                    color: "var(--color-amber)",
+                    backgroundColor: "color-mix(in srgb, var(--color-amber) 8%, transparent)",
+                  }
               }
               className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 whitespace-nowrap"
             >

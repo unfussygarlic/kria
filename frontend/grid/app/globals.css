@@ -46,6 +46,15 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 /* ─────────────────────────────────────────────────────────────────
    Component-level semantic tokens (respond to data-theme switch)
+   ─────────────────────────────────────────────────────────────────
+   Dark defaults: solar flare (near-black canvas, lime accent, low
+   contrast for eye comfort). Light overrides are further below.
+
+   Shadow tokens: dark mode leans on borders; light mode leans on
+   subtle shadows because borders at 6-10% are near-invisible. The
+   `--card-shadow` var is empty in dark and a soft micro-shadow in
+   light so a component can just do `box-shadow: var(--card-shadow)`
+   in both themes without a branch.
    ───────────────────────────────────────────────────────────────── */
 :root {
   /* Surfaces */
@@ -58,6 +67,10 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   /* Borders & dividers */
   --border-color:  rgba(255,255,255,0.10);
   --border-subtle: rgba(255,255,255,0.05);
+
+  /* Card lift — none in dark (borders do the work) */
+  --card-shadow:        none;
+  --card-shadow-strong: none;
 
   /* Hover */
   --hover-bg:      rgba(255,255,255,0.05);
@@ -73,94 +86,135 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   /* Lime — constant in both themes (avatar bg, CTA) */
   --lime:    #D4FF00;
   --lime-on: #0e0e0e;
-}
 
-/* ── Pumpkin Orange Light (white + orange + black) ── */
-[data-theme="light"] {
-  /* Surfaces — milk white hierarchy */
-  --color-bg:        #FEFCFF;
-  --color-surface-1: #FEFCFF;
-  --color-surface-2: #F5F3F7;
-  --color-surface-3: #ECEAED;
-  --color-surface-4: #E3E1E4;
-  --color-surface-5: #D9D7DA;
-
-  /* Primary = pumpkin orange; secondary = obsidian black */
-  --color-primary:     #FF7518;
-  --color-primary-dim: #E05E08;
-  --color-secondary:   #0D0D0D;
-  --color-error:       #CC2200;
-  --color-amber:       #D97706;
-
-  /* Text — obsidian hierarchy */
-  --color-text:       #0D0D0D;
-  --color-text-sub:   #2D2D2D;
-  --color-text-muted: #666666;
-  --color-text-inv:   #FEFCFF;   /* white on orange/black buttons */
-
-  /* Component tokens */
-  --card-bg:       #FEFCFF;
-  --sidebar-bg:    #FEFCFF;
-  --topbar-bg:     rgba(254,252,255,0.92);
-  --content-bg:    #FEFCFF;
-  --input-bg:      #F5F3F7;
-
-  /* Borders — obsidian black */
-  --border-color:  rgba(13,13,13,0.80);
-  --border-subtle: rgba(13,13,13,0.45);
-  --hover-bg:      rgba(13,13,13,0.04);
-
-  /* Nav */
-  --nav-active-bg:     rgba(255,117,24,0.08);
-  --nav-active-text:   #FF7518;
-  --nav-active-border: #FF7518;
-  --nav-inactive-text: #666666;
-  --nav-hover-bg:      rgba(13,13,13,0.04);
-  --nav-hover-text:    #0D0D0D;
-
-  /* Orange replaces lime constant */
-  --lime:    #FF7518;
-  --lime-on: #FEFCFF;
+  /* Accent-tinted focus ring — reused by inputs, palette, dropdowns */
+  --focus-ring: rgba(212,255,0,0.35);
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   Light-mode overrides for hardcoded dark Tailwind utilities
-   These fix pages that use border-white/* and bg-white/* without
-   needing to touch individual component files.
+   Light theme — "Warm Paper"
+   ─────────────────────────────────────────────────────────────────
+   Redesigned 2026-08-07. Prior version had 80%-opacity black borders,
+   pumpkin orange primary, and identical card/canvas backgrounds —
+   heavy chrome, no depth, and the loud accent fought with the loud
+   borders.
+
+   New system follows Linear/Vercel/Attio 2026 light-mode patterns:
+
+     - **Off-white canvas + pure white cards.** Cards visibly "lift"
+       off the page without needing a heavy border. Canvas is warm
+       (#FAFAF6, slight yellow tint) to sit under Kria's lime/olive
+       brand naturally rather than clashing with a cold pure white.
+     - **Near-invisible borders (~7%).** Structure comes from the
+       card/canvas contrast + a micro-shadow, not from lines.
+     - **Warm gray text hierarchy** (#1a1a17 → #4a4a45 → #8a8a83).
+       Not pure black on white — that reads harsh at long dwell
+       times which is exactly what a dashboard demands.
+     - **Refined olive primary** (#526a10). Brand-consistent with
+       dark mode's lime (same hue, darkened for AA contrast on
+       white). Pumpkin orange was reserved for accent/warning tone
+       elsewhere ("--color-error" style), not the primary CTA.
+     - **Micro-shadow on cards** (--card-shadow) — 1px + 2px blur,
+       ~4% alpha. Adds elevation without visible grey.
    ───────────────────────────────────────────────────────────────── */
-/* Borders — obsidian black */
+[data-theme="light"] {
+  /* ── Surfaces — canvas warmer, cards pure white for lift ────── */
+  --color-bg:        #FAFAF6;   /* canvas (warm paper) */
+  --color-surface-1: #FFFFFF;   /* cards */
+  --color-surface-2: #F4F3EE;   /* raised inputs / muted rows */
+  --color-surface-3: #EBEAE4;   /* input backgrounds */
+  --color-surface-4: #E2E1DA;
+  --color-surface-5: #D5D4CC;
+
+  /* ── Brand: refined olive (lime, darkened for AA on white) ─── */
+  --color-primary:     #526a10;   /* olive-lime, 4.9:1 on white */
+  --color-primary-dim: #445809;
+  --color-secondary:   #4152a3;   /* deeper cobalt for readability */
+  --color-error:       #b8340f;   /* warm terracotta */
+  --color-amber:       #a05d00;   /* burnt caramel */
+
+  /* ── Text — warm gray hierarchy, not pure black ─────────────── */
+  --color-text:       #1a1a17;    /* headings / high-emphasis */
+  --color-text-sub:   #4a4a45;    /* body */
+  --color-text-muted: #8a8a83;    /* labels / captions */
+  --color-text-inv:   #FFFFFF;    /* text on olive/cobalt buttons */
+
+  /* ── Component tokens ───────────────────────────────────────── */
+  --card-bg:       #FFFFFF;                /* cards pop off canvas */
+  --sidebar-bg:    #FFFFFF;
+  --topbar-bg:     rgba(250,250,246,0.85);
+  --content-bg:    #FAFAF6;
+  --input-bg:      #F4F3EE;
+
+  /* ── Borders — 7% black (was 80% — the source of the pain) ── */
+  --border-color:  rgba(20,20,17,0.08);
+  --border-subtle: rgba(20,20,17,0.04);
+  --hover-bg:      rgba(20,20,17,0.035);
+
+  /* ── Card lift — subtle micro-shadow ───────────────────────── */
+  --card-shadow:        0 1px 2px rgba(20,20,17,0.04), 0 1px 1px rgba(20,20,17,0.02);
+  --card-shadow-strong: 0 4px 12px rgba(20,20,17,0.06), 0 1px 3px rgba(20,20,17,0.04);
+
+  /* ── Nav ────────────────────────────────────────────────────── */
+  --nav-active-bg:     rgba(82,106,16,0.08);
+  --nav-active-text:   #526a10;
+  --nav-active-border: #526a10;
+  --nav-inactive-text: #8a8a83;
+  --nav-hover-bg:      rgba(20,20,17,0.03);
+  --nav-hover-text:    #1a1a17;
+
+  /* ── Lime → Olive across app ───────────────────────────────── */
+  --lime:    #526a10;
+  --lime-on: #FFFFFF;
+
+  /* ── Focus ring ─────────────────────────────────────────────── */
+  --focus-ring: rgba(82,106,16,0.28);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Light-mode overrides for hardcoded dark Tailwind utilities.
+   Many components were built dark-first and lean on border-white/*
+   and bg-white/* utilities — these overrides retint those to warm
+   near-black variants that read correctly on the light canvas
+   without editing every component file.
+   ───────────────────────────────────────────────────────────────── */
+/* Borders — very subtle warm-grey scale (was near-solid black) */
 [data-theme="light"] .border-white\/5   { border-color: var(--border-subtle) !important; }
 [data-theme="light"] .border-white\/10  { border-color: var(--border-color)  !important; }
-[data-theme="light"] .border-white\/20  { border-color: rgba(13,13,13,0.88)  !important; }
-[data-theme="light"] .border-white\/30  { border-color: rgba(13,13,13,0.92)  !important; }
+[data-theme="light"] .border-white\/20  { border-color: rgba(20,20,17,0.12)  !important; }
+[data-theme="light"] .border-white\/30  { border-color: rgba(20,20,17,0.18)  !important; }
 
-/* Table/list dividers — also obsidian */
+/* Table/list dividers */
 [data-theme="light"] .divide-white\/5  > * + * { border-color: var(--border-subtle) !important; }
 [data-theme="light"] .divide-white\/10 > * + * { border-color: var(--border-color)  !important; }
 
-[data-theme="light"] .bg-white\/5  { background-color: rgba(13,13,13,0.03) !important; }
-[data-theme="light"] .bg-white\/10 { background-color: rgba(13,13,13,0.05) !important; }
+[data-theme="light"] .bg-white\/5  { background-color: rgba(20,20,17,0.025) !important; }
+[data-theme="light"] .bg-white\/10 { background-color: rgba(20,20,17,0.045) !important; }
 
-[data-theme="light"] .hover\:border-white\/20:hover    { border-color: rgba(13,13,13,0.90) !important; }
-[data-theme="light"] .hover\:border-white\/25:hover    { border-color: rgba(13,13,13,0.92) !important; }
-[data-theme="light"] .hover\:border-white\/40:hover    { border-color: rgba(13,13,13,0.95) !important; }
-[data-theme="light"] .hover\:bg-white\/5:hover         { background-color: rgba(13,13,13,0.04) !important; }
-[data-theme="light"] .hover\:bg-white\/\[0\.02\]:hover { background-color: rgba(13,13,13,0.02) !important; }
-[data-theme="light"] .hover\:bg-surface-2:hover        { background-color: #F5F3F7 !important; }
+[data-theme="light"] .hover\:border-white\/20:hover    { border-color: rgba(20,20,17,0.14) !important; }
+[data-theme="light"] .hover\:border-white\/25:hover    { border-color: rgba(20,20,17,0.16) !important; }
+[data-theme="light"] .hover\:border-white\/40:hover    { border-color: rgba(20,20,17,0.22) !important; }
+[data-theme="light"] .hover\:bg-white\/5:hover         { background-color: rgba(20,20,17,0.035) !important; }
+[data-theme="light"] .hover\:bg-white\/\[0\.02\]:hover { background-color: rgba(20,20,17,0.02)  !important; }
+[data-theme="light"] .hover\:bg-white\/\[0\.03\]:hover { background-color: rgba(20,20,17,0.03)  !important; }
+[data-theme="light"] .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(20,20,17,0.04)  !important; }
+[data-theme="light"] .hover\:bg-surface-2:hover        { background-color: #F4F3EE !important; }
 
 /* Hardcoded input / surface backgrounds */
-[data-theme="light"] .bg-\[\#201f1f\] { background-color: #F5F3F7 !important; }
+[data-theme="light"] .bg-\[\#201f1f\] { background-color: #F4F3EE !important; }
+[data-theme="light"] .bg-\[\#131313\] { background-color: #FFFFFF !important; }
+[data-theme="light"] .bg-\[\#1a1919\] { background-color: #F4F3EE !important; }
 
-/* Hardcoded lime hex → orange in light mode */
-[data-theme="light"] .bg-\[\#D4FF00\]    { background-color: #FF7518 !important; }
-[data-theme="light"] .text-\[\#D4FF00\]  { color: #FF7518 !important; }
-[data-theme="light"] .border-\[\#D4FF00\] { border-color: #FF7518 !important; }
+/* Hardcoded lime hex → olive in light mode */
+[data-theme="light"] .bg-\[\#D4FF00\]     { background-color: #526a10 !important; }
+[data-theme="light"] .text-\[\#D4FF00\]   { color: #526a10 !important; }
+[data-theme="light"] .border-\[\#D4FF00\] { border-color: #526a10 !important; }
 
 /* Text color fixes for things using literal white/near-white on dark */
-[data-theme="light"] .text-neutral-300 { color: #2D2D2D !important; }
-[data-theme="light"] .text-neutral-400 { color: #666666 !important; }
-[data-theme="light"] .text-neutral-500 { color: #555555 !important; }
-[data-theme="light"] .text-neutral-600 { color: #333333 !important; }
+[data-theme="light"] .text-neutral-300 { color: #4a4a45 !important; }
+[data-theme="light"] .text-neutral-400 { color: #6a6a63 !important; }
+[data-theme="light"] .text-neutral-500 { color: #8a8a83 !important; }
+[data-theme="light"] .text-neutral-600 { color: #4a4a45 !important; }
 
 /* ── Skill Graph canvas tokens ── */
 :root {
@@ -184,12 +238,12 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   --band-newcomer: #777575;
 }
 [data-theme="light"] {
-  --band-legend:   #0D0D0D;
-  --band-elite:    #FF7518;
-  --band-trusted:  #8a6200;
-  --band-reliable: #4858ab;
-  --band-building: #b84c35;
-  --band-newcomer: #4a4a4a;
+  --band-legend:   #1a1a17;   /* highest tier = obsidian on white */
+  --band-elite:    #526a10;   /* olive (lime family) */
+  --band-trusted:  #a05d00;   /* burnt caramel */
+  --band-reliable: #4152a3;   /* deep cobalt */
+  --band-building: #b8340f;   /* terracotta */
+  --band-newcomer: #6a6a63;
 }
 
 /* ── Star rating colors ── */
@@ -198,8 +252,8 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   --star-empty-stroke: rgba(255,255,255,0.20);
 }
 [data-theme="light"] {
-  --star-filled:       #FF7518;
-  --star-empty-stroke: rgba(13,13,13,0.20);
+  --star-filled:       #526a10;
+  --star-empty-stroke: rgba(20,20,17,0.16);
 }
 
 /* ── Progress bar / fill colors ── */
@@ -209,9 +263,9 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   --color-amber:   #FFC83D;
 }
 [data-theme="light"] {
-  --fill-complete: #FF7518;
-  --fill-partial:  #4858ab;
-  --color-amber:   #D97706;
+  --fill-complete: #526a10;
+  --fill-partial:  #4152a3;
+  --color-amber:   #a05d00;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -257,6 +311,29 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 /* ── Themed border utilities (responds to data-theme switch) ── */
 .border-theme        { border-color: var(--border-color); }
 .border-theme-subtle { border-color: var(--border-subtle); }
+
+/* ── Themed card lift ─────────────────────────────────────────────
+   `.card-lift` opts a container into the theme's shadow token. In
+   dark mode --card-shadow is `none`, so this is a no-op. In light
+   mode it gets a soft micro-shadow that gives cards perceptible
+   elevation without needing to darken the border.
+
+   Auto-applied to the most common card patterns (Tailwind
+   `.bg-surface-1` with a border + rounded corners, or explicit
+   inline `background: var(--card-bg)`) so existing components
+   pick up the lift without a rewrite.
+   ───────────────────────────────────────────────────────────────── */
+.card-lift { box-shadow: var(--card-shadow); }
+
+/* Light-mode only: any bordered/rounded card using the primary card
+   surface gets the shadow. Dark mode selector doesn't apply (var
+   would be `none` anyway, but this keeps the specificity tidy). */
+[data-theme="light"] .bg-surface-1.rounded-xl,
+[data-theme="light"] .bg-surface-1.rounded-2xl,
+[data-theme="light"] .bg-surface-2.rounded-xl,
+[data-theme="light"] .bg-surface-2.rounded-2xl {
+  box-shadow: var(--card-shadow);
+}
 
 /* ── Nav item base classes (Sidebar + ThemeToggle) ── */
 .nav-item {

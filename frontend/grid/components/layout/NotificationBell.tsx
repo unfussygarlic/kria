@@ -54,7 +54,11 @@ export function NotificationBell() {
             style={{
               backgroundColor: queue.urgent.length > 0 ? "#ff7351" : "var(--lime)",
               color: queue.urgent.length > 0 ? "#fff" : "var(--lime-on)",
-              boxShadow: `0 0 8px ${queue.urgent.length > 0 ? "rgba(255,115,81,0.6)" : "rgba(212,255,0,0.5)"}`,
+              // Use the theme's lime token in the shadow so light mode gets an
+              // olive glow (never bright yellow-green on a white page).
+              boxShadow: queue.urgent.length > 0
+                ? "0 0 8px rgba(255,115,81,0.55)"
+                : "0 0 8px color-mix(in srgb, var(--lime) 55%, transparent)",
             }}
           >
             {totalUrgent > 99 ? "99+" : totalUrgent}

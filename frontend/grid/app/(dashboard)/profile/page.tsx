@@ -321,7 +321,8 @@ export default function ProfilePage() {
           <button
             onClick={handleSaveProfile}
             disabled={savingProfile}
-            className="px-6 py-3 bg-primary text-text-inv text-xs font-black uppercase tracking-widest rounded-lg hover:brightness-110 transition-all active:scale-95 disabled:opacity-60 shadow-[0_4px_20px_rgba(212,255,0,0.15)]"
+            className="px-6 py-3 bg-primary text-text-inv text-xs font-black uppercase tracking-widest rounded-lg hover:brightness-110 transition-all active:scale-95 disabled:opacity-60"
+            style={{ boxShadow: "0 4px 20px color-mix(in srgb, var(--lime) 20%, transparent)" }}
           >
             {savingProfile ? "Saving…" : savedProfile ? "Saved ✓" : "Save Changes"}
           </button>
@@ -365,7 +366,10 @@ export default function ProfilePage() {
                   <div
                     key={idType}
                     className="flex items-center gap-3 rounded-lg px-4 py-3"
-                    style={{ backgroundColor: "rgba(212,255,0,0.06)", border: "1px solid rgba(212,255,0,0.20)" }}
+                    style={{
+                      backgroundColor: "color-mix(in srgb, var(--lime) 6%, transparent)",
+                      border: "1px solid color-mix(in srgb, var(--lime) 20%, transparent)",
+                    }}
                   >
                     <ShieldCheck size={14} className="text-primary flex-shrink-0" />
                     <span className="text-sm font-semibold text-text">

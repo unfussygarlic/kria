@@ -65,9 +65,14 @@ function GigChip({ gig, active, onClick }: {
       onClick={onClick}
       className={`relative flex-shrink-0 flex flex-col gap-1.5 px-4 py-3 rounded-xl border transition-all text-left min-w-[180px] max-w-[220px] ${
         active
-          ? "border-primary bg-primary/8 shadow-[0_0_0_1px_rgba(212,255,0,0.3)]"
+          ? "border-primary bg-primary/8"
           : "border-white/10 bg-surface-1 hover:border-white/25 hover:bg-surface-2"
       }`}
+      // Ring glow uses the theme's --lime token so light mode gets an olive
+      // outline instead of a bright yellow-green halo on the white canvas.
+      style={active
+        ? { boxShadow: "0 0 0 1px color-mix(in srgb, var(--lime) 30%, transparent)" }
+        : undefined}
     >
       {/* Pending badge */}
       {gig.pending_count > 0 && (
@@ -397,7 +402,10 @@ export default function ApplicationsPage() {
               <div className="absolute right-0 top-0 bottom-5 w-20 z-10 pointer-events-none"
                 style={{ background: "linear-gradient(to left, var(--content-bg) 20%, transparent 100%)" }}>
                 <div className="absolute right-0 top-0 bottom-0 w-px"
-                  style={{ background: "linear-gradient(to bottom, transparent, rgba(212,255,0,0.5) 40%, rgba(212,255,0,0.5) 60%, transparent)", filter: "blur(3px)" }} />
+                  style={{
+                    background: "linear-gradient(to bottom, transparent, color-mix(in srgb, var(--lime) 50%, transparent) 40%, color-mix(in srgb, var(--lime) 50%, transparent) 60%, transparent)",
+                    filter: "blur(3px)",
+                  }} />
               </div>
             )}
             {/* -my-2 compensates for py-2 inside scroll container, which gives room for absolute badges */}
