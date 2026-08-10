@@ -10,6 +10,7 @@ import {
   Animated,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
 import { rf, rw } from "@/constants/responsive";
@@ -18,6 +19,7 @@ const OTP_LENGTH = 6;
 
 export default function VerifyScreen() {
   const { phone } = useLocalSearchParams<{ phone: string }>();
+  const insets = useSafeAreaInsets();
   const [otpValue, setOtpValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -88,7 +90,7 @@ export default function VerifyScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: insets.top + rw(20) }]}>
         {/* Back button */}
         <Pressable style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>← Back</Text>
@@ -173,7 +175,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 60,
+    // paddingTop is injected inline (insets.top + rw(20)) so it respects
+    // the status bar / notch on every device.
   },
   backButton: {
     marginBottom: 32,

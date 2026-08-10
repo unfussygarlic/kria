@@ -219,7 +219,14 @@ export const JobCard = memo(function JobCard({ gig, variant, applicationCount, p
   const content = isExplore ? (
     <View style={[styles.card, styles.cardExploreCover]} pointerEvents="none">
       {gig.cover_image_url ? (
-        <Image source={{ uri: gig.cover_image_url }} style={styles.coverImage} resizeMode="cover" />
+        // resizeMode="contain" is defensive — new 1080×1620 covers match the
+        // 2:3 container exactly (contain == cover), but any cover generated
+        // before the 2026-08-07 compositor bump is 1080×1350 (4:5). With
+        // resizeMode="cover" the taller 2:3 container zooms + center-crops
+        // those, chopping the baked title/pay/host text on both sides.
+        // "contain" fits the full image with letterboxing on the mismatched
+        // ones, so old covers stay readable until they're regenerated.
+        <Image source={{ uri: gig.cover_image_url }} style={styles.coverImage} resizeMode="contain" />
       ) : (
         <FallbackHero
           gig={gig}

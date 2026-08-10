@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { KriaLogo } from "@/components/ui/KriaLogo";
+import { UrgencyDot } from "@/components/ui/UrgencyDot";
+import { useHostQueue } from "@/components/layout/HostQueueProvider";
 import type { Profile } from "@/types";
 
 const NAV = [
@@ -25,10 +27,19 @@ interface Props {
 
 export function Sidebar({ profile, trialDaysRemaining }: Props) {
   const pathname = usePathname();
+  const { queue } = useHostQueue();
 
   const showTrialDot =
     trialDaysRemaining !== undefined && trialDaysRemaining >= 0 && trialDaysRemaining <= 14;
   const trialDotColor = trialDaysRemaining !== undefined && trialDaysRemaining <= 7 ? "#ff7351" : "#FFC83D";
+
+  // Per-nav-item counts for the urgency dots. Silent (null render) when 0.
+  const countFor = (href: string): number => {
+    if (href === "/applications") return queue.totalPendingApplications;
+    if (href === "/gigs")         return queue.urgent.length + queue.expired.length;
+    if (href === "/dashboard")    return queue.urgent.length + queue.expired.length + queue.totalPendingApplications;
+    return 0;
+  };
 
   return (
     <aside
@@ -52,6 +63,7 @@ export function Sidebar({ profile, trialDaysRemaining }: Props) {
         {NAV.map(({ href, label, Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           const isSubscription = href === "/subscription";
+          const count = countFor(href);
           return (
             <Link
               key={href}
@@ -61,10 +73,11 @@ export function Sidebar({ profile, trialDaysRemaining }: Props) {
               }`}
             >
               <Icon size={16} />
-              {label}
+              <span className="flex-1">{label}</span>
+              {count > 0 && <UrgencyDot count={count} />}
               {isSubscription && showTrialDot && (
                 <span
-                  className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: trialDotColor, boxShadow: `0 0 4px ${trialDotColor}` }}
                 />
               )}

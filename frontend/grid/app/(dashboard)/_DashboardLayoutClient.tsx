@@ -7,6 +7,7 @@ import { initializeSubscription, type SubscriptionStatus } from "@/lib/api/subsc
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { TrialBanner } from "@/components/layout/TrialBanner";
+import { HostQueueProvider } from "@/components/layout/HostQueueProvider";
 import { Spinner } from "@/components/ui/Spinner";
 import type { Profile } from "@/types";
 
@@ -75,17 +76,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     subscription.days_remaining <= 14;
 
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: "var(--content-bg)" }}>
-      <Sidebar profile={profile} trialDaysRemaining={subscription?.days_remaining} />
-      <div className="flex-1 min-w-0 flex flex-col">
-        <TopBar profile={profile} />
-        {showBanner && (
-          <TrialBanner daysRemaining={subscription!.days_remaining} />
-        )}
-        <main className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--content-bg)" }}>
-          {children}
-        </main>
+    <HostQueueProvider>
+      <div className="flex min-h-screen" style={{ backgroundColor: "var(--content-bg)" }}>
+        <Sidebar profile={profile} trialDaysRemaining={subscription?.days_remaining} />
+        <div className="flex-1 min-w-0 flex flex-col">
+          <TopBar profile={profile} />
+          {showBanner && (
+            <TrialBanner daysRemaining={subscription!.days_remaining} />
+          )}
+          <main className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--content-bg)" }}>
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </HostQueueProvider>
   );
 }

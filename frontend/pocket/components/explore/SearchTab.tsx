@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   searchJobs,
   SearchResultItem,
@@ -86,18 +87,22 @@ function FilterSheet({
   onApply: () => void;
   onClear: () => void;
 }) {
+  // presentationStyle="pageSheet" is iOS-only; on Android the modal covers
+  // the full screen including the status bar, so the header collides with
+  // the notch/clock unless we add the top inset manually.
+  const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onApply}>
       <View style={fs.sheet}>
         {/* Header */}
-        <View style={fs.header}>
+        <View style={[fs.header, { paddingTop: insets.top + 14 }]}>
           <Text style={fs.headerTitle}>Filters</Text>
           <Pressable onPress={onApply} style={fs.doneBtn}>
             <Text style={fs.doneBtnText}>Done</Text>
           </Pressable>
         </View>
 
-        <ScrollView style={fs.body} contentContainerStyle={fs.bodyContent} showsVerticalScrollIndicator={false}>
+        <ScrollView style={fs.body} contentContainerStyle={[fs.bodyContent, { paddingBottom: 24 + insets.bottom }]} showsVerticalScrollIndicator={false}>
           {/* Type */}
           <Text style={fs.sectionLabel}>Type</Text>
           <View style={fs.chipRow}>
@@ -160,7 +165,7 @@ function FilterSheet({
         </ScrollView>
 
         {/* Footer */}
-        <View style={fs.footer}>
+        <View style={[fs.footer, { paddingBottom: 16 + insets.bottom }]}>
           <Pressable style={fs.clearBtn} onPress={onClear}>
             <Text style={fs.clearBtnText}>Clear all</Text>
           </Pressable>
@@ -822,6 +827,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 16,
+    paddingTop: 14,
     paddingBottom: 10,
   },
   sortLabel: {

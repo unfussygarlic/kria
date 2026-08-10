@@ -1,262 +1,384 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, Briefcase, Users, Calendar, TrendingUp, Download, ArrowRight } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { GigStatusBadge } from "@/components/ui/Badge";
-import { PageLoader } from "@/components/ui/Spinner";
-import type { Gig, MyEventSummary } from "@/types";
+/**
+ * Dashboard — the host's home screen. Redesigned 2026-08-07 from a generic
+ * KPI grid into a worklist.
+ *
+ * Old dashboard led with 4 stat cards (Active Gigs / Events / Slots Filled /
+ * Total Posted), a "recent gigs" table that duplicated /gigs, and a filler
+ * "System Status: 99.98% uptime" card. Vanity metrics with no next step.
+ *
+ * New dashboard answers the only question a returning host cares about:
+ * **what should I look at right now?**
+ *
+ * Section order (top → bottom, most actionable first):
+ *   1. Attention row — cards for URGENT (ends today/tomorrow, unfilled),
+ *      PENDING (applications waiting), EXPIRED (past date, not resolved)
+ *   2. This week — 7-day agenda of upcoming gigs sorted by event_date
+ *   3. At a glance — compact stat strip (fill rate, active count, this month
+ *      pay committed) tucked at the bottom
+ *
+ * All data comes from a single `GET /gigs/mine` call → PostedGigSummary[]
+ * (already carries pending_count per gig), no need for a fan-out.
+ */
 
-function StatCard({
-  label, value, sub, Icon, accent = "primary",
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Plus, ArrowRight, AlertTriangle, Inbox, TimerReset,
+  Calendar, Zap, TrendingUp, MapPin,
+} from "lucide-react";
+import { listMyGigs, type PostedGigSummary } from "@/lib/api/gigs";
+import { PageLoader } from "@/components/ui/Spinner";
+import { UrgencyDot } from "@/components/ui/UrgencyDot";
+import { TimeToEventPill } from "@/components/ui/TimeToEventPill";
+import { computeWorkQueue, timeToEvent, type WorkQueue } from "@/lib/urgency";
+import { supabase } from "@/lib/supabase";
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface DashboardData {
+  gigs: PostedGigSummary[];
+  firstName: string | null;
+}
+
+// ── Action card ──────────────────────────────────────────────────────────────
+// One card per bucket in the top "Attention" row. Shown only when its count
+// is > 0 — the row shrinks to just the cards that carry a real signal.
+
+function ActionCard({
+  tone, Icon, title, sub, count, cta, onClick,
 }: {
-  label: string;
-  value: string | number;
-  sub?: string;
+  tone: "urgent" | "pending" | "expired";
   Icon: React.ElementType;
-  accent?: "primary" | "secondary";
+  title: string;
+  sub: string;
+  count: number;
+  cta: string;
+  onClick: () => void;
 }) {
-  const accentColor = accent === "primary" ? "text-primary" : "text-secondary";
-  const glowColor   = accent === "primary" ? "bg-primary/20 group-hover:bg-primary" : "bg-secondary/20 group-hover:bg-secondary";
+  const color =
+    tone === "urgent"  ? "#ff7351" :
+    tone === "pending" ? "var(--lime)" :
+    "var(--color-text-muted)";
+  const bg =
+    tone === "urgent"  ? "color-mix(in srgb, #ff7351 8%, var(--card-bg))" :
+    tone === "pending" ? "color-mix(in srgb, var(--lime) 6%, var(--card-bg))" :
+    "var(--card-bg)";
 
   return (
-    <div className="bg-surface-1 border border-white/10 rounded-xl p-6 relative overflow-hidden group">
-      <div className="flex items-start justify-between mb-4">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{label}</span>
-        <Icon size={18} className={accentColor} />
+    <button
+      onClick={onClick}
+      className="text-left rounded-xl p-5 border transition-all hover:brightness-110 active:scale-[0.99] group"
+      style={{
+        backgroundColor: bg,
+        borderColor: tone === "expired" ? "var(--border-color)" : `color-mix(in srgb, ${color} 35%, transparent)`,
+      }}
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div
+          className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)` }}
+        >
+          <Icon size={18} style={{ color }} />
+        </div>
+        <span className="text-3xl font-bold leading-none tabular-nums" style={{ color }}>{count}</span>
       </div>
-      <p className={`text-4xl font-bold ${accentColor}`}>{value}</p>
-      {sub && <p className="text-xs text-text-muted mt-2">{sub}</p>}
-      {/* Bottom accent bar */}
-      <div className={`absolute bottom-0 left-0 w-full h-[2px] transition-colors duration-300 ${glowColor}`} />
+      <p className="text-sm font-bold text-text mb-1">{title}</p>
+      <p className="text-xs text-text-muted mb-4">{sub}</p>
+      <span
+        className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest transition-transform group-hover:translate-x-0.5"
+        style={{ color }}
+      >
+        {cta} <ArrowRight size={11} />
+      </span>
+    </button>
+  );
+}
+
+// ── Agenda row (This week list) ─────────────────────────────────────────────
+// Compact one-line per gig — the whole point of the row is to *not* eat a
+// full card each. Left: title + city. Right: time-to-event pill + slot fill.
+
+function AgendaRow({ gig }: { gig: PostedGigSummary }) {
+  const fillPct = gig.slots_total > 0
+    ? Math.round((gig.slots_filled / gig.slots_total) * 100) : 0;
+  const filled = gig.slots_filled >= gig.slots_total && gig.slots_total > 0;
+
+  return (
+    <Link
+      href={`/gigs/${gig.id}`}
+      className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/[0.03] transition-colors group"
+    >
+      <TimeToEventPill eventDate={gig.event_date} className="flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-text truncate group-hover:text-primary transition-colors">
+          {gig.title}
+        </p>
+        <p className="text-[11px] text-text-muted flex items-center gap-1 mt-0.5">
+          <MapPin size={9} />{gig.city}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {gig.pending_count > 0 && (
+          <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+            {gig.pending_count} pending
+          </span>
+        )}
+        <div className="w-16 h-1 bg-surface-3 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${fillPct}%`,
+              backgroundColor: filled ? "var(--fill-complete)" : "var(--fill-partial)",
+            }}
+          />
+        </div>
+        <span className="text-xs text-text-sub tabular-nums w-10 text-right">
+          {gig.slots_filled}/{gig.slots_total}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+// ── Stat strip (at a glance, at the bottom) ─────────────────────────────────
+
+function StatStrip({ items }: { items: { label: string; value: string; Icon: React.ElementType }[] }) {
+  return (
+    <div
+      className="grid grid-cols-2 md:grid-cols-4 rounded-xl border overflow-hidden"
+      style={{ borderColor: "var(--border-color)", backgroundColor: "var(--card-bg)" }}
+    >
+      {items.map(({ label, value, Icon }, i) => (
+        <div
+          key={label}
+          className={`px-5 py-4 ${i > 0 ? "border-l border-t md:border-t-0" : ""}`}
+          style={{ borderColor: "var(--border-color)" }}
+        >
+          <div className="flex items-center gap-2 mb-1.5">
+            <Icon size={12} className="text-text-muted" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{label}</span>
+          </div>
+          <p className="text-xl font-bold text-text tabular-nums">{value}</p>
+        </div>
+      ))}
     </div>
   );
 }
 
+// ── Page ────────────────────────────────────────────────────────────────────
+
 export default function DashboardPage() {
   const router = useRouter();
-  const [gigs, setGigs] = useState<Gig[]>([]);
-  const [events, setEvents] = useState<MyEventSummary[]>([]);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const [gigsRes, eventsRes] = await Promise.all([
-        supabase
-          .from("gigs")
-          .select("*")
-          .eq("poster_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(50),
-        supabase
-          .from("events")
-          .select("id, title, venue_name, city, event_date, status, created_at")
-          .eq("poster_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(20),
+      const [gigsRes, userRes] = await Promise.all([
+        listMyGigs(),
+        supabase.auth.getUser(),
       ]);
 
-      setGigs((gigsRes.data ?? []) as Gig[]);
-      setEvents((eventsRes.data ?? []) as unknown as MyEventSummary[]);
+      let firstName: string | null = null;
+      const userId = userRes.data.user?.id;
+      if (userId) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("first_name")
+          .eq("id", userId)
+          .single();
+        firstName = profile?.first_name ?? null;
+      }
+
+      setData({
+        gigs: gigsRes.data?.items ?? [],
+        firstName,
+      });
       setLoading(false);
     };
     load();
   }, []);
 
-  if (loading) return <PageLoader />;
+  const queue: WorkQueue | null = useMemo(
+    () => (data ? computeWorkQueue(data.gigs) : null),
+    [data]
+  );
 
-  const activeGigs  = gigs.filter((g) => g.status === "open" || g.status === "in_progress");
-  const totalSlots  = gigs.reduce((s, g) => s + g.slots_total, 0);
-  const filledSlots = gigs.reduce((s, g) => s + g.slots_filled, 0);
-  const recentGigs  = gigs.slice(0, 6);
+  if (loading || !data || !queue) return <PageLoader />;
+
+  const { gigs, firstName } = data;
+  const greeting = firstName ? `Hi, ${firstName}` : "Host Dashboard";
+
+  // Empty state — no gigs ever posted.
+  if (gigs.length === 0) {
+    return (
+      <div className="p-8 max-w-5xl mx-auto">
+        <div className="mb-8">
+          <p className="pg-eyebrow">Overview</p>
+          <h1 className="pg-title">{greeting}</h1>
+          <p className="pg-sub">Welcome to Grid. Post your first gig to see runners apply.</p>
+        </div>
+        <div
+          className="rounded-2xl p-16 text-center border"
+          style={{ borderColor: "var(--border-color)", backgroundColor: "var(--card-bg)" }}
+        >
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 mx-auto mb-6 flex items-center justify-center">
+            <Zap size={28} className="text-primary" />
+          </div>
+          <h2 className="text-lg font-bold text-text mb-2">You&apos;re one gig away</h2>
+          <p className="text-sm text-text-muted mb-6 max-w-md mx-auto">
+            Post a role, set a shift time and pay, and verified runners near your venue will start applying.
+          </p>
+          <button
+            onClick={() => router.push("/gigs/new")}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-text-inv text-xs font-bold uppercase tracking-wider rounded-lg hover:brightness-110 active:scale-95 transition-all"
+          >
+            <Plus size={14} /> Post your first gig
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Derived stats (compact strip at bottom) ────────────────────────────
+  const activeGigs   = gigs.filter((g) => g.status === "open" || g.status === "in_progress").length;
+  const totalSlots   = gigs.reduce((s, g) => s + g.slots_total, 0);
+  const filledSlots  = gigs.reduce((s, g) => s + g.slots_filled, 0);
+  const fillRate     = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
+
+  // "Coming up" = next 7 days worth of upcoming gigs, excluding already-urgent
+  // ones (which are shown in the Attention row above so we don't repeat them).
+  const upcomingList = queue.upcoming.slice(0, 6);
+  const hasAnyAction = queue.urgent.length + queue.pending.length + queue.expired.length > 0;
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-end justify-between mb-10">
+      {/* ── Header ────────────────────────────────────────────────────────── */}
+      <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
         <div>
           <p className="pg-eyebrow">Overview</p>
-          <h1 className="pg-title">Host Dashboard</h1>
-          <p className="pg-sub">Real-time performance and gig management.</p>
+          <h1 className="pg-title">{greeting}</h1>
+          <p className="pg-sub">
+            {hasAnyAction
+              ? "Here's what needs your attention today."
+              : "All caught up. Nothing needs immediate action."}
+          </p>
         </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-surface-1 border border-white/10 text-text text-xs font-bold uppercase tracking-wider rounded hover:bg-surface-2 transition-colors">
-            <Download size={14} />
-            Export CSV
-          </button>
-          <button
-            onClick={() => router.push("/gigs/new")}
-            className="flex items-center gap-2 px-5 py-2 bg-primary text-text-inv text-xs font-bold uppercase tracking-wider rounded hover:brightness-110 active:scale-95 transition-all"
-          >
-            <Plus size={14} />
-            Post New Gig
-          </button>
-        </div>
+        <button
+          onClick={() => router.push("/gigs/new")}
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-text-inv text-xs font-bold uppercase tracking-wider rounded hover:brightness-110 active:scale-95 transition-all"
+        >
+          <Plus size={14} /> Post a Gig
+        </button>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Active Gigs"  value={activeGigs.length}              sub="open or in progress"  Icon={Briefcase}  accent="primary"   />
-        <StatCard label="Total Events" value={events.length}                   sub="all time"             Icon={Calendar}   accent="secondary" />
-        <StatCard
-          label="Slots Filled"
-          value={`${filledSlots}/${totalSlots}`}
-          sub={totalSlots > 0 ? `${Math.round((filledSlots / totalSlots) * 100)}% fill rate` : "no gigs yet"}
-          Icon={Users}
-          accent="primary"
-        />
-        <StatCard label="Total Posted" value={gigs.length}                    sub="gigs all time"        Icon={TrendingUp} accent="secondary" />
-      </div>
-
-      {/* Content grid */}
-      <div className="grid grid-cols-12 gap-4">
-        {/* Recent gigs table */}
-        <div className="col-span-12 lg:col-span-9 bg-surface-1 border border-white/10 rounded-xl overflow-hidden">
-          <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-surface-2">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-text">Recent Gigs</h3>
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5 text-[10px] text-text-muted font-bold uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-primary inline-block" /> Open
-              </span>
-              <span className="flex items-center gap-1.5 text-[10px] text-text-muted font-bold uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-secondary inline-block" /> In Progress
-              </span>
-            </div>
-          </div>
-
-          {gigs.length === 0 ? (
-            <div className="p-12 text-center">
-              <Briefcase size={32} className="text-text-muted mx-auto mb-3" />
-              <p className="text-sm text-text-muted mb-4">No gigs yet. Post your first one!</p>
-              <button
-                onClick={() => router.push("/gigs/new")}
-                className="px-5 py-2 bg-primary text-text-inv text-xs font-bold uppercase tracking-wider rounded hover:brightness-110 transition-all"
-              >
-                Post a Gig
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-text-muted">Gig Details</th>
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-text-muted hidden md:table-cell">Category</th>
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-text-muted hidden lg:table-cell">City</th>
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-text-muted hidden lg:table-cell">Date</th>
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-text-muted">Slots</th>
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-text-muted">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {recentGigs.map((gig) => (
-                      <tr
-                        key={gig.id}
-                        onClick={() => router.push(`/gigs/${gig.id}`)}
-                        className="cursor-pointer hover:bg-white/[0.02] transition-colors group"
-                      >
-                        <td className="px-6 py-5">
-                          <p className="text-sm font-semibold text-text">{gig.title}</p>
-                          {gig.company_name && (
-                            <p className="text-[10px] text-text-muted mt-0.5">{gig.company_name}</p>
-                          )}
-                        </td>
-                        <td className="px-6 py-5 hidden md:table-cell">
-                          <span className="bg-surface-4 text-secondary text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wide">
-                            {gig.category.replace(/_/g, " ")}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 text-sm text-text-sub hidden lg:table-cell">{gig.city}</td>
-                        <td className="px-6 py-5 text-sm text-text-sub hidden lg:table-cell">
-                          {new Date(gig.event_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                        </td>
-                        <td className="px-6 py-5">
-                          <span className={`text-sm font-semibold ${gig.slots_filled >= gig.slots_total && gig.slots_total > 0 ? "text-primary" : "text-text"}`}>
-                            {gig.slots_filled}/{gig.slots_total}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5">
-                          <GigStatusBadge status={gig.status} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="px-6 py-4 border-t border-white/5 bg-bg/30">
-                <button
-                  onClick={() => router.push("/gigs")}
-                  className="flex items-center gap-2 text-xs text-text-muted hover:text-primary transition-colors font-bold uppercase tracking-wider"
-                >
-                  View All Gigs <ArrowRight size={12} />
-                </button>
-              </div>
-            </>
+      {/* ── Attention row (only shown when there's something to act on) ──── */}
+      {hasAnyAction && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+          {queue.urgent.length > 0 && (
+            <ActionCard
+              tone="urgent"
+              Icon={AlertTriangle}
+              title="Runners needed"
+              sub={
+                queue.urgent.length === 1
+                  ? "1 gig starts soon and isn't full"
+                  : `${queue.urgent.length} gigs start soon and aren't full`
+              }
+              count={queue.urgent.length}
+              cta="Review gigs"
+              onClick={() => router.push(`/gigs/${queue.urgent[0]!.id}`)}
+            />
+          )}
+          {queue.totalPendingApplications > 0 && (
+            <ActionCard
+              tone="pending"
+              Icon={Inbox}
+              title="Applications waiting"
+              sub={
+                queue.pending.length === 1
+                  ? `On 1 gig — review and accept`
+                  : `Across ${queue.pending.length} gigs — review and accept`
+              }
+              count={queue.totalPendingApplications}
+              cta="Open inbox"
+              onClick={() => router.push("/applications")}
+            />
+          )}
+          {queue.expired.length > 0 && (
+            <ActionCard
+              tone="expired"
+              Icon={TimerReset}
+              title="Ended without wrap-up"
+              sub={
+                queue.expired.length === 1
+                  ? "1 gig ended and is still marked open"
+                  : `${queue.expired.length} gigs ended and are still marked open`
+              }
+              count={queue.expired.length}
+              cta="Resolve"
+              onClick={() => router.push("/gigs")}
+            />
           )}
         </div>
+      )}
 
-        {/* Right sidebar */}
-        <div className="col-span-12 lg:col-span-3 flex flex-col gap-4">
-          {/* Quick actions */}
-          <div className="bg-surface-1 border border-white/10 rounded-xl p-6">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-4">Quick Actions</h3>
-            <div className="space-y-3">
-              <button
-                onClick={() => router.push("/gigs/new")}
-                className="w-full flex items-center gap-3 p-3 bg-surface-3 rounded border border-white/5 hover:border-primary/30 transition-colors text-left"
-              >
-                <Briefcase size={16} className="text-primary flex-shrink-0" />
-                <div>
-                  <p className="text-xs font-bold text-text">Post a Gig</p>
-                  <p className="text-[10px] text-text-muted">Find Runners instantly</p>
-                </div>
-              </button>
-              <button
-                onClick={() => router.push("/events/new")}
-                className="w-full flex items-center gap-3 p-3 bg-surface-3 rounded border border-white/5 hover:border-secondary/30 transition-colors text-left"
-              >
-                <Calendar size={16} className="text-secondary flex-shrink-0" />
-                <div>
-                  <p className="text-xs font-bold text-text">Create Event</p>
-                  <p className="text-[10px] text-text-muted">Bundle multiple gigs</p>
-                </div>
-              </button>
-            </div>
+      {/* ── This week (agenda) ──────────────────────────────────────────── */}
+      <div
+        className="rounded-xl border overflow-hidden mb-6"
+        style={{ borderColor: "var(--border-color)", backgroundColor: "var(--card-bg)" }}
+      >
+        <div
+          className="px-5 py-4 flex items-center justify-between border-b"
+          style={{ borderColor: "var(--border-color)" }}
+        >
+          <div className="flex items-center gap-2.5">
+            <Calendar size={14} className="text-text-muted" />
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-text">
+              This week
+            </h2>
+            <UrgencyDot count={queue.urgent.length} showLabel />
           </div>
-
-          {/* System status */}
-          <div className="bg-surface-1 border border-white/10 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">System Status</span>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-primary" />
-                <span className="text-[10px] font-bold text-primary uppercase">Optimal</span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {[
-                { label: "API Uptime", value: "99.98%", pct: 99 },
-                { label: "Match Rate",  value: "94.2%",  pct: 94 },
-              ].map(({ label, value, pct }) => (
-                <div key={label}>
-                  <div className="flex justify-between text-[10px] text-text-muted font-bold uppercase tracking-wider mb-1">
-                    <span>{label}</span>
-                    <span>{value}</span>
-                  </div>
-                  <div className="w-full bg-surface-3 h-[2px] rounded-full overflow-hidden">
-                    <div className="bg-primary h-full rounded-full" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Link
+            href="/gigs"
+            className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-text-muted hover:text-primary transition-colors"
+          >
+            All gigs <ArrowRight size={11} />
+          </Link>
         </div>
+        {upcomingList.length === 0 && queue.urgent.length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <p className="text-sm text-text-muted">Nothing scheduled in the next 7 days.</p>
+          </div>
+        ) : (
+          <div className="p-2">
+            {/* Merge urgent + upcoming, urgent first, dedup by id */}
+            {(() => {
+              const merged: PostedGigSummary[] = [];
+              const seen = new Set<string>();
+              for (const g of [...queue.urgent, ...upcomingList]) {
+                if (seen.has(g.id)) continue;
+                seen.add(g.id);
+                merged.push(g);
+              }
+              return merged.slice(0, 8).map((g) => <AgendaRow key={g.id} gig={g} />);
+            })()}
+          </div>
+        )}
       </div>
+
+      {/* ── At a glance (compact stat strip, not the star of the page) ──── */}
+      <StatStrip
+        items={[
+          { label: "Active gigs",  value: String(activeGigs),                       Icon: Zap },
+          { label: "Fill rate",    value: `${fillRate}%`,                            Icon: TrendingUp },
+          { label: "Slots filled", value: `${filledSlots}/${totalSlots}`,            Icon: Inbox },
+          { label: "Total posted", value: String(gigs.length),                       Icon: Calendar },
+        ]}
+      />
     </div>
   );
 }

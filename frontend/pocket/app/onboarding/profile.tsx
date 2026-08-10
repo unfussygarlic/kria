@@ -16,6 +16,7 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
 import { GenderType } from "@/types/database";
@@ -149,6 +150,9 @@ function CityPickerModal({
   onClose: () => void;
 }) {
   const [search, setSearch] = useState("");
+  // presentationStyle="pageSheet" is iOS-only; on Android the modal is
+  // full-screen so we need to pad past the status bar ourselves.
+  const insets = useSafeAreaInsets();
 
   const filtered = search.trim()
     ? INDIA_CITIES.filter((c) =>
@@ -160,7 +164,7 @@ function CityPickerModal({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={picker.sheet}>
         {/* Header */}
-        <View style={picker.header}>
+        <View style={[picker.header, { paddingTop: insets.top + 14 }]}>
           <Text style={picker.headerTitle}>Select City</Text>
           <Pressable onPress={onClose} hitSlop={12}>
             <Feather name="x" size={22} color={T.text} />

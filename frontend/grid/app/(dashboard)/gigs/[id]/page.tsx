@@ -12,6 +12,7 @@ import { pauseGig, unpauseGig } from "@/lib/api/gigs";
 import { GigStatusBadge, AppStatusBadge, AsgnStatusBadge, PausedBadge, ExpiredBadge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { MomentumChip } from "@/components/ui/MomentumChip";
+import { TimeToEventPill } from "@/components/ui/TimeToEventPill";
 import { ApplicantProfileModal } from "@/components/applicants/ApplicantProfileModal";
 import type { Gig, ApplicantListItem } from "@/types";
 
@@ -112,20 +113,21 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
   const otp = accepted.find((a) => a.assignment_otp)?.assignment_otp ?? null;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-8 max-w-7xl mx-auto">
       {/* Back */}
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-2 text-text-muted hover:text-text text-xs font-bold uppercase tracking-wider mb-8 transition-colors"
+        className="flex items-center gap-2 text-text-muted hover:text-text text-xs font-bold uppercase tracking-wider mb-6 transition-colors"
       >
         <ArrowLeft size={15} /> Back to Gigs
       </button>
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1 flex-wrap">
-            <h1 className="pg-title">{gig.title}</h1>
+      {/* Header — title, status pills, time-to-event, plus a right cluster
+          holding slots progress + compact OTP chip + pause. OTP moved out of
+          the left column (it used to eat a full card + a huge 5xl number). */}
+      <div className="flex items-start justify-between mb-8 flex-wrap gap-6">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             {expired ? (
               <ExpiredBadge />
             ) : (
@@ -134,15 +136,53 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
                 {gig.is_paused && <PausedBadge />}
               </>
             )}
+            <TimeToEventPill eventDate={gig.event_date} />
           </div>
-          {gig.company_name && <p className="text-sm text-text-muted">{gig.company_name}</p>}
+          <h1 className="pg-title">{gig.title}</h1>
+          {gig.company_name && <p className="text-sm text-text-muted mt-1">{gig.company_name}</p>}
         </div>
-        <div className="flex items-start gap-3">
+
+        <div className="flex items-start gap-3 flex-wrap">
+          {/* OTP chip — inline. Shown as ── when no accepted runners yet. */}
+          <div
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg"
+            style={{
+              backgroundColor: otp ? "color-mix(in srgb, var(--lime) 8%, var(--card-bg))" : "var(--card-bg)",
+              border: `1px solid ${otp ? "color-mix(in srgb, var(--lime) 40%, transparent)" : "var(--border-color)"}`,
+            }}
+            title={otp ? "Share this OTP at the venue on the day" : "OTP appears once a runner is accepted"}
+          >
+            <Key size={13} className={otp ? "text-primary" : "text-text-muted"} />
+            <div className="flex flex-col leading-tight">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-text-muted">Check-in OTP</span>
+              <span className={`text-lg font-black tabular-nums tracking-[0.15em] ${otp ? "text-primary" : "text-text-muted"}`}>
+                {otp ?? "——"}
+              </span>
+            </div>
+          </div>
+
+          {/* Slots block */}
+          <div className="text-right min-w-[110px]">
+            <p className="text-[10px] text-text-muted uppercase tracking-widest font-bold">Slots</p>
+            <p className="text-2xl font-bold text-text tabular-nums">{gig.slots_filled}/{gig.slots_total}</p>
+            <div className="w-full h-1 bg-surface-3 rounded-full overflow-hidden mt-1.5">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: gig.slots_total ? `${(gig.slots_filled / gig.slots_total) * 100}%` : "0%",
+                  backgroundColor: gig.slots_filled >= gig.slots_total && gig.slots_total > 0
+                    ? "var(--fill-complete)" : "var(--fill-partial)",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Pause action */}
           {(gig.status === "open" || gig.status === "in_progress") && !expired && (
             <button
               onClick={handleTogglePause}
               disabled={pauseLoading}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 ${
+              className={`flex items-center gap-2 px-4 h-9 self-center rounded-lg border text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 ${
                 gig.is_paused
                   ? "border-primary/40 text-primary hover:bg-primary/10"
                   : "border-amber/30 text-amber hover:bg-amber/10"
@@ -151,22 +191,13 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
               {gig.is_paused ? <><Play size={12} /> Resume</> : <><Pause size={12} /> Pause</>}
             </button>
           )}
-          <div className="text-right">
-          <p className="text-xs text-text-muted uppercase tracking-wider font-bold">Slots</p>
-          <p className="text-2xl font-bold text-text">{gig.slots_filled}/{gig.slots_total}</p>
-          <div className="w-full h-1 bg-surface-3 rounded-full overflow-hidden mt-1.5">
-            <div
-              className="h-full bg-primary rounded-full"
-              style={{ width: gig.slots_total ? `${(gig.slots_filled / gig.slots_total) * 100}%` : "0%" }}
-            />
-          </div>
-        </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left column: gig info */}
-        <div className="lg:col-span-5 space-y-4">
+        {/* Left column: gig info — 4/12 (was 5/12). Reclaims one column for
+            the applicants panel, which is the primary work surface. */}
+        <div className="lg:col-span-4 space-y-4">
 
           {/* Cover art — aspect-[4/5] matches the source image (1080x1350); a
               fixed height here would force object-cover to crop top+bottom */}
@@ -202,28 +233,6 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
             </div>
           </div>
 
-          {/* OTP card — prominent, always shown */}
-          <div className={`rounded-xl p-6 flex items-center justify-between ${
-            otp
-              ? "bg-surface-2 border-2 border-primary/50 shadow-[0_0_24px_rgba(212,255,0,0.08)]"
-              : "bg-surface-1 border border-white/10"
-          }`}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Key size={20} className="text-primary" />
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-primary">Check-in OTP</p>
-                <p className="text-xs text-text-muted mt-0.5">
-                  {otp ? "Share at venue on the day" : "Shown once a runner is accepted"}
-                </p>
-              </div>
-            </div>
-            <div className={`text-5xl font-black tracking-[0.15em] ${otp ? "text-text" : "text-text-muted"}`}>
-              {otp ?? "——"}
-            </div>
-          </div>
-
           {/* Requirements */}
           {(gig.dress_code || gig.requirements_note || gig.experience_required || (gig.languages_required?.length > 0)) && (
             <div className="bg-surface-1 border border-white/10 rounded-xl p-6 space-y-3">
@@ -251,8 +260,8 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
           )}
         </div>
 
-        {/* Right column: applicants */}
-        <div className="lg:col-span-7">
+        {/* Right column: applicants — 8/12 (was 7/12) */}
+        <div className="lg:col-span-8">
           <div className="bg-surface-1 border border-white/10 rounded-xl overflow-hidden flex flex-col">
             {/* Tab header */}
             <div className="flex border-b border-white/10">
