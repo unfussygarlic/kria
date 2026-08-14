@@ -1,129 +1,201 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+/**
+ * /login — Grid landing page.
+ *
+ * ── "Live Grid" redesign (2026-08-07) ────────────────────────────────────────
+ * Replaced the 7-scene scroll story ("Intro → Why Grid → Post → Applicants → …
+ * → Dashboard mockup") with a live-feed-first hero.
+ *
+ * Prior design was a features tour: employers had to scroll past 6 scenes
+ * before reaching the dashboard mockup and the sign-in was buried behind
+ * cognitive load. This version leads with **motion and specifics** — a live
+ * (simulated) stream of activity across India + an animated India map with
+ * pulsing city dots — so the pitch is "look how many businesses are hiring
+ * on Kria right now" rather than "here's how our feature X works."
+ *
+ * Structure (left column = story, right column = sticky email OTP):
+ *   1. Hero — headline + short lead + big live-feed panel
+ *   2. India map + city rankings
+ *   3. Three pillar cards (Post · Hire · Verify) with one condensed demo
+ *   4. Dashboard mockup (kept, kept small)
+ *
+ * All auth logic (Supabase magic-link OTP flow, error/cooldown handling,
+ * theme toggle) is unchanged from the prior version — same session code,
+ * same route → dashboard-or-onboarding behavior.
+ *
+ * The activity feed is simulated: rotating templates keyed off a pool of
+ * hand-picked hosts + cities so it feels grounded even on cold-start. When
+ * we ship a real events stream (application-created / gig-posted / OTP-
+ * verified), swap `useActivityFeed()` for a real WebSocket subscription
+ * without touching the layout.
+ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 type Step = "email" | "otp";
 
-const RAIL_STEPS = ["Grid", "Why Grid", "Post", "Applicants", "Check-in", "Events", "Start"];
 const RESEND_COOLDOWN = 60;
-const ROLE_TEXT = "Banquet service crew";
 
-const CITIES = ["Mumbai", "Delhi NCR", "Bengaluru", "Hyderabad", "Pune", "Chennai", "Jaipur", "Kochi"];
+// ── Live activity feed seed data ───────────────────────────────────────────
+// Hand-picked hosts + city so the stream reads authentic before any real
+// signal exists. Kept small (~12 hosts × 10 templates) so patterns are
+// visible enough to feel real but random enough not to loop obviously.
 
-const APPLICANTS = [
-  { initials: "PS", name: "Priya Sharma", meta: "38 gigs · Mumbai", score: 812, band: "Elite", bandVar: "--band-elite" },
-  { initials: "AM", name: "Arjun Mehta", meta: "21 gigs · Thane", score: 704, band: "Trusted", bandVar: "--band-trusted" },
-  { initials: "KN", name: "Kavya Nair", meta: "12 gigs · Navi Mumbai", score: 631, band: "Reliable", bandVar: "--band-reliable" },
+const HOSTS: { name: string; city: string; cityKey: string }[] = [
+  { name: "Olive & Oak",           city: "Bengaluru",  cityKey: "blr" },
+  { name: "Chennai Trade Centre",  city: "Chennai",    cityKey: "che" },
+  { name: "Verba Studios",         city: "Mumbai",     cityKey: "mum" },
+  { name: "Bandra Books",          city: "Mumbai",     cityKey: "mum" },
+  { name: "Mama",                  city: "Bengaluru",  cityKey: "blr" },
+  { name: "Flipkart",              city: "Hyderabad",  cityKey: "hyd" },
+  { name: "Sunburn Ent.",          city: "Goa",        cityKey: "mum" },
+  { name: "The Leela",             city: "Delhi NCR",  cityKey: "delhi" },
+  { name: "Cafe Coffee Day",       city: "Pune",       cityKey: "pune" },
+  { name: "Nirvana Wedding Co.",   city: "Jaipur",     cityKey: "jaipur" },
+  { name: "Le Meridien",           city: "Kochi",      cityKey: "koc" },
+  { name: "Ozone Wellness",        city: "Bengaluru",  cityKey: "blr" },
 ];
 
-const BAND_LEGEND = [
-  { label: "Newcomer", bandVar: "--band-newcomer" },
-  { label: "Building", bandVar: "--band-building" },
-  { label: "Reliable", bandVar: "--band-reliable" },
-  { label: "Trusted", bandVar: "--band-trusted" },
-  { label: "Elite", bandVar: "--band-elite" },
-  { label: "Legend", bandVar: "--band-legend" },
+const RUNNER_NAMES = ["Priya S.", "Arjun M.", "Kavya N.", "Rohan G.", "Anika P.", "Vikram T.", "Meera K.", "Aditya R."];
+
+type ActivityKind = "post" | "hire" | "fill" | "checkin" | "rating" | "level" | "pay" | "accept";
+
+const ACTIVITY_TEMPLATES: {
+  kind: ActivityKind;
+  build: (h: (typeof HOSTS)[number], runner: string) => { text: string; sub: string };
+}[] = [
+  { kind: "post",    build: (h)    => ({ text: `${h.name} posted 3 shifts`,           sub: `Banquet crew · ${h.city}` }) },
+  { kind: "hire",    build: (h)    => ({ text: `${h.name} hired 4 promoters`,         sub: `for launch event · ${h.city}` }) },
+  { kind: "fill",    build: (h)    => ({ text: `${h.name} filled a 10-hour shoot`,    sub: `in 9 minutes · ${h.city}` }) },
+  { kind: "checkin", build: (h, r) => ({ text: `${r} checked in`,                     sub: `${h.name} venue · ${h.city}` }) },
+  { kind: "rating",  build: (h, r) => ({ text: `${r} rated 5.0`,                      sub: `after gig at ${h.name} · ${h.city}` }) },
+  { kind: "post",    build: (h)    => ({ text: `${h.name} posted a wedding crew`,     sub: `12 roles across 3 days · ${h.city}` }) },
+  { kind: "accept",  build: (h, r) => ({ text: `${r} accepted a shift`,               sub: `at ${h.name} · ${h.city}` }) },
+  { kind: "pay",     build: (h)    => ({ text: `${h.name} settled ₹42,000 in wages`,  sub: `overnight · ${h.city}` }) },
+  { kind: "level",   build: (h, r) => ({ text: `${r} hit 800 Momentum`,               sub: `Elite band · ${h.city}` }) },
+  { kind: "fill",    build: (h)    => ({ text: `${h.name} filled 8 slots in 6 min`,   sub: `median today · 8m 12s · ${h.city}` }) },
 ];
 
-const WITHOUT_GRID = [
-  "Juggling WhatsApp groups and phone calls for every shift",
-  "No way to check if someone actually shows up on time",
-  "No-shows discovered mid-shift, when it's too late",
-  "Attendance tracked on paper, or not at all",
+// ── City coordinates on the India-map SVG (viewBox 0 0 400 500) ───────────
+// Baseline "live count" per city — updated in-place by the feed hook so the
+// numbers on the map tick up as new activity streams in.
+
+const CITY_DOTS: { key: string; label: string; x: number; y: number; live: number }[] = [
+  { key: "delhi",  label: "Delhi NCR",  x: 210, y: 118, live: 32 },
+  { key: "jaipur", label: "Jaipur",     x: 176, y: 148, live: 12 },
+  { key: "ahm",    label: "Ahmedabad",  x: 130, y: 195, live:  9 },
+  { key: "kol",    label: "Kolkata",    x: 300, y: 220, live:  7 },
+  { key: "mum",    label: "Mumbai",     x: 128, y: 245, live: 41 },
+  { key: "pune",   label: "Pune",       x: 152, y: 268, live: 18 },
+  { key: "hyd",    label: "Hyderabad",  x: 208, y: 285, live: 24 },
+  { key: "blr",    label: "Bengaluru",  x: 194, y: 340, live: 47 },
+  { key: "che",    label: "Chennai",    x: 240, y: 346, live: 22 },
+  { key: "koc",    label: "Kochi",      x: 186, y: 392, live:  8 },
 ];
 
-const WITH_GRID = [
-  "Post a role in minutes, from your phone or laptop",
-  "See a verified performance history before you hire",
-  "A one-time code confirms who's actually on-site",
-  "One dashboard for every gig, shift, and event",
-];
+// ── Activity feed hook ────────────────────────────────────────────────────
+// Pushes one new row every 2.8–5s. Ages every row every second so the "12s
+// ago" labels tick. Also emits the cityKey of the latest event so the map
+// can flash that city's dot.
 
-const ROLE_POOL = ["Valet · 3", "Housekeeping · 5", "AV crew · 2"];
-
-/* ── Scroll-reveal helper ─────────────────────────────────────────────── */
-
-function useReveal() {
-  const [visible, setVisible] = useState<Set<string>>(new Set());
-  const observerRef = useRef<IntersectionObserver | null>(null);
-
-  // Created synchronously during render (not inside useEffect) so it already
-  // exists by the time child Reveal components register in their own mount
-  // effects — child effects fire before parent effects, so a parent-side
-  // useEffect here would always lose that race and leave everything at
-  // opacity: 0 forever.
-  if (!observerRef.current && typeof window !== "undefined") {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        setVisible((prev) => {
-          let changed = false;
-          const next = new Set(prev);
-          entries.forEach((entry) => {
-            const id = (entry.target as HTMLElement).dataset.revealId;
-            if (entry.isIntersecting && id && !next.has(id)) {
-              next.add(id);
-              changed = true;
-            }
-          });
-          return changed ? next : prev;
-        });
-      },
-      { threshold: 0.15, rootMargin: "0px 0px -10% 0px" }
-    );
-  }
-
-  useEffect(() => {
-    return () => observerRef.current?.disconnect();
-  }, []);
-
-  const register = useCallback((el: HTMLElement | null, id: string) => {
-    if (!el || !observerRef.current) return;
-    el.dataset.revealId = id;
-    observerRef.current.observe(el);
-  }, []);
-
-  return { visible, register };
+interface ActivityRow {
+  id: number;
+  text: string;
+  sub: string;
+  kind: ActivityKind;
+  cityKey: string;
+  age: number; // seconds since it landed
 }
 
-function Reveal({
-  id,
-  register,
-  visible,
-  delay = 0,
-  scale = false,
-  style,
-  children,
-}: {
-  id: string;
-  register: (el: HTMLElement | null, id: string) => void;
-  visible: Set<string>;
-  delay?: number;
-  scale?: boolean;
-  style?: React.CSSProperties;
-  children: React.ReactNode;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    register(ref.current, id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [register, id]);
-  const shown = visible.has(id);
-  return (
-    <div
-      ref={ref}
-      style={{
-        opacity: shown ? 1 : 0,
-        transform: shown ? (scale ? "scale(1)" : "translateY(0)") : scale ? "scale(0.5)" : "translateY(28px)",
-        transition: `opacity 0.6s ease ${delay}s, transform 0.6s ease ${delay}s`,
-        ...style,
-      }}
-    >
-      {children}
-    </div>
+let __actSeq = 0;
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]!;
+}
+
+function makeActivity(): ActivityRow {
+  const host = pick(HOSTS);
+  const runner = pick(RUNNER_NAMES);
+  const template = pick(ACTIVITY_TEMPLATES);
+  const built = template.build(host, runner);
+  return {
+    id: __actSeq++,
+    text: built.text,
+    sub: built.sub,
+    kind: template.kind,
+    cityKey: host.cityKey,
+    age: 0,
+  };
+}
+
+function useActivityFeed() {
+  // Seed with 6 rows so the panel isn't blank on first paint.
+  const [rows, setRows] = useState<ActivityRow[]>(() =>
+    Array.from({ length: 6 }, () => {
+      const a = makeActivity();
+      a.age = 5 + Math.floor(Math.random() * 90);
+      return a;
+    })
   );
+  const [pulseCity, setPulseCity] = useState<string | null>(null);
+  const [cityLive, setCityLive] = useState<Record<string, number>>(
+    () => Object.fromEntries(CITY_DOTS.map((c) => [c.key, c.live]))
+  );
+
+  // Age counter: every row's "12s ago" ticks upward at 1Hz.
+  useEffect(() => {
+    const id = setInterval(
+      () => setRows((prev) => prev.map((r) => ({ ...r, age: r.age + 1 }))),
+      1000
+    );
+    return () => clearInterval(id);
+  }, []);
+
+  // Streamer: recursive setTimeout with jitter so gaps feel human, not robotic.
+  useEffect(() => {
+    let cancelled = false;
+    let handle: ReturnType<typeof setTimeout>;
+    const scheduleNext = () => {
+      const delay = 2800 + Math.random() * 2200;
+      handle = setTimeout(() => {
+        if (cancelled) return;
+        const next = makeActivity();
+        setRows((prev) => [next, ...prev].slice(0, 7));
+        setPulseCity(next.cityKey);
+        setCityLive((prev) => ({ ...prev, [next.cityKey]: (prev[next.cityKey] ?? 0) + 1 }));
+        setTimeout(() => setPulseCity(null), 1400);
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
+    return () => { cancelled = true; if (handle) clearTimeout(handle); };
+  }, []);
+
+  return { rows, pulseCity, cityLive };
 }
+
+// ── Presentational atoms ──────────────────────────────────────────────────
+
+function formatAge(seconds: number): string {
+  if (seconds < 60) return `${seconds}s ago`;
+  const min = Math.floor(seconds / 60);
+  if (min < 60) return `${min}m ago`;
+  return `${Math.floor(min / 60)}h ago`;
+}
+
+const KIND_META: Record<ActivityKind, { dot: string; label: string }> = {
+  post:    { dot: "var(--color-primary)",  label: "POST" },
+  hire:    { dot: "var(--color-primary)",  label: "HIRE" },
+  fill:    { dot: "var(--color-primary)",  label: "FILL" },
+  checkin: { dot: "var(--color-secondary)", label: "CHECK-IN" },
+  rating:  { dot: "var(--color-amber)",    label: "RATED" },
+  level:   { dot: "var(--color-amber)",    label: "LEVEL" },
+  pay:     { dot: "var(--color-primary)",  label: "PAID" },
+  accept:  { dot: "var(--color-secondary)", label: "ACCEPT" },
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -141,7 +213,7 @@ export default function LoginPage() {
     localStorage.setItem("kria-grid-theme", next);
   };
 
-  /* ── Auth state ── */
+  /* ── Auth state (unchanged from prior version) ── */
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
@@ -168,11 +240,7 @@ export default function LoginPage() {
         token: code,
         type: "email",
       });
-      if (err) {
-        setLoading(false);
-        setError(err.message);
-        return;
-      }
+      if (err) { setLoading(false); setError(err.message); return; }
       const { data: profile } = await supabase
         .from("profiles")
         .select("first_name")
@@ -191,17 +259,11 @@ export default function LoginPage() {
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!email.trim() || !email.includes("@")) {
-      setError("Enter a valid email address.");
-      return;
-    }
+    if (!email.trim() || !email.includes("@")) { setError("Enter a valid email address."); return; }
     setLoading(true);
     const { error: err } = await supabase.auth.signInWithOtp({ email: email.trim() });
     setLoading(false);
-    if (err) {
-      setError(err.message);
-      return;
-    }
+    if (err) { setError(err.message); return; }
     setCooldown(RESEND_COOLDOWN);
     setStep("otp");
     setTimeout(() => otpRefs.current[0]?.focus(), 50);
@@ -214,10 +276,7 @@ export default function LoginPage() {
     setLoading(true);
     const { error: err } = await supabase.auth.signInWithOtp({ email: email.trim() });
     setLoading(false);
-    if (err) {
-      setError(err.message);
-      return;
-    }
+    if (err) { setError(err.message); return; }
     setCooldown(RESEND_COOLDOWN);
     otpRefs.current[0]?.focus();
   };
@@ -230,102 +289,26 @@ export default function LoginPage() {
 
   const handleOtpChange = (i: number, val: string) => {
     const digit = val.replace(/\D/g, "").slice(-1);
-    setOtpDigits((prev) => {
-      const next = [...prev];
-      next[i] = digit;
-      return next;
-    });
+    setOtpDigits((prev) => { const next = [...prev]; next[i] = digit; return next; });
     if (digit && i < 5) otpRefs.current[i + 1]?.focus();
   };
 
   const handleOtpKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !otpDigits[i] && i > 0) {
       otpRefs.current[i - 1]?.focus();
-      setOtpDigits((prev) => {
-        const next = [...prev];
-        next[i - 1] = "";
-        return next;
-      });
+      setOtpDigits((prev) => { const next = [...prev]; next[i - 1] = ""; return next; });
     }
   };
 
-  /* ── Scroll story: reveal + active rail tracking ── */
-  const { visible, register } = useReveal();
-  const [active, setActive] = useState(0);
-  const sceneRefs = useRef<(HTMLDivElement | null)[]>([]);
+  /* ── Live feed ── */
+  const { rows, pulseCity, cityLive } = useActivityFeed();
 
-  useEffect(() => {
-    const check = () => {
-      const vh = window.innerHeight || document.documentElement.clientHeight;
-      let next = 0;
-      sceneRefs.current.forEach((el, i) => {
-        if (el && el.getBoundingClientRect().top < vh * 0.55) next = i;
-      });
-      setActive((prev) => (prev === next ? prev : next));
-    };
-    window.addEventListener("scroll", check, { passive: true });
-    window.addEventListener("resize", check);
-    check();
-    return () => {
-      window.removeEventListener("scroll", check);
-      window.removeEventListener("resize", check);
-    };
-  }, []);
-
-  const goToScene = (i: number) => {
-    const el = sceneRefs.current[i];
-    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 140, behavior: "smooth" });
-  };
-
-  /* ── Demo: typed role ── */
-  const [typedRole, setTypedRole] = useState("");
-  const typingStarted = useRef(false);
-  useEffect(() => {
-    if (!visible.has("scene-2") || typingStarted.current) return;
-    typingStarted.current = true;
-    let i = 0;
-    const t = setInterval(() => {
-      i++;
-      setTypedRole(ROLE_TEXT.slice(0, i));
-      if (i >= ROLE_TEXT.length) clearInterval(t);
-    }, 55);
-    return () => clearInterval(t);
-  }, [visible]);
-  const typedDone = typedRole.length >= ROLE_TEXT.length;
-
-  /* ── Demo: publish gig ── */
-  const [published, setPublished] = useState(false);
-
-  /* ── Demo: accept applicants ── */
-  const [accepted, setAccepted] = useState<Record<string, boolean>>({});
-  const acceptedCount = Object.values(accepted).filter(Boolean).length;
-
-  /* ── Demo: event roles ── */
-  const [eventRoles, setEventRoles] = useState(["Service · 12", "Security · 4", "Setup · 6"]);
-  const crewCount = eventRoles.reduce((n, r) => n + Number(r.split("·")[1]), 0);
-  const addRole = () => {
-    if (eventRoles.length >= 6) return;
-    setEventRoles((prev) => [...prev, ROLE_POOL[prev.length - 3]]);
-  };
-
-  /* ── Live pulse: city + clock ── */
-  const [cityIdx, setCityIdx] = useState(0);
-  const [cityVisible, setCityVisible] = useState(true);
+  /* ── IST clock (kept from prior; drives the right-panel pulse strip) ── */
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     setNow(new Date());
-    const cityTimer = setInterval(() => {
-      setCityVisible(false);
-      setTimeout(() => {
-        setCityIdx((i) => (i + 1) % CITIES.length);
-        setCityVisible(true);
-      }, 350);
-    }, 3000);
     const clock = setInterval(() => setNow(new Date()), 15000);
-    return () => {
-      clearInterval(cityTimer);
-      clearInterval(clock);
-    };
+    return () => clearInterval(clock);
   }, []);
   const istTime = now
     ? new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" })
@@ -333,58 +316,95 @@ export default function LoginPage() {
         .toLowerCase()
     : "";
 
-  const setSceneRef = (i: number) => (el: HTMLDivElement | null) => {
-    sceneRefs.current[i] = el;
+  /* ── Interactive mini-demo (one condensed section, was 4 scenes) ── */
+  const [demoStep, setDemoStep] = useState<"post" | "applying" | "hired">("post");
+  const [demoRole, setDemoRole] = useState("");
+  const publishDemo = () => {
+    setDemoRole(demoRole || "Banquet service crew");
+    setDemoStep("applying");
+    setTimeout(() => setDemoStep("hired"), 1600);
   };
+  const resetDemo = () => { setDemoRole(""); setDemoStep("post"); };
+
+  /* ── Totals for stats strip ── */
+  const totalLive = useMemo(
+    () => Object.values(cityLive).reduce((a, b) => a + b, 0),
+    [cityLive]
+  );
 
   return (
-    <div style={{ background: "var(--color-bg)", color: "var(--color-text)", fontFamily: "Inter, system-ui, sans-serif", minHeight: "100vh" }}>
+    <div style={{
+      background: "var(--color-bg)",
+      color: "var(--color-text)",
+      fontFamily: "Inter, system-ui, sans-serif",
+      minHeight: "100vh",
+    }}>
       <style>{`
         @keyframes gridBlink { 0%,45% { opacity: 1 } 50%,95% { opacity: 0 } 100% { opacity: 1 } }
         @keyframes gridPulse {
-          0% { box-shadow: 0 0 0 0 rgba(212,255,0,0.45) }
+          0% { box-shadow: 0 0 0 0 rgba(212,255,0,0.5) }
           70% { box-shadow: 0 0 0 8px rgba(212,255,0,0) }
           100% { box-shadow: 0 0 0 0 rgba(212,255,0,0) }
         }
+        @keyframes gridRise {
+          0%   { opacity: 0; transform: translateY(-14px); }
+          6%   { opacity: 1; transform: translateY(0); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes gridFlash {
+          0%   { transform: scale(1);   opacity: 0.6; }
+          50%  { transform: scale(3);   opacity: 0; }
+          100% { transform: scale(3);   opacity: 0; }
+        }
+
         .grid-shell { display: grid; grid-template-columns: minmax(0,1fr) minmax(340px,480px); min-height: 100vh; }
         .grid-auth-col { position: relative; border-left: 1px solid var(--border-color); background: var(--color-surface-1); }
-        .grid-auth-inner { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 40px; padding: 36px 40px; min-width: 0; max-width: 460px; margin: 0 auto; }
-        .grid-header, .grid-footer { display: flex; align-items: center; padding-left: 32px; padding-right: 32px; flex-shrink: 0; }
-        .grid-rail { display: block; width: 120px; flex-shrink: 0; padding-left: 32px; box-sizing: border-box; }
-        .grid-rail span { white-space: nowrap; }
-        .grid-rail-sticky { position: sticky; top: 34vh; }
-        .grid-scene-row { display: flex; flex: 1; }
-        .grid-scene-content { padding: 40px 32px 0 40px; max-width: min(600px, 100%); min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 96px; margin-bottom: 96px; }
-        .grid-story-inner { width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; flex: 1; }
+        .grid-auth-inner { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 32px; padding: 36px 40px; min-width: 0; max-width: 460px; margin: 0 auto; }
+        .grid-story-col { display: flex; flex-direction: column; min-width: 0; }
+        .grid-header, .grid-footer { display: flex; align-items: center; padding: 22px 40px; flex-shrink: 0; }
+        .grid-story-body { padding: 8px 40px 40px 40px; display: flex; flex-direction: column; gap: 72px; flex: 1; }
+
+        /* Section grids */
+        .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: stretch; }
+        .map-grid  { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,0.9fr); gap: 32px; align-items: start; }
+        .pillars   { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        .stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; overflow: hidden; }
+
         @media (max-width: 1023px) {
           .grid-shell { grid-template-columns: 1fr; }
           .grid-story-col { order: 2; }
           .grid-auth-col { order: 1; border-left: none; border-bottom: 1px solid var(--border-color); }
-          .grid-auth-inner { position: relative; top: auto; height: auto; gap: 32px; max-width: 520px; }
-          .grid-rail { display: none; }
-          .grid-scene-content { padding: 32px 24px 0 24px; gap: 72px; margin-bottom: 72px; }
-          .grid-header, .grid-footer { padding-left: 24px; padding-right: 24px; }
+          .grid-auth-inner { position: relative; top: auto; height: auto; gap: 24px; max-width: 520px; padding: 30px 24px; }
+          .grid-header { padding: 20px 24px; }
+          .grid-story-body { padding: 4px 24px 32px 24px; gap: 56px; }
+          .grid-footer { padding: 20px 24px; }
+          .hero-grid { grid-template-columns: 1fr; gap: 24px; }
+          .map-grid  { grid-template-columns: 1fr; gap: 24px; }
+          .pillars   { grid-template-columns: 1fr; }
+          .stats-strip { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 480px) {
-          .grid-header, .grid-footer { padding-left: 18px; padding-right: 18px; }
-          .grid-scene-content { padding-left: 18px; padding-right: 18px; gap: 56px; margin-bottom: 56px; }
+          .grid-header { padding-left: 18px; padding-right: 18px; }
+          .grid-story-body { padding-left: 18px; padding-right: 18px; }
           .grid-auth-inner { padding: 24px 18px; }
-          .grid-mockup-sidebar { display: none; }
         }
-        .grid-otp-input:focus { border-color: var(--color-primary) !important; }
-        .grid-email-input:focus { border-color: var(--color-primary) !important; }
+
+        .grid-otp-input:focus  { border-color: var(--color-primary) !important; }
+        .grid-email-input:focus{ border-color: var(--color-primary) !important; }
       `}</style>
 
       <div className="grid-shell">
-        {/* ── LEFT: scroll story ── */}
-        <div className="grid-story-col" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <div className="grid-header" style={{ justifyContent: "space-between", paddingTop: 22, paddingBottom: 22 }}>
+        {/* ═══════════════════════════════════════════════════════════════════
+            LEFT — story column
+            ═══════════════════════════════════════════════════════════════════ */}
+        <div className="grid-story-col">
+
+          {/* ── Header ── */}
+          <div className="grid-header" style={{ justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 26, height: 26, background: "var(--color-primary)", borderRadius: 6, display: "grid", placeItems: "center" }}>
                 <div style={{ width: 12, height: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-                  {[0, 1, 2, 3].map((k) => (
-                    <div key={k} style={{ background: "var(--color-text-inv)", borderRadius: 1 }} />
-                  ))}
+                  {[0, 1, 2, 3].map((k) => <div key={k} style={{ background: "var(--color-text-inv)", borderRadius: 1 }} />)}
                 </div>
               </div>
               <span style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 19, letterSpacing: "-0.02em" }}>grid</span>
@@ -396,368 +416,427 @@ export default function LoginPage() {
               onClick={toggleTheme}
               style={{ display: "flex", alignItems: "center", gap: 8, background: "transparent", border: "1px solid var(--border-color)", borderRadius: 999, padding: "6px 14px", color: "var(--color-text-sub)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
             >
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-primary)", display: "inline-block" }} />
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-primary)" }} />
               {theme === "dark" ? "Dark" : "Light"}
             </button>
           </div>
 
-        <div className="grid-story-inner">
-          <div className="grid-scene-row">
-            {/* progress rail */}
-            <div className="grid-rail">
-              <div className="grid-rail-sticky" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {RAIL_STEPS.map((name, i) => (
-                  <div
-                    key={name}
-                    onClick={() => goToScene(i)}
-                    style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "5px 0" }}
+          <div className="grid-story-body">
+
+            {/* ═════ 1. Hero — headline + live feed panel ═════ */}
+            <section className="hero-grid">
+              <div style={{ display: "flex", flexDirection: "column", gap: 22, justifyContent: "center" }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, alignSelf: "flex-start", fontSize: 11.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-primary)" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-primary)", animation: "gridPulse 2s infinite" }} />
+                  Live across 10 Indian cities
+                </div>
+                <h1 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: "clamp(38px,4.6vw,52px)", lineHeight: 1.08, margin: 0, letterSpacing: "-0.02em" }}>
+                  Hire in <span style={{ color: "var(--color-primary)" }}>minutes.</span><br />Verify at the door.
+                </h1>
+                <p style={{ fontSize: 17, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0, maxWidth: 480 }}>
+                  Grid is Kria&apos;s hiring dashboard for shift and event work. Post the role, review runners with a verified performance history, hire in minutes, and confirm attendance on-site with a one-time code. No agency. No middlemen.
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
+                  <a
+                    href="mailto:support@trykria.com"
+                    style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--color-primary)", color: "var(--color-text-inv)", border: "none", borderRadius: 999, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, textDecoration: "none" }}
                   >
-                    <span
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        background: i === active ? "var(--color-primary)" : "var(--color-surface-5)",
-                        transition: "background 0.3s",
-                        flexShrink: 0,
-                      }}
+                    Talk to us <span>→</span>
+                  </a>
+                  <span style={{ fontSize: 12.5, color: "var(--color-text-muted)" }}>
+                    Free to start · No credit card
+                  </span>
+                </div>
+              </div>
+
+              {/* Live activity panel */}
+              <div style={{
+                background: "var(--color-surface-1)",
+                border: "1px solid var(--border-color)",
+                borderRadius: 16,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+                boxShadow: "var(--card-shadow, none)",
+                minHeight: 420,
+              }}>
+                <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-primary)", animation: "gridPulse 2s infinite" }} />
+                    <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>Live now across India</span>
+                  </div>
+                  <span style={{ fontSize: 11, color: "var(--color-text-muted)", fontFamily: "ui-monospace, monospace" }}>
+                    {istTime && `${istTime} IST`}
+                  </span>
+                </div>
+                <div style={{ padding: "8px 6px", display: "flex", flexDirection: "column", flex: 1 }}>
+                  {rows.map((r) => {
+                    const meta = KIND_META[r.kind];
+                    return (
+                      <div
+                        key={r.id}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "auto 1fr auto",
+                          gap: 12,
+                          alignItems: "center",
+                          padding: "10px 12px",
+                          borderRadius: 8,
+                          animation: "gridRise 0.5s ease",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 8, height: 8, borderRadius: "50%",
+                            background: meta.dot,
+                            boxShadow: `0 0 10px ${meta.dot}`,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--color-text)", lineHeight: 1.35 }}>{r.text}</div>
+                          <div style={{ fontSize: 11.5, color: "var(--color-text-muted)", marginTop: 2 }}>{r.sub}</div>
+                        </div>
+                        <div style={{ fontSize: 10.5, color: "var(--color-text-muted)", fontFamily: "ui-monospace, monospace", whiteSpace: "nowrap" }}>
+                          {formatAge(r.age)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* ═════ 2. Stats strip ═════ */}
+            <section className="stats-strip" style={{ border: "1px solid var(--border-color)", background: "var(--border-color)", borderRadius: 14, overflow: "hidden" }}>
+              {[
+                { val: totalLive.toLocaleString("en-IN"), sub: "Gigs live today across India" },
+                { val: "12,418",                          sub: "Verified runners on the platform" },
+                { val: "94.2%",                           sub: "OTP-confirmed show-up rate" },
+                { val: "8m 12s",                          sub: "Median time from post → hired" },
+              ].map((s) => (
+                <div key={s.sub} style={{ background: "var(--color-surface-1)", padding: "22px 20px" }}>
+                  <div style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, color: "var(--color-text)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{s.val}</div>
+                  <div style={{ fontSize: 11.5, color: "var(--color-text-muted)", marginTop: 8, lineHeight: 1.4 }}>{s.sub}</div>
+                </div>
+              ))}
+            </section>
+
+            {/* ═════ 3. India map + city rankings ═════ */}
+            <section>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-muted)", marginBottom: 8 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-secondary)" }} />
+                Where runners are working
+              </div>
+              <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 30, margin: 0, marginBottom: 22, lineHeight: 1.2 }}>
+                Live in <span style={{ color: "var(--color-primary)" }}>10 cities</span>, growing every week
+              </h2>
+              <div className="map-grid">
+                {/* Map */}
+                <div style={{ background: "var(--color-surface-1)", border: "1px solid var(--border-color)", borderRadius: 16, padding: 18, boxShadow: "var(--card-shadow, none)" }}>
+                  <svg viewBox="0 0 400 500" style={{ width: "100%", height: "auto", display: "block" }}>
+                    {/* India silhouette — stylized soft blob */}
+                    <path
+                      d="M 175 32
+                         C 208 26, 250 44, 268 76
+                         C 288 100, 296 132, 292 160
+                         C 288 190, 306 220, 316 258
+                         C 322 288, 312 316, 300 340
+                         C 282 370, 260 396, 240 420
+                         C 220 434, 202 428, 192 412
+                         C 174 384, 148 380, 128 372
+                         C 108 360, 96 336, 90 300
+                         C 82 264, 84 226, 92 190
+                         C 100 156, 112 116, 132 84
+                         C 148 58, 158 40, 175 32 Z"
+                      fill="none"
+                      stroke="var(--border-color)"
+                      strokeWidth="1"
+                      strokeDasharray="3 4"
                     />
-                    <span style={{ fontSize: 11.5, fontWeight: 600, color: i === active ? "var(--color-text)" : "var(--color-text-muted)", transition: "color 0.3s" }}>
-                      {name}
-                    </span>
+                    {/* City dots */}
+                    {CITY_DOTS.map((c) => {
+                      const isPulsing = pulseCity === c.key;
+                      const live = cityLive[c.key] ?? c.live;
+                      const isTier1 = ["mum", "blr", "delhi"].includes(c.key);
+                      return (
+                        <g key={c.key} transform={`translate(${c.x} ${c.y})`}>
+                          {isPulsing && (
+                            <circle
+                              r={isTier1 ? 6 : 5}
+                              fill="var(--color-primary)"
+                              opacity="0.6"
+                              style={{ animation: "gridFlash 1.2s ease-out" }}
+                            />
+                          )}
+                          <circle
+                            r={isTier1 ? 5 : 4}
+                            fill="var(--color-primary)"
+                            style={{ filter: `drop-shadow(0 0 ${isTier1 ? 6 : 4}px var(--color-primary))` }}
+                          />
+                          <text
+                            x={c.x > 240 ? 10 : (c.x < 140 ? -10 : 10)}
+                            y="4"
+                            textAnchor={c.x > 240 ? "start" : (c.x < 140 ? "end" : "start")}
+                            fontSize="10"
+                            fontFamily="ui-monospace, monospace"
+                            fill="var(--color-text-sub)"
+                          >
+                            {c.label} <tspan fill="var(--color-primary)" fontWeight="700">{live}</tspan>
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>
+
+                {/* City breakdown */}
+                <div style={{ background: "var(--color-surface-1)", border: "1px solid var(--border-color)", borderRadius: 16, overflow: "hidden", boxShadow: "var(--card-shadow, none)" }}>
+                  <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text)" }}>Gigs live now</span>
+                    <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>10 cities</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    {[...CITY_DOTS]
+                      .sort((a, b) => (cityLive[b.key] ?? 0) - (cityLive[a.key] ?? 0))
+                      .map((c) => {
+                        const n = cityLive[c.key] ?? c.live;
+                        const max = Math.max(...CITY_DOTS.map((x) => cityLive[x.key] ?? x.live));
+                        const pct = max > 0 ? (n / max) * 100 : 0;
+                        return (
+                          <div key={c.key} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 12, alignItems: "center", padding: "10px 18px", borderTop: "1px solid var(--border-subtle)" }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>{c.label}</span>
+                            <div style={{ width: 100, height: 3, background: "var(--color-surface-3)", borderRadius: 999, overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: `${pct}%`, background: "var(--color-primary)", transition: "width 400ms" }} />
+                            </div>
+                            <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--color-text)", fontVariantNumeric: "tabular-nums", minWidth: 26, textAlign: "right" }}>{n}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ═════ 4. How Grid works — 3 pillar cards ═════ */}
+            <section>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-muted)", marginBottom: 8 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-primary)" }} />
+                How Grid works
+              </div>
+              <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 30, margin: 0, marginBottom: 22, lineHeight: 1.2 }}>
+                Three steps. That&apos;s the whole thing.
+              </h2>
+
+              <div className="pillars">
+                {[
+                  { n: "01", title: "Post the role",     copy: "Tell us what you need and when. A banquet crew for Saturday, two loaders for tonight. Takes a minute." },
+                  { n: "02", title: "Hire verified",     copy: "Every runner carries a Momentum score built from finished gigs. See who showed up, who was on-time, who to trust." },
+                  { n: "03", title: "Verify at the door", copy: "On the day, workers confirm arrival with a one-time code at your venue. No clipboards. No phone chase." },
+                ].map((p) => (
+                  <div key={p.n} style={{
+                    background: "var(--color-surface-1)",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: 14,
+                    padding: "22px 20px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12,
+                    boxShadow: "var(--card-shadow, none)",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 11, color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>{p.n}</span>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-primary)" }} />
+                    </div>
+                    <div style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 18, lineHeight: 1.25 }}>{p.title}</div>
+                    <p style={{ fontSize: 13.5, lineHeight: 1.55, color: "var(--color-text-sub)", margin: 0 }}>{p.copy}</p>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div className="grid-scene-content">
-              {/* Scene 0: Intro */}
-              <div ref={setSceneRef(0)} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-primary)" }}>
-                  Staffing platform for businesses
-                </div>
-                <h1 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: "clamp(34px,4.2vw,42px)", lineHeight: 1.18, margin: 0, letterSpacing: "-0.01em" }}>
-                  Hire verified shift &amp; gig staff across India.
-                </h1>
-                <p style={{ fontSize: 17, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0 }}>
-                  Grid is Kria&apos;s hiring dashboard for businesses. Restaurants, event companies, retail stores, warehouses. Post the role, review workers with a verified performance history, hire in minutes, and confirm attendance on-site. No staffing agency, no middlemen.
-                </p>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                  <button
-                    onClick={() => goToScene(2)}
-                    style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--color-primary)", color: "var(--color-text-inv)", border: "none", borderRadius: 999, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-                  >
-                    See how it works
-                    <span style={{ fontSize: 14 }}>↓</span>
-                  </button>
-                  <a
-                    href="mailto:support@trykria.com"
-                    style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--border-color)", borderRadius: 999, padding: "10px 18px", fontSize: 13, fontWeight: 700, color: "var(--color-text)" }}
-                  >
-                    Talk to us
-                  </a>
-                </div>
+            {/* ═════ 5. Interactive mini-demo ═════ */}
+            <section>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-muted)", marginBottom: 8 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-amber)" }} />
+                Try it right here
               </div>
-
-              {/* Scene 1: Why Grid (before / after) */}
-              <div ref={setSceneRef(1)}>
-                <Reveal id="scene-1" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                  <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
-                    You&apos;re probably doing this the hard way
-                  </h2>
-                  <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0 }}>
-                    Most businesses fill short-term shifts through phone calls, referrals, and hope. Here&apos;s what changes with Grid.
-                  </p>
-                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-                    <div style={{ flex: "1 1 260px", minWidth: 240, background: "var(--color-surface-1)", border: "1px solid var(--border-color)", borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)" }}>Without Grid</div>
-                      {WITHOUT_GRID.map((line) => (
-                        <div key={line} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                          <span style={{ color: "var(--color-error)", fontSize: 13, fontWeight: 700, lineHeight: 1.5 }}>✕</span>
-                          <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--color-text-sub)" }}>{line}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ flex: "1 1 260px", minWidth: 240, background: "var(--color-surface-1)", border: "1px solid var(--color-primary)", borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)" }}>With Grid</div>
-                      {WITH_GRID.map((line) => (
-                        <div key={line} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                          <span style={{ color: "var(--color-primary)", fontSize: 13, fontWeight: 700, lineHeight: 1.5 }}>✓</span>
-                          <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--color-text)" }}>{line}</span>
-                        </div>
-                      ))}
-                    </div>
+              <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 30, margin: 0, marginBottom: 22, lineHeight: 1.2 }}>
+                Post a mock gig. Watch it fill.
+              </h2>
+              <div style={{
+                background: "var(--color-surface-1)",
+                border: "1px solid var(--border-color)",
+                borderRadius: 16,
+                padding: 22,
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+                maxWidth: 560,
+                boxShadow: "var(--card-shadow, none)",
+              }}>
+                {/* Form */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 130px auto", gap: 10, alignItems: "end" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)", letterSpacing: "0.05em" }}>ROLE</label>
+                    <input
+                      value={demoRole}
+                      onChange={(e) => setDemoRole(e.target.value)}
+                      placeholder="Banquet service crew"
+                      disabled={demoStep !== "post"}
+                      style={{ background: "var(--color-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "var(--color-text)", outline: "none" }}
+                    />
                   </div>
-                </Reveal>
-              </div>
-
-              {/* Scene 2: Post a gig */}
-              <div ref={setSceneRef(2)}>
-                <Reveal id="scene-2" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                  <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
-                    Start with the work, not the paperwork
-                  </h2>
-                  <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0 }}>
-                    Tell us what you need and when. A banquet crew for Saturday, two loaders for tonight. Watch, we&apos;ll fill this one in for you.
-                  </p>
-                  <div style={{ background: "var(--color-surface-1)", border: "1px solid var(--border-color)", borderRadius: 14, padding: 22, display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>Role</div>
-                      <div style={{ background: "var(--color-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "10px 14px", fontSize: 14, minHeight: 20, display: "flex", alignItems: "center" }}>
-                        {typedRole}
-                        <span style={{ display: "inline-block", width: 2, height: 16, background: "var(--color-primary)", marginLeft: 2, animation: "gridBlink 1.1s infinite" }} />
-                      </div>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>When</div>
-                        <div style={{ background: "var(--color-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "10px 14px", fontSize: 14, minHeight: 20, color: typedDone ? "var(--color-text)" : "var(--color-text-muted)", transition: "color 0.4s" }}>
-                          Sat, 5 pm to 11 pm
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>Pay</div>
-                        <div style={{ background: "var(--color-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "10px 14px", fontSize: 14, minHeight: 20, color: typedDone ? "var(--color-text)" : "var(--color-text-muted)", transition: "color 0.4s" }}>
-                          ₹1,100 per shift
-                        </div>
-                      </div>
-                    </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)", letterSpacing: "0.05em" }}>PAY</label>
+                    <div style={{ background: "var(--color-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "var(--color-text-sub)" }}>₹1,100/shift</div>
+                  </div>
+                  {demoStep === "post" ? (
                     <button
-                      onClick={() => setPublished(true)}
-                      style={{
-                        alignSelf: "flex-start",
-                        background: published ? "var(--color-surface-3)" : "var(--color-primary)",
-                        color: published ? "var(--color-text-sub)" : "var(--color-text-inv)",
-                        border: "1px solid var(--border-subtle)",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        padding: "9px 18px",
-                        borderRadius: 8,
-                        marginTop: 4,
-                        cursor: "pointer",
-                        transition: "background 0.3s, color 0.3s",
-                      }}
+                      onClick={publishDemo}
+                      style={{ background: "var(--color-primary)", color: "var(--color-text-inv)", border: "none", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", height: 40 }}
                     >
-                      {published ? "Gig is live ✓" : "Publish gig"}
+                      Publish
                     </button>
-                  </div>
-                </Reveal>
-              </div>
+                  ) : (
+                    <button
+                      onClick={resetDemo}
+                      style={{ background: "var(--color-surface-2)", color: "var(--color-text-sub)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", height: 40 }}
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
 
-              {/* Scene 3: Applicants */}
-              <div ref={setSceneRef(3)}>
-                <Reveal id="scene-3" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                  <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
-                    See who actually shows up
-                  </h2>
-                  <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0 }}>
-                    Every Runner carries a Momentum score built from finished gigs. Did they turn up, were they on time, would the last host hire them again. Go ahead, hire someone.
+                {/* Response area */}
+                {demoStep === "post" && (
+                  <p style={{ fontSize: 12.5, color: "var(--color-text-muted)", margin: 0, lineHeight: 1.55 }}>
+                    Fill the role and hit Publish. We&apos;ll simulate applications coming in — no sign-up needed for this bit.
                   </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", fontSize: 11, color: "var(--color-text-muted)" }}>
-                    {BAND_LEGEND.map((b) => (
-                      <div key={b.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <span style={{ width: 7, height: 7, borderRadius: "50%", background: `var(${b.bandVar})`, flexShrink: 0 }} />
-                        {b.label}
+                )}
+                {demoStep === "applying" && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--color-text-sub)" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-primary)", animation: "gridPulse 1s infinite" }} />
+                    Applications coming in for “{demoRole || "Banquet service crew"}”…
+                  </div>
+                )}
+                {demoStep === "hired" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>3 applications · sorted by Momentum</div>
+                    {[
+                      { name: "Priya Sharma", meta: "38 gigs · Mumbai",     score: 812, band: "Elite",    bandVar: "--band-elite" },
+                      { name: "Arjun Mehta",  meta: "21 gigs · Thane",      score: 704, band: "Trusted",  bandVar: "--band-trusted" },
+                      { name: "Kavya Nair",   meta: "12 gigs · Navi Mumbai", score: 631, band: "Reliable", bandVar: "--band-reliable" },
+                    ].map((a) => (
+                      <div key={a.name} style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr auto auto",
+                        gap: 12,
+                        alignItems: "center",
+                        background: "var(--color-surface-2)",
+                        border: "1px solid var(--border-subtle)",
+                        borderRadius: 10,
+                        padding: "10px 14px",
+                      }}>
+                        <div>
+                          <div style={{ fontSize: 13.5, fontWeight: 600 }}>{a.name}</div>
+                          <div style={{ fontSize: 11.5, color: "var(--color-text-muted)" }}>{a.meta}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: `var(${a.bandVar})`, fontVariantNumeric: "tabular-nums" }}>{a.score}</div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-text-muted)" }}>{a.band}</div>
+                        </div>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--color-primary)", background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)", borderRadius: 999, padding: "4px 10px" }}>Hire</span>
+                      </div>
+                    ))}
+                    <div style={{ fontSize: 12.5, color: "var(--color-text-muted)", marginTop: 4 }}>
+                      This is what your dashboard looks like. Ready to try it for real? Sign in →
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* ═════ 6. Dashboard mockup ═════ */}
+            <section>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-muted)", marginBottom: 8 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-primary)" }} />
+                What you&apos;ll actually use
+              </div>
+              <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 30, margin: 0, marginBottom: 22, lineHeight: 1.2 }}>
+                One dashboard. Every gig, applicant, and shift.
+              </h2>
+              <div style={{
+                border: "1px solid var(--border-color)",
+                borderRadius: 16,
+                overflow: "hidden",
+                background: "var(--color-surface-1)",
+                boxShadow: "var(--card-shadow, none)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)", background: "var(--color-surface-2)" }}>
+                  {["#ff7351", "#ffeb9c", "#8097ff"].map((c) => (
+                    <span key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c, opacity: 0.7 }} />
+                  ))}
+                  <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                    <span style={{ fontSize: 11, color: "var(--color-text-muted)", background: "var(--color-surface-3)", borderRadius: 999, padding: "3px 12px" }}>
+                      grid.trykria.com/dashboard
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", minHeight: 260 }}>
+                  <div style={{ width: 140, flexShrink: 0, borderRight: "1px solid var(--border-subtle)", padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
+                    {["Dashboard", "Gigs", "Events", "Applications", "Analytics"].map((label, i) => (
+                      <div key={label} style={{
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        padding: "8px 10px",
+                        borderRadius: 6,
+                        background: i === 0 ? "color-mix(in srgb, var(--color-primary) 12%, transparent)" : "transparent",
+                        color: i === 0 ? "var(--color-primary)" : "var(--color-text-muted)",
+                      }}>
+                        {label}
                       </div>
                     ))}
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 480 }}>
-                    {APPLICANTS.map((a, i) => {
-                      const hired = !!accepted[a.name];
-                      return (
-                        <Reveal key={a.name} id={`applicant-${i}`} register={register} visible={visible} delay={i * 0.15}>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 12,
-                              background: "var(--color-surface-1)",
-                              border: `1px solid ${hired ? "var(--color-primary)" : "var(--border-color)"}`,
-                              borderRadius: 12,
-                              padding: "12px 14px",
-                              transition: "border-color 0.3s",
-                            }}
-                          >
-                            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--color-surface-4)", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 700, color: "var(--color-text-sub)", flexShrink: 0 }}>
-                              {a.initials}
-                            </div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 1, flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13.5, fontWeight: 600 }}>{a.name}</div>
-                              <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{a.meta}</div>
-                            </div>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
-                              <div style={{ fontSize: 16, fontWeight: 700, color: `var(${a.bandVar})` }}>{a.score}</div>
-                              <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--color-text-muted)" }}>{a.band}</div>
-                            </div>
-                            <button
-                              onClick={() => setAccepted((prev) => ({ ...prev, [a.name]: !prev[a.name] }))}
-                              style={{
-                                background: hired ? "var(--color-primary)" : "transparent",
-                                color: hired ? "var(--color-text-inv)" : "var(--color-text)",
-                                border: "1px solid var(--border-color)",
-                                fontSize: 12,
-                                fontWeight: 700,
-                                padding: "7px 13px",
-                                borderRadius: 8,
-                                cursor: "pointer",
-                                transition: "background 0.25s, color 0.25s",
-                                minWidth: 70,
-                              }}
-                            >
-                              {hired ? "Hired" : "Accept"}
-                            </button>
-                          </div>
-                        </Reveal>
-                      );
-                    })}
-                    <div style={{ fontSize: 12.5, color: "var(--color-text-muted)", paddingTop: 2, minHeight: 18 }}>
-                      {acceptedCount === 0 ? "" : acceptedCount === 3 ? "Full crew. They'll be notified instantly." : `${acceptedCount} hired. They'd be notified instantly.`}
-                    </div>
-                  </div>
-                </Reveal>
-              </div>
-
-              {/* Scene 4: Check-in */}
-              <div ref={setSceneRef(4)}>
-                <Reveal id="scene-4" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                  <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
-                    Attendance handles itself
-                  </h2>
-                  <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0 }}>
-                    On the day, each worker confirms arrival with a one-time code at your venue. You know who is in before the shift starts, without keeping a register or chasing anyone on the phone.
-                  </p>
-                  <div style={{ background: "var(--color-surface-1)", border: "1px solid var(--border-color)", borderRadius: 14, padding: "20px 22px", display: "flex", alignItems: "center", gap: 16, maxWidth: 440 }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      {["4", "8", "2", "1"].map((d, i) => (
-                        <Reveal key={i} id={`otp-digit-${i}`} register={register} visible={visible} delay={0.2 + i * 0.25} scale>
-                          <div style={{ width: 38, height: 46, border: "1px solid var(--border-color)", borderRadius: 8, display: "grid", placeItems: "center", fontFamily: "ui-monospace, monospace", fontSize: 19, fontWeight: 700, background: "var(--color-surface-2)" }}>
-                            {d}
-                          </div>
-                        </Reveal>
-                      ))}
-                    </div>
-                    <Reveal id="checkin-note" register={register} visible={visible} delay={1.2} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>
-                        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-primary)", animation: "gridPulse 2s infinite" }} />
-                        Priya checked in
-                      </div>
-                      <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>5:02 pm · Bandra West venue</div>
-                    </Reveal>
-                  </div>
-                </Reveal>
-              </div>
-
-              {/* Scene 5: Events */}
-              <div ref={setSceneRef(5)}>
-                <Reveal id="scene-5" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                  <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
-                    One listing can hold a whole event
-                  </h2>
-                  <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0 }}>
-                    Running a wedding or a festival? Bundle every role under a single event. Try adding a few roles to this one.
-                  </p>
-                  <div style={{ background: "var(--color-surface-1)", border: "1px solid var(--border-color)", borderRadius: 14, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>Mehta wedding · 3 days · Juhu</div>
-                      <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{crewCount} workers</div>
-                    </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      {eventRoles.map((r) => (
-                        <span key={r} style={{ fontSize: 12.5, fontWeight: 600, border: "1px solid var(--border-color)", borderRadius: 999, padding: "6px 12px" }}>
-                          {r}
-                        </span>
-                      ))}
-                      {eventRoles.length < 6 && (
-                        <button
-                          onClick={addRole}
-                          style={{ fontSize: 12.5, fontWeight: 700, border: "1px dashed var(--border-color)", borderRadius: 999, padding: "6px 12px", background: "transparent", color: "var(--color-primary)", cursor: "pointer" }}
-                        >
-                          + Add a role
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </Reveal>
-              </div>
-
-              {/* Scene 6: Close */}
-              <div ref={setSceneRef(6)}>
-                <Reveal id="scene-6" register={register} visible={visible} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                  <h2 style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
-                    This is what you&apos;ll be using
-                  </h2>
-                  <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0, maxWidth: 480 }}>
-                    One dashboard for every gig, applicant, and shift. Here&apos;s a look at it.
-                  </p>
-
-                  {/* Dashboard mockup */}
-                  <div style={{ border: "1px solid var(--border-color)", borderRadius: 14, overflow: "hidden", maxWidth: 520, background: "var(--color-surface-1)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--border-subtle)", background: "var(--color-surface-2)" }}>
-                      {["#ff7351", "#ffeb9c", "#8097ff"].map((c) => (
-                        <span key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c, opacity: 0.6 }} />
-                      ))}
-                      <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-                        <span style={{ fontSize: 11, color: "var(--color-text-muted)", background: "var(--color-surface-3)", borderRadius: 999, padding: "3px 12px" }}>
-                          grid.trykria.com/dashboard
-                        </span>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex" }}>
-                      <div className="grid-mockup-sidebar" style={{ width: 108, flexShrink: 0, borderRight: "1px solid var(--border-subtle)", padding: "14px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
-                        {["Dashboard", "Gigs", "Events", "Applications"].map((label, i) => (
-                          <div
-                            key={label}
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 600,
-                              padding: "6px 8px",
-                              borderRadius: 6,
-                              background: i === 0 ? "var(--color-primary)" : "transparent",
-                              color: i === 0 ? "var(--color-text-inv)" : "var(--color-text-muted)",
-                            }}
-                          >
-                            {label}
-                          </div>
-                        ))}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          {[
-                            { label: "Active gigs", val: "4" },
-                            { label: "Applicants", val: "18" },
-                            { label: "This week", val: "6 shifts" },
-                          ].map((s) => (
-                            <div key={s.label} style={{ flex: 1, minWidth: 0, background: "var(--color-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "8px 10px" }}>
-                              <div style={{ fontSize: 15, fontWeight: 700 }}>{s.val}</div>
-                              <div style={{ fontSize: 9.5, color: "var(--color-text-muted)" }}>{s.label}</div>
-                            </div>
-                          ))}
+                  <div style={{ flex: 1, minWidth: 0, padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                      {[
+                        { label: "Active gigs", val: "4" },
+                        { label: "Applicants", val: "18" },
+                        { label: "This week", val: "6" },
+                        { label: "Paid", val: "₹68K" },
+                      ].map((s) => (
+                        <div key={s.label} style={{ background: "var(--color-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: "10px 12px" }}>
+                          <div style={{ fontSize: 17, fontWeight: 700, fontFamily: "var(--font-comfortaa), sans-serif", fontVariantNumeric: "tabular-nums" }}>{s.val}</div>
+                          <div style={{ fontSize: 10, color: "var(--color-text-muted)", marginTop: 3, letterSpacing: "0.04em" }}>{s.label}</div>
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          {[
-                            { title: "Banquet crew", status: "Filling", color: "var(--color-amber)" },
-                            { title: "Warehouse loaders", status: "Live", color: "var(--color-primary)" },
-                          ].map((g) => (
-                            <div key={g.title} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--color-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "8px 10px" }}>
-                              <span style={{ fontSize: 11.5, fontWeight: 600 }}>{g.title}</span>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: g.color }}>{g.status}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      ))}
                     </div>
+                    {[
+                      { title: "Banquet service crew", meta: "Sat · Bandra · 3/5 slots", status: "Filling", color: "var(--color-amber)" },
+                      { title: "Warehouse loaders",    meta: "Tonight · Peenya · 2/2 slots", status: "Full", color: "var(--color-primary)" },
+                      { title: "Wedding hostess",      meta: "Sun · Juhu · 6/8 slots", status: "Live", color: "var(--color-secondary)" },
+                    ].map((g) => (
+                      <div key={g.title} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--color-surface-2)", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: "10px 14px" }}>
+                        <div>
+                          <div style={{ fontSize: 12.5, fontWeight: 600 }}>{g.title}</div>
+                          <div style={{ fontSize: 10.5, color: "var(--color-text-muted)", marginTop: 2 }}>{g.meta}</div>
+                        </div>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: g.color, background: `color-mix(in srgb, ${g.color} 10%, transparent)`, border: `1px solid color-mix(in srgb, ${g.color} 25%, transparent)`, borderRadius: 999, padding: "4px 10px" }}>{g.status}</span>
+                      </div>
+                    ))}
                   </div>
-
-                  <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0, maxWidth: 480 }}>
-                    It&apos;s free to start and there&apos;s nothing to install. Sign in on the right with your email and your first gig can be live today.
-                  </p>
-                </Reveal>
+                </div>
               </div>
-            </div>
+              <p style={{ fontSize: 14, lineHeight: 1.65, color: "var(--color-text-sub)", margin: 0, marginTop: 18, maxWidth: 520 }}>
+                Nothing to install. Sign in on the right with your email — your first gig can be live today.
+              </p>
+            </section>
+
           </div>
-        </div>
 
-          <div className="grid-footer" style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 20, paddingBottom: 20, gap: 24, fontSize: 12.5, color: "var(--color-text-muted)", flexWrap: "wrap" }}>
+          {/* ── Footer ── */}
+          <div className="grid-footer" style={{ borderTop: "1px solid var(--border-subtle)", gap: 24, fontSize: 12.5, color: "var(--color-text-muted)", flexWrap: "wrap" }}>
             <span>© 2026 Kria</span>
             <a href="https://trykria.com" target="_blank" rel="noopener noreferrer">trykria.com</a>
             <a href="https://trykria.com/terms" target="_blank" rel="noopener noreferrer">Terms</a>
@@ -766,27 +845,22 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* ── RIGHT: sticky sign-in ── */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            RIGHT — sticky sign-in (unchanged from prior)
+            ═══════════════════════════════════════════════════════════════════ */}
         <div className="grid-auth-col">
           <div className="grid-auth-inner">
-            {/* Live pulse */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 600, color: "var(--color-text-sub)" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-primary)", animation: "gridPulse 2s infinite" }} />
-                  Live across 8 cities
-                </div>
-                <div style={{ fontSize: 12.5, color: "var(--color-text-muted)", fontVariantNumeric: "tabular-nums" }}>{istTime} IST</div>
+            {/* Compact pulse strip */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 600, color: "var(--color-text-sub)" }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-primary)", animation: "gridPulse 2s infinite" }} />
+                {totalLive.toLocaleString("en-IN")} gigs live now
               </div>
-              <div style={{ fontFamily: "var(--font-comfortaa), sans-serif", fontWeight: 700, fontSize: 19, lineHeight: 1.4 }}>
-                Hiring right now in
-                <br />
-                <span style={{ color: "var(--color-primary)", opacity: cityVisible ? 1 : 0, transition: "opacity 0.35s", display: "inline-block" }}>{CITIES[cityIdx]}</span>
-              </div>
+              <div style={{ fontSize: 12.5, color: "var(--color-text-muted)", fontVariantNumeric: "tabular-nums" }}>{istTime} IST</div>
             </div>
 
             {/* Sign-in card */}
-            <div style={{ background: "var(--color-bg)", border: "1px solid var(--border-color)", borderRadius: 16, padding: 30, display: "flex", flexDirection: "column", gap: 22 }}>
+            <div style={{ background: "var(--color-bg)", border: "1px solid var(--border-color)", borderRadius: 16, padding: 30, display: "flex", flexDirection: "column", gap: 22, boxShadow: "var(--card-shadow-strong, none)" }}>
               {step === "email" && (
                 <form onSubmit={handleSendOtp} style={{ display: "flex", flexDirection: "column", gap: 22 }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -875,6 +949,12 @@ export default function LoginPage() {
                   </div>
                 </form>
               )}
+            </div>
+
+            {/* Small trust line under card */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "var(--color-text-muted)", justifyContent: "center" }}>
+              <span>🇮🇳</span>
+              <span>Made in India for India&apos;s shift & event economy</span>
             </div>
           </div>
         </div>
