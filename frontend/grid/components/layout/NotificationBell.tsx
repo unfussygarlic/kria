@@ -115,12 +115,18 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
-  // Opening the bell marks the currently-displayed items as seen — matches
-  // Gmail/Slack style where opening the tray IS the "I saw it" signal.
-  useEffect(() => {
-    if (open) markAllSeen();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  // Mark just one signature as seen — called when the host actually clicks
+  // through on a notification. Explicit per-row marking (vs. auto-marking on
+  // bell open) means the badge only clears for items the user engaged with.
+  const markSeen = (sig: string) => {
+    setSeen((prev) => {
+      if (prev.has(sig)) return prev;
+      const next = new Set(prev);
+      next.add(sig);
+      saveSeen(next);
+      return next;
+    });
+  };
 
   return (
     <div className="relative" ref={wrapRef}>
@@ -160,16 +166,23 @@ export function NotificationBell() {
         >
           {/* Header */}
           <div
-            className="px-4 py-3 border-b flex items-center justify-between"
+            className="px-4 py-3 border-b flex items-center justify-between gap-3"
             style={{ borderColor: "var(--border-color)" }}
           >
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Notifications</span>
-            {totalUrgent > 0 ? (
-              <span className="text-[10px] font-bold text-text-muted">{totalUrgent} pending</span>
-            ) : (
+            {totalUrgent === 0 ? (
               <span className="flex items-center gap-1 text-[10px] font-bold text-primary">
                 <CheckCheck size={11} /> All clear
               </span>
+            ) : unseenCount > 0 ? (
+              <button
+                onClick={markAllSeen}
+                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-text-muted hover:text-primary transition-colors"
+              >
+                <CheckCheck size={11} /> Mark all read
+              </button>
+            ) : (
+              <span className="text-[10px] font-bold text-text-muted">{totalUrgent} pending</span>
             )}
           </div>
 
@@ -188,68 +201,83 @@ export function NotificationBell() {
               </div>
             ) : (
               <>
-                {queue.totalPendingApplications > 0 && (
-                  <Link
-                    href="/applications"
-                    onClick={() => setOpen(false)}
-                    className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/[0.04] border-b"
-                    style={{ borderColor: "var(--border-subtle, var(--border-color))" }}
-                  >
-                    <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--lime) 12%, transparent)" }}>
-                      <Inbox size={13} className="text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-text">{queue.totalPendingApplications} applications waiting</p>
-                      <p className="text-[10px] text-text-muted mt-0.5">
-                        Across {queue.pending.length} gig{queue.pending.length !== 1 ? "s" : ""}
-                      </p>
-                    </div>
-                    <ArrowRight size={11} className="text-text-muted mt-1 flex-shrink-0" />
-                  </Link>
-                )}
-
-                {queue.urgent.map((g) => (
-                  <Link
-                    key={`u-${g.id}`}
-                    href={`/gigs/${g.id}`}
-                    onClick={() => setOpen(false)}
-                    className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/[0.04] border-b"
-                    style={{ borderColor: "var(--border-subtle, var(--border-color))" }}
-                  >
-                    <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, #ff7351 12%, transparent)" }}>
-                      <AlertTriangle size={13} style={{ color: "#ff7351" }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <p className="text-xs font-bold text-text truncate">{g.title}</p>
-                        <TimeToEventPill eventDate={g.event_date} />
+                {queue.totalPendingApplications > 0 && (() => {
+                  const sig = `pending:${queue.totalPendingApplications}`;
+                  const isSeen = seen.has(sig);
+                  return (
+                    <Link
+                      href="/applications"
+                      onClick={() => { markSeen(sig); setOpen(false); }}
+                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/[0.04] border-b"
+                      style={{ borderColor: "var(--border-subtle, var(--border-color))", opacity: isSeen ? 0.55 : 1 }}
+                    >
+                      <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--lime) 12%, transparent)" }}>
+                        <Inbox size={13} className="text-primary" />
                       </div>
-                      <p className="text-[10px] text-text-muted">
-                        {g.slots_filled}/{g.slots_total} slots · {g.city}
-                      </p>
-                    </div>
-                    <ArrowRight size={11} className="text-text-muted mt-1 flex-shrink-0" />
-                  </Link>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-text">{queue.totalPendingApplications} applications waiting</p>
+                        <p className="text-[10px] text-text-muted mt-0.5">
+                          Across {queue.pending.length} gig{queue.pending.length !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      {!isSeen && <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />}
+                      <ArrowRight size={11} className="text-text-muted mt-1 flex-shrink-0" />
+                    </Link>
+                  );
+                })()}
 
-                {queue.expired.slice(0, 3).map((g) => (
-                  <Link
-                    key={`e-${g.id}`}
-                    href={`/gigs/${g.id}`}
-                    onClick={() => setOpen(false)}
-                    className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/[0.04] border-b"
-                    style={{ borderColor: "var(--border-subtle, var(--border-color))" }}
-                  >
-                    <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
-                      <TimerReset size={13} className="text-text-muted" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-text truncate">{g.title}</p>
-                      <p className="text-[10px] text-text-muted mt-0.5">Ended without wrap-up</p>
-                    </div>
-                    <ArrowRight size={11} className="text-text-muted mt-1 flex-shrink-0" />
-                  </Link>
-                ))}
+                {queue.urgent.map((g) => {
+                  const sig = `urgent:${g.id}:${g.slots_filled}/${g.slots_total}`;
+                  const isSeen = seen.has(sig);
+                  return (
+                    <Link
+                      key={`u-${g.id}`}
+                      href={`/gigs/${g.id}`}
+                      onClick={() => { markSeen(sig); setOpen(false); }}
+                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/[0.04] border-b"
+                      style={{ borderColor: "var(--border-subtle, var(--border-color))", opacity: isSeen ? 0.55 : 1 }}
+                    >
+                      <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, #ff7351 12%, transparent)" }}>
+                        <AlertTriangle size={13} style={{ color: "#ff7351" }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="text-xs font-bold text-text truncate">{g.title}</p>
+                          <TimeToEventPill eventDate={g.event_date} />
+                        </div>
+                        <p className="text-[10px] text-text-muted">
+                          {g.slots_filled}/{g.slots_total} slots · {g.city}
+                        </p>
+                      </div>
+                      {!isSeen && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: "#ff7351" }} />}
+                      <ArrowRight size={11} className="text-text-muted mt-1 flex-shrink-0" />
+                    </Link>
+                  );
+                })}
+
+                {queue.expired.slice(0, 3).map((g) => {
+                  const sig = `expired:${g.id}`;
+                  const isSeen = seen.has(sig);
+                  return (
+                    <Link
+                      key={`e-${g.id}`}
+                      href={`/gigs/${g.id}`}
+                      onClick={() => { markSeen(sig); setOpen(false); }}
+                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/[0.04] border-b"
+                      style={{ borderColor: "var(--border-subtle, var(--border-color))", opacity: isSeen ? 0.55 : 1 }}
+                    >
+                      <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
+                        <TimerReset size={13} className="text-text-muted" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-text truncate">{g.title}</p>
+                        <p className="text-[10px] text-text-muted mt-0.5">Ended without wrap-up</p>
+                      </div>
+                      {!isSeen && <span className="w-1.5 h-1.5 rounded-full bg-text-muted flex-shrink-0 mt-1.5" />}
+                      <ArrowRight size={11} className="text-text-muted mt-1 flex-shrink-0" />
+                    </Link>
+                  );
+                })}
               </>
             )}
           </div>

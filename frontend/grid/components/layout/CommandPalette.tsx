@@ -139,7 +139,15 @@ export function CommandPalette() {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
+      style={{
+        // Much lighter than the old rgba(0,0,0,0.55): a 55%-black backdrop
+        // reads as a heavy black bar above the palette (which starts at
+        // 15vh). Modern palettes (Raycast / Linear / cmdk) lean on a soft
+        // tint + backdrop blur so the underlying UI stays legible.
+        backgroundColor: "rgba(20,20,17,0.28)",
+        backdropFilter: "blur(6px) saturate(120%)",
+        WebkitBackdropFilter: "blur(6px) saturate(120%)",
+      }}
       onClick={() => setOpen(false)}
     >
       <div
