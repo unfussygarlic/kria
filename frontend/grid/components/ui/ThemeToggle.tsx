@@ -6,11 +6,12 @@ import { Sun, Moon } from "lucide-react";
 const STORAGE_KEY = "kria-grid-theme";
 
 export function ThemeToggle() {
-  const [isDark, setIsDark] = useState(true);
+  // Default LIGHT (matches Pocket). Users flip to dark via this toggle.
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    const dark = saved ? saved === "dark" : true;
+    const dark = saved ? saved === "dark" : false;
     setIsDark(dark);
     document.documentElement.dataset.theme = dark ? "dark" : "light";
   }, []);

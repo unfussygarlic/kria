@@ -64,7 +64,7 @@ export default function EventsPage() {
       </div>
 
       {events.length === 0 ? (
-        <div className="bg-surface-1 border border-white/10 rounded-xl p-16 text-center">
+        <div className="card shadow-card p-16 text-center">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
             <Calendar size={28} className="text-primary" />
           </div>
@@ -91,7 +91,7 @@ export default function EventsPage() {
                 <div
                   key={event.id}
                   onClick={() => router.push(`/events/${event.id}`)}
-                  className={`bg-surface-1 border border-white/10 rounded-xl p-5 cursor-pointer hover:border-white/20 hover:bg-white/[0.02] transition-all group ${expired ? "opacity-60" : ""}`}
+                  className={`card shadow-card p-5 cursor-pointer hover:border-white/20 hover:bg-white/[0.02] transition-all group ${expired ? "opacity-60" : ""}`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-4">

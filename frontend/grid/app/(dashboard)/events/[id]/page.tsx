@@ -189,7 +189,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-surface-1 border border-white/10 rounded-xl p-5 relative overflow-hidden group">
+        <div className="card shadow-card p-5 relative overflow-hidden group">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Roles</span>
             <Briefcase size={16} className="text-secondary" />
@@ -197,7 +197,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           <p className="text-3xl font-bold text-secondary">{event.jobs.length}</p>
           <div className="absolute bottom-0 left-0 w-full h-[2px] bg-secondary/20 group-hover:bg-secondary transition-colors duration-300" />
         </div>
-        <div className="bg-surface-1 border border-white/10 rounded-xl p-5 relative overflow-hidden group">
+        <div className="card shadow-card p-5 relative overflow-hidden group">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Slots Filled</span>
             <Users size={16} className="text-primary" />
@@ -205,7 +205,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           <p className="text-3xl font-bold text-primary">{filledSlots}/{totalSlots}</p>
           <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary/20 group-hover:bg-primary transition-colors duration-300" />
         </div>
-        <div className="bg-surface-1 border border-white/10 rounded-xl p-5 relative overflow-hidden group">
+        <div className="card shadow-card p-5 relative overflow-hidden group">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Fill Rate</span>
             <TrendingUp size={16} className="text-primary" />
@@ -213,7 +213,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           <p className="text-3xl font-bold text-primary">{fillPct}%</p>
           <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary/20 group-hover:bg-primary transition-colors duration-300" />
         </div>
-        <div className="bg-surface-1 border border-white/10 rounded-xl p-5 relative overflow-hidden group">
+        <div className="card shadow-card p-5 relative overflow-hidden group">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Applicants</span>
             <Users size={16} className={pendingApplicants > 0 ? "text-primary" : "text-text-muted"} />
@@ -239,7 +239,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {event.jobs.length === 0 ? (
-        <div className="bg-surface-1 border border-white/10 rounded-xl p-12 text-center">
+        <div className="card shadow-card p-12 text-center">
           <Users size={28} className="text-text-muted mx-auto mb-3" />
           <p className="text-sm text-text-muted">No roles defined for this event.</p>
         </div>

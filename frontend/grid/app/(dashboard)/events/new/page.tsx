@@ -167,7 +167,7 @@ export default function NewEventPage() {
       {step === 0 && (
         <div className="space-y-5">
           <h2 className="text-xl font-bold text-text mb-6">Event Details</h2>
-          <div className="bg-surface-1 border border-white/10 rounded-xl p-6 space-y-5">
+          <div className="card shadow-card p-6 space-y-5">
             <div>
               <label className={labelCls}>Event Name *</label>
               <input className={inputCls} placeholder="e.g. Bangalore Tech Summit 2026" value={form.title} onChange={(e) => patchForm({ title: e.target.value })} />
@@ -267,7 +267,7 @@ export default function NewEventPage() {
           </div>
 
           {jobs.map((job, i) => (
-            <div key={i} className="bg-surface-1 border border-white/10 rounded-xl p-5 space-y-4">
+            <div key={i} className="card shadow-card p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold uppercase tracking-widest text-text-muted">Role {i + 1}</p>
                 {jobs.length > 1 && (

@@ -351,7 +351,7 @@ export default function NewGigPage() {
       {step === 1 && (
         <div className="space-y-5">
           <h2 className="text-xl font-bold text-text mb-6">Basic Info</h2>
-          <div className="bg-surface-1 border border-white/10 rounded-xl p-6 space-y-5">
+          <div className="card shadow-card p-6 space-y-5">
             <div>
               <label className={labelCls}>Gig Title *</label>
               <input className={inputCls} placeholder="e.g. Lead Coordinator for Tech Summit" value={form.title} onChange={(e) => set({ title: e.target.value })} />
@@ -467,7 +467,7 @@ export default function NewGigPage() {
       {step === 2 && (
         <div className="space-y-5">
           <h2 className="text-xl font-bold text-text mb-6">Scheduling</h2>
-          <div className="bg-surface-1 border border-white/10 rounded-xl p-6 space-y-5">
+          <div className="card shadow-card p-6 space-y-5">
             <div>
               <label className={labelCls}>Venue Name *</label>
               <input
@@ -564,7 +564,7 @@ export default function NewGigPage() {
       {step === 3 && (
         <div className="space-y-5">
           <h2 className="text-xl font-bold text-text mb-6">Requirements</h2>
-          <div className="bg-surface-1 border border-white/10 rounded-xl p-6 space-y-5">
+          <div className="card shadow-card p-6 space-y-5">
             <div>
               <label className={labelCls}>Gender Preference</label>
               <select className={inputCls} value={form.gender_preference} onChange={(e) => set({ gender_preference: e.target.value as GenderPreference })}>

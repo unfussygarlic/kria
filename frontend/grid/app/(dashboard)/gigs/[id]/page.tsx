@@ -218,7 +218,7 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
           )}
 
           {/* Details card */}
-          <div className="bg-surface-1 border border-white/10 rounded-xl p-6 space-y-4">
+          <div className="card shadow-card p-6 space-y-4">
             <h2 className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Gig Details</h2>
             <div className="space-y-3">
               <div className="flex items-start gap-3 text-sm">
@@ -245,7 +245,7 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
 
           {/* Requirements */}
           {(gig.dress_code || gig.requirements_note || gig.experience_required || (gig.languages_required?.length > 0)) && (
-            <div className="bg-surface-1 border border-white/10 rounded-xl p-6 space-y-3">
+            <div className="card shadow-card p-6 space-y-3">
               <h2 className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Requirements</h2>
               {gig.gender_preference && gig.gender_preference !== "any" && (
                 <p className="text-sm text-text-sub capitalize">Gender: {gig.gender_preference}</p>
@@ -272,7 +272,7 @@ export default function GigDetailPage({ params }: { params: Promise<{ id: string
 
         {/* Right column: applicants — 8/12 (was 7/12) */}
         <div className="lg:col-span-8">
-          <div className="bg-surface-1 border border-white/10 rounded-xl overflow-hidden flex flex-col">
+          <div className="card shadow-card overflow-hidden flex flex-col">
             {/* Tab header */}
             <div className="flex border-b border-white/10">
               {(["pending", "accepted", "all"] as const).map((tab) => {

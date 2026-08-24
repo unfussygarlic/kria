@@ -76,7 +76,7 @@ export default function AnalyticsPage() {
       <div className="p-8 max-w-6xl mx-auto">
         <p className="pg-eyebrow">Analytics</p>
         <h1 className="pg-title mb-8">Analytics</h1>
-        <div className="bg-surface-1 border border-white/10 rounded-xl p-16 text-center">
+        <div className="card shadow-card p-16 text-center">
           <BarChart2 size={32} className="text-text-muted mx-auto mb-4" />
           <p className="text-sm text-text-muted">Post your first gig to see analytics here.</p>
         </div>
@@ -204,7 +204,7 @@ export default function AnalyticsPage() {
       {/* Funnel + Category */}
       <div className="grid grid-cols-12 gap-5">
         {/* Application Funnel */}
-        <div className="col-span-12 lg:col-span-5 bg-surface-1 border border-white/10 rounded-xl p-6">
+        <div className="col-span-12 lg:col-span-5 card shadow-card p-6">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-6">Application Funnel</h2>
           {funnelApplied === 0 ? (
             <p className="text-sm text-text-muted">No applications yet.</p>
@@ -232,7 +232,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Category Performance */}
-        <div className="col-span-12 lg:col-span-7 bg-surface-1 border border-white/10 rounded-xl p-6">
+        <div className="col-span-12 lg:col-span-7 card shadow-card p-6">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-6">Category Performance</h2>
           <div className="space-y-4 max-h-[280px] overflow-y-auto pr-1">
             {catStats.map(({ cat, label, count, fillRate: fr, avgPay }) => (
@@ -264,7 +264,7 @@ export default function AnalyticsPage() {
       {/* Monthly Activity + City */}
       <div className="grid grid-cols-12 gap-5">
         {/* Monthly Activity Bar Chart */}
-        <div className="col-span-12 lg:col-span-7 bg-surface-1 border border-white/10 rounded-xl p-6">
+        <div className="col-span-12 lg:col-span-7 card shadow-card p-6">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-6">Monthly Activity</h2>
           <div className="flex items-end gap-3 h-36">
             {monthlyData.map(({ label, count, filled }) => (
@@ -296,7 +296,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* City Distribution */}
-        <div className="col-span-12 lg:col-span-5 bg-surface-1 border border-white/10 rounded-xl p-6">
+        <div className="col-span-12 lg:col-span-5 card shadow-card p-6">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-6 flex items-center gap-2">
             <MapPin size={10} /> City Distribution
           </h2>
@@ -325,7 +325,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Gig Activity Heatmap */}
-      <div className="bg-surface-1 border border-white/10 rounded-xl p-6">
+      <div className="card shadow-card p-6">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-text-muted flex items-center gap-2">
             <Calendar size={10} /> Gig Calendar — Last 12 Weeks
@@ -383,7 +383,7 @@ function KpiCard({
   const barTo      = accent === "error" ? "group-hover:bg-error" : accent === "secondary" ? "group-hover:bg-secondary" : "group-hover:bg-primary";
 
   return (
-    <div className="bg-surface-1 border border-white/10 rounded-xl p-5 relative overflow-hidden group">
+    <div className="card shadow-card p-5 relative overflow-hidden group">
       <div className="flex items-center justify-between mb-3">
         <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{label}</span>
         <Icon size={15} className={textColor} />
