@@ -7,7 +7,11 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.middleware import CurrentUser
-from app.covers.compositor import generate_cover, generate_square_cover
+# NOTE: the compositor (app/covers/compositor.py) is no longer imported —
+# 2026-08-24 the auto template rendering was removed. Pocket renders an
+# all-native poster hero per category instead. Compositor code is left in
+# place for the one-off `regenerate_covers.py` script + future reference,
+# but nothing in the request path calls it.
 from app.covers.storage import upload_cover
 from app.db.session import get_db
 from app.models.gig import GigMatchRequest, GigMatchResponse
@@ -371,15 +375,6 @@ _COVER_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _COVER_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
-def _format_pay(amount: float, pay_type: str) -> str:
-    label = f"₹{amount:,.0f}"
-    if pay_type == "hourly":
-        return f"{label}/hr"
-    if pay_type == "per_day":
-        return f"{label}/day"
-    return label
-
-
 class CoverResponse(BaseModel):
     cover_image_url: str
     cover_image_square_url: str
@@ -390,22 +385,36 @@ async def generate_gig_cover(
     gig_id: str,
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
-    photo: Optional[UploadFile] = File(None, description="Optional host photo for the cover's photo slot"),
+    photo: Optional[UploadFile] = File(None, description="Host-uploaded cover photo (required)"),
 ) -> CoverResponse:
     """
-    Generates (or regenerates) a gig's cover image from its own data — call
-    right after creating the gig (mirrors the pattern used for
-    PATCH /{gig_id}/location). Template-based, not AI — see
-    memory/features/gig_cover_images.md.
+    Stores a host-uploaded cover photo for a gig.
+
+    **2026-08-24 rewrite:** compositor removed. Pocket now renders an
+    all-native "poster" hero per category (gradient + icon + name) when no
+    photo is present, which adapts to any theme cleanly and avoids the
+    alignment issues rendered PNGs caused on the swipe deck.
+    Endpoint is kept (same route + response shape for backwards compat) but
+    now REQUIRES a photo upload — no automatic template rendering.
+
+    Cover art is optional per gig; Pocket falls back to the in-app poster
+    when `cover_image_url` is NULL.
     """
+    # Photo is now required — Grid must skip this call when the host didn't
+    # upload one, and Pocket renders the in-app poster in that case.
+    if photo is None:
+        raise HTTPException(
+            status_code=422,
+            detail="photo: required (auto template rendering was removed 2026-08-24)",
+        )
+    if photo.content_type not in _COVER_ALLOWED_TYPES:
+        raise HTTPException(status_code=422, detail="photo: must be JPEG, PNG, or WebP")
+    photo_bytes = await photo.read()
+    if len(photo_bytes) > _COVER_MAX_BYTES:
+        raise HTTPException(status_code=422, detail="photo: file too large (max 10 MB)")
+
     row = await db.execute(
-        text("""
-            SELECT g.poster_id, g.category, g.title, g.pay_amount, g.pay_type::text, g.city, g.venue_name,
-                   COALESCE(g.company_name, p.display_name) AS host_name
-            FROM gigs g
-            JOIN profiles p ON p.id = g.poster_id
-            WHERE g.id = :id
-        """),
+        text("SELECT poster_id FROM gigs WHERE id = :id"),
         {"id": gig_id},
     )
     gig = row.mappings().first()
@@ -414,33 +423,26 @@ async def generate_gig_cover(
     if str(gig["poster_id"]) != current_user.user_id:
         raise HTTPException(status_code=403, detail="Not your gig.")
 
-    photo_bytes: Optional[bytes] = None
-    if photo is not None:
-        if photo.content_type not in _COVER_ALLOWED_TYPES:
-            raise HTTPException(status_code=422, detail="photo: must be JPEG, PNG, or WebP")
-        photo_bytes = await photo.read()
-        if len(photo_bytes) > _COVER_MAX_BYTES:
-            raise HTTPException(status_code=422, detail="photo: file too large (max 10 MB)")
+    # File extension for the storage path — keeps the Supabase mime metadata
+    # aligned with reality (an uploaded JPEG stored as "cover.png" served the
+    # wrong content-type header, which broke some CDN/browser sniffers).
+    ext_map = {
+        "image/jpeg": "jpg",
+        "image/png":  "png",
+        "image/webp": "webp",
+    }
+    ext = ext_map.get(photo.content_type or "", "jpg")
+    filename = f"cover.{ext}"
 
-    cover_kwargs = dict(
-        category=gig["category"],
-        title=gig["title"],
-        pay_label=_format_pay(gig["pay_amount"], gig["pay_type"]),
-        venue=gig["venue_name"] or "",
-        city=gig["city"] or "",
-        host_name=gig["host_name"] or "",
-        photo_bytes=photo_bytes,
-    )
-    cover_png = generate_cover(**cover_kwargs)
-    square_png = generate_square_cover(**cover_kwargs)
+    cover_url = await upload_cover(gig_id, filename, photo_bytes, photo.content_type or "image/jpeg")
 
-    cover_url = await upload_cover(gig_id, "cover.png", cover_png)
-    square_url = await upload_cover(gig_id, "cover-square.png", square_png)
-
+    # cover_image_square_url points at the same photo — Pocket center-crops
+    # via `resizeMode: cover` in any square context. Kept in the schema for
+    # backwards compat with old clients that still read it separately.
     await db.execute(
-        text("UPDATE gigs SET cover_image_url = :url, cover_image_square_url = :square_url WHERE id = :id"),
-        {"url": cover_url, "square_url": square_url, "id": gig_id},
+        text("UPDATE gigs SET cover_image_url = :url, cover_image_square_url = :url WHERE id = :id"),
+        {"url": cover_url, "id": gig_id},
     )
     await db.commit()
 
-    return CoverResponse(cover_image_url=cover_url, cover_image_square_url=square_url)
+    return CoverResponse(cover_image_url=cover_url, cover_image_square_url=cover_url)

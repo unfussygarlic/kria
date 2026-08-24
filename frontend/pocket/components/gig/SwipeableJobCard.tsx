@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     color: "#000",
     fontSize: 26,
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     letterSpacing: 0.5,
   },
 });

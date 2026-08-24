@@ -1,21 +1,20 @@
 /**
- * NextUnlocks — compact "next 3 badges you're closest to earning" for Arena.
+ * NextUnlocks — "next 3 badges you're closest to earning" for Arena.
  *
- * Picks up to 3 locked badges with progress data, sorts by
- * `progress_current / progress_target` DESC so the closest-to-unlock rise
- * to the top. Skips badges without progress data (identity/skill — binary,
- * no bar to show).
+ * Picks up to 3 locked badges with progress data, sorted by
+ * progress_current / progress_target DESC. Skips binary badges
+ * (identity/skill) that have no progress bar.
  *
- * Tap → routes to the full /badges screen. This lives on Arena so the
- * runner sees "what's next" without having to leave the tab (the earlier
- * design forced them to Home → Profile → Badges to check progress).
+ * Refreshed 2026-08-23 for the new visual system: SHADOW.card,
+ * TYPE tokens, no external margins (parent owns spacing).
  */
 import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { T } from "@/constants/colors";
-import { rf, rw } from "@/constants/responsive";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
+import { rw } from "@/constants/responsive";
 import { PressableScale } from "@/components/ui/PressableScale";
 import type { Badge } from "@/lib/api/badges";
 
@@ -25,7 +24,7 @@ const CATEGORY_COLOR: Record<string, string> = {
   identity:     "#8097ff",
   skill:        "#a8f060",
   reliability:  "#ff7351",
-  community:    "#ffffff",
+  community:    T.text,
 };
 
 const CATEGORY_ICON: Record<string, keyof typeof Feather.glyphMap> = {
@@ -69,15 +68,16 @@ export function NextUnlocks({ badges }: Props) {
           const color = CATEGORY_COLOR[badge.category] ?? T.primary;
           const icon = CATEGORY_ICON[badge.category] ?? "award";
           const pct = Math.min(100, Math.max(2, Math.round(ratio * 100)));
+          const isLast = i === candidates.length - 1;
           return (
             <View
               key={badge.code}
-              style={[styles.row, i < candidates.length - 1 && styles.rowDivider]}
+              style={[styles.row, !isLast && { marginBottom: S.md }]}
             >
-              <View style={[styles.iconRing, { backgroundColor: color + "18", borderColor: color + "40" }]}>
+              <View style={[styles.iconRing, { backgroundColor: color + "18" }]}>
                 <Feather name={icon} size={rw(16)} color={color} />
               </View>
-              <View style={{ flex: 1, gap: rw(4) }}>
+              <View style={{ flex: 1, gap: 4 }}>
                 <View style={styles.rowTop}>
                   <Text style={styles.name} numberOfLines={1}>{badge.name}</Text>
                   <Text style={styles.progressText}>
@@ -101,51 +101,38 @@ export function NextUnlocks({ badges }: Props) {
 
 const styles = StyleSheet.create({
   section: {
-    marginHorizontal: rw(16),
-    marginTop: rw(6),
+    gap: S.sm,
   },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: rw(10),
   },
   eyebrow: {
-    fontSize: rf(11),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.label,
     color: T.textMuted,
-    letterSpacing: 1.6,
   },
   seeAll: {
-    fontSize: rf(12),
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
     color: T.primary,
   },
   card: {
-    backgroundColor: T.surface,
-    borderRadius: rw(16),
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: rw(14),
-    gap: rw(10),
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    padding: S.md,
+    ...SHADOW.card,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(12),
-    paddingBottom: rw(10),
-  },
-  rowDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    gap: S.sm,
   },
   iconRing: {
     width: rw(38),
     height: rw(38),
-    borderRadius: rw(10),
-    borderWidth: 1,
+    borderRadius: R.thumb,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -156,21 +143,20 @@ const styles = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontSize: rf(13),
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
   },
   progressText: {
-    fontSize: rf(11),
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
     color: T.textMuted,
-    letterSpacing: 0.3,
   },
   progressTrack: {
     height: 4,
-    backgroundColor: T.border,
+    backgroundColor: T.surface2,
     borderRadius: 2,
     overflow: "hidden",
   },
@@ -179,9 +165,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   hint: {
-    fontSize: rf(11),
-    fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
+    ...TYPE.caption,
     color: T.textMuted,
   },
 });

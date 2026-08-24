@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontSize: rf(11),
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: T.textMuted,
     letterSpacing: 1.6,
   },
@@ -168,13 +168,13 @@ const styles = StyleSheet.create({
   trendText: {
     fontSize: rf(11),
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     letterSpacing: 0.2,
   },
   amount: {
     fontSize: rf(44),
     fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: T.text,
     letterSpacing: -1,
     marginBottom: rw(10),
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   subText: {
     fontSize: rf(13),
     fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
+    fontFamily: "Inter_500Medium",
     color: T.textSub,
   },
   dot: {
@@ -221,14 +221,14 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: rf(16),
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: T.text,
     marginBottom: 2,
   },
   emptySub: {
     fontSize: rf(12),
     fontWeight: "400",
-    fontFamily: "SpaceGrotesk_400Regular",
+    fontFamily: "Inter_400Regular",
     color: T.textMuted,
     lineHeight: rf(16),
   },

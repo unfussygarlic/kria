@@ -123,13 +123,13 @@ const styles = StyleSheet.create({
   text: {
     fontSize: rf(12),
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     letterSpacing: 0.2,
   },
   textCompact: {
     fontSize: rf(10),
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     letterSpacing: 0.2,
   },
 });

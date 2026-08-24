@@ -1,3 +1,11 @@
+/**
+ * Settings — theme picker + account controls (deactivate, delete).
+ *
+ * Redesigned 2026-08-23 for the new visual system: SHADOW cards (no borders),
+ * TYPE tokens, S/R spacing, solid surfaces. Deactivate/delete sheets keep
+ * their behaviour but reuse the new tokens.
+ */
+
 import { useState } from "react";
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
@@ -7,11 +15,11 @@ import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { T } from "@/constants/colors";
-import { rf, rw } from "@/constants/responsive";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
+import { currentTheme, setTheme, type ThemeName } from "@/constants/theme";
+import { rw } from "@/constants/responsive";
 import { useAuthStore } from "@/stores/authStore";
 import { deactivateAccount, deleteAccountRequest, type DeactivateDuration } from "@/lib/api/account";
-
-// ── Duration options ──────────────────────────────────────────────────────────
 
 const DURATION_OPTIONS: { value: DeactivateDuration; label: string; sublabel: string }[] = [
   { value: "7d",         label: "7 days",       sublabel: "Back in one week"     },
@@ -50,23 +58,21 @@ function DeactivateSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, S.lg) }]}>
         <View style={styles.sheetHandle} />
 
-        {/* Header */}
         <View style={styles.sheetHeader}>
-          <View style={[styles.sheetIcon, { backgroundColor: "rgba(245,158,11,0.12)" }]}>
+          <View style={[styles.sheetIcon, { backgroundColor: "#f59e0b22" }]}>
             <Feather name="clock" size={rw(20)} color="#f59e0b" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.sheetTitle}>Deactivate Account</Text>
+            <Text style={styles.sheetTitle}>Deactivate account</Text>
             <Text style={styles.sheetSubtitle}>Your profile will be hidden and gigs paused</Text>
           </View>
         </View>
 
         <Text style={styles.pickerLabel}>How long do you want to deactivate?</Text>
 
-        {/* Duration picker */}
         <View style={styles.durationList}>
           {DURATION_OPTIONS.map((opt) => {
             const active = selected === opt.value;
@@ -142,21 +148,19 @@ function DeleteSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, S.lg) }]}>
         <View style={styles.sheetHandle} />
 
-        {/* Header */}
         <View style={styles.sheetHeader}>
-          <View style={[styles.sheetIcon, { backgroundColor: "rgba(239,68,68,0.12)" }]}>
+          <View style={[styles.sheetIcon, { backgroundColor: T.error + "22" }]}>
             <Feather name="trash-2" size={rw(20)} color={T.error} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.sheetTitle, { color: T.error }]}>Delete Account</Text>
+            <Text style={[styles.sheetTitle, { color: T.error }]}>Delete account</Text>
             <Text style={styles.sheetSubtitle}>This cannot be undone</Text>
           </View>
         </View>
 
-        {/* Warning box */}
         <View style={styles.warningBox}>
           <Text style={styles.warningTitle}>What gets deleted:</Text>
           {[
@@ -171,13 +175,10 @@ function DeleteSheet({
         </View>
 
         <Text style={styles.pickerLabel}>
-          Type <Text style={{ color: T.text, fontWeight: "700" }}>DELETE</Text> to confirm:
+          Type <Text style={{ color: T.text, fontFamily: "Inter_700Bold", fontWeight: "700" }}>DELETE</Text> to confirm:
         </Text>
         <TextInput
-          style={[
-            styles.confirmInput,
-            confirmed && { borderColor: T.error },
-          ]}
+          style={[styles.confirmInput, confirmed && { backgroundColor: T.error + "12" }]}
           value={confirmation}
           onChangeText={setConfirmation}
           placeholder="DELETE"
@@ -197,7 +198,7 @@ function DeleteSheet({
           >
             {loading
               ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={styles.deleteBtnText}>Delete Forever</Text>
+              : <Text style={styles.deleteBtnText}>Delete forever</Text>
             }
           </Pressable>
         </View>
@@ -212,10 +213,18 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [showDeactivate, setShowDeactivate] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<ThemeName>(currentTheme);
+
+  const handleThemePick = async (next: ThemeName) => {
+    if (next === selectedTheme) return;
+    setSelectedTheme(next);
+    // Fire-and-forget — setTheme persists and best-effort reloads. No popup
+    // if reload can't fire; the preference applies on next open.
+    setTheme(next);
+  };
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Feather name="arrow-left" size={rw(20)} color={T.text} />
@@ -229,16 +238,48 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Account section */}
-        <Text style={styles.sectionLabel}>Account</Text>
+        <Text style={styles.sectionLabel}>APPEARANCE</Text>
         <View style={styles.card}>
-          {/* Deactivate row */}
+          <View style={styles.menuRow}>
+            <View style={[styles.menuIcon, { backgroundColor: T.primary + "18" }]}>
+              <Feather name="sun" size={rw(18)} color={T.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.menuLabel}>Theme</Text>
+              <Text style={styles.menuSub}>Light by default. Dark reduces glare at night.</Text>
+            </View>
+          </View>
+          <View style={styles.themeRow}>
+            {(["light", "dark"] as const).map((mode) => {
+              const active = selectedTheme === mode;
+              return (
+                <Pressable
+                  key={mode}
+                  onPress={() => handleThemePick(mode)}
+                  style={[styles.themeChip, active && styles.themeChipActive]}
+                >
+                  <Feather
+                    name={mode === "light" ? "sun" : "moon"}
+                    size={rw(14)}
+                    color={active ? T.selText : T.textSub}
+                  />
+                  <Text style={[styles.themeChipText, active && styles.themeChipTextActive]}>
+                    {mode === "light" ? "Light" : "Dark"}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <Text style={styles.sectionLabel}>ACCOUNT</Text>
+        <View style={styles.card}>
           <Pressable style={styles.menuRow} onPress={() => setShowDeactivate(true)}>
-            <View style={[styles.menuIcon, { backgroundColor: "rgba(245,158,11,0.10)" }]}>
+            <View style={[styles.menuIcon, { backgroundColor: "#f59e0b22" }]}>
               <Feather name="clock" size={rw(18)} color="#f59e0b" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.menuLabel}>Deactivate Account</Text>
+              <Text style={styles.menuLabel}>Deactivate account</Text>
               <Text style={styles.menuSub}>Temporarily hide your profile and pause gigs</Text>
             </View>
             <Feather name="chevron-right" size={rw(18)} color={T.textMuted} />
@@ -246,13 +287,12 @@ export default function SettingsScreen() {
 
           <View style={styles.divider} />
 
-          {/* Delete row */}
           <Pressable style={styles.menuRow} onPress={() => setShowDelete(true)}>
-            <View style={[styles.menuIcon, { backgroundColor: "rgba(239,68,68,0.10)" }]}>
+            <View style={[styles.menuIcon, { backgroundColor: T.error + "22" }]}>
               <Feather name="trash-2" size={rw(18)} color={T.error} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.menuLabel, { color: T.error }]}>Delete Account</Text>
+              <Text style={[styles.menuLabel, { color: T.error }]}>Delete account</Text>
               <Text style={styles.menuSub}>Permanently remove your account and all data</Text>
             </View>
             <Feather name="chevron-right" size={rw(18)} color={T.textMuted} />
@@ -266,8 +306,6 @@ export default function SettingsScreen() {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -277,149 +315,169 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: rw(16),
-    paddingVertical: rw(14),
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    paddingHorizontal: S.md,
+    paddingVertical: S.sm,
   },
   backBtn: {
     width: rw(36),
     height: rw(36),
-    borderRadius: rw(10),
-    backgroundColor: T.surface,
+    borderRadius: R.thumb,
+    backgroundColor: T.surface1,
     justifyContent: "center",
     alignItems: "center",
+    ...SHADOW.sm,
   },
   headerTitle: {
-    fontSize: rf(16),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title3,
     color: T.text,
   },
   content: {
-    padding: rw(16),
-    gap: rw(8),
+    padding: S.md,
+    gap: S.xs,
   },
   sectionLabel: {
-    fontSize: rf(10),
-    fontWeight: "700",
+    ...TYPE.label,
     color: T.textMuted,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-    marginBottom: rw(8),
-    marginLeft: rw(4),
+    marginBottom: S.xs,
+    marginLeft: 4,
+    marginTop: S.xs,
   },
   card: {
-    backgroundColor: T.surface,
-    borderRadius: rw(16),
-    borderWidth: 1,
-    borderColor: T.border,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
     overflow: "hidden",
+    ...SHADOW.card,
   },
   menuRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(12),
-    padding: rw(16),
+    gap: S.sm,
+    padding: S.md,
   },
   menuIcon: {
     width: rw(38),
     height: rw(38),
-    borderRadius: rw(12),
+    borderRadius: R.thumb,
     justifyContent: "center",
     alignItems: "center",
   },
   menuLabel: {
-    fontSize: rf(14),
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: T.text,
   },
   menuSub: {
-    fontSize: rf(11),
+    ...TYPE.caption,
     color: T.textMuted,
     marginTop: 2,
   },
   divider: {
     height: 1,
-    backgroundColor: T.border,
+    backgroundColor: T.surface2,
     marginLeft: rw(66),
   },
 
-  // ── Sheet ──
+  themeRow: {
+    flexDirection: "row",
+    gap: S.xs,
+    padding: S.md,
+    paddingTop: 0,
+  },
+  themeChip: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: S.xs,
+    paddingVertical: S.sm,
+    borderRadius: R.button,
+    backgroundColor: T.surface2,
+  },
+  themeChipActive: {
+    backgroundColor: T.selBg,
+  },
+  themeChipText: {
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "700",
+    color: T.textSub,
+  },
+  themeChipTextActive: {
+    color: T.selText,
+  },
+
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.55)",
   },
   sheet: {
-    backgroundColor: T.surface,
-    borderTopLeftRadius: rw(24),
-    borderTopRightRadius: rw(24),
-    paddingHorizontal: rw(20),
-    paddingTop: rw(12),
+    backgroundColor: T.surface1,
+    borderTopLeftRadius: R.hero,
+    borderTopRightRadius: R.hero,
+    paddingHorizontal: S.lg,
+    paddingTop: S.sm,
+    ...SHADOW.xl,
   },
   sheetHandle: {
     width: rw(40),
     height: 4,
-    backgroundColor: T.border,
+    backgroundColor: T.surface2,
     borderRadius: 2,
     alignSelf: "center",
-    marginBottom: rw(16),
+    marginBottom: S.md,
   },
   sheetHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(12),
-    marginBottom: rw(20),
+    gap: S.sm,
+    marginBottom: S.lg,
   },
   sheetIcon: {
     width: rw(44),
     height: rw(44),
-    borderRadius: rw(14),
+    borderRadius: R.thumb,
     justifyContent: "center",
     alignItems: "center",
   },
   sheetTitle: {
-    fontSize: rf(16),
-    fontWeight: "700",
+    ...TYPE.title3,
     color: T.text,
   },
   sheetSubtitle: {
-    fontSize: rf(12),
+    ...TYPE.caption,
     color: T.textMuted,
     marginTop: 2,
   },
   pickerLabel: {
-    fontSize: rf(12),
+    ...TYPE.caption,
     color: T.textMuted,
-    marginBottom: rw(10),
+    marginBottom: S.xs,
   },
 
-  // ── Duration picker ──
   durationList: {
-    gap: rw(8),
-    marginBottom: rw(20),
+    gap: S.xs,
+    marginBottom: S.lg,
   },
   durationRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(12),
-    padding: rw(14),
-    borderRadius: rw(12),
-    borderWidth: 1.5,
-    borderColor: T.border,
-    backgroundColor: "transparent",
+    gap: S.sm,
+    padding: S.sm,
+    borderRadius: R.button,
+    backgroundColor: T.surface2,
   },
   durationRowActive: {
-    borderColor: T.primary,
-    backgroundColor: "rgba(212,255,0,0.05)",
+    backgroundColor: T.primary + "18",
   },
   durationLabel: {
-    fontSize: rf(14),
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: T.text,
   },
   durationSub: {
-    fontSize: rf(11),
+    ...TYPE.caption,
     color: T.textMuted,
     marginTop: 2,
   },
@@ -428,7 +486,7 @@ const styles = StyleSheet.create({
     height: rw(18),
     borderRadius: rw(9),
     borderWidth: 2,
-    borderColor: T.border,
+    borderColor: T.surface2,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -442,81 +500,78 @@ const styles = StyleSheet.create({
     backgroundColor: T.primary,
   },
 
-  // ── Delete confirm input ──
   warningBox: {
-    backgroundColor: "rgba(239,68,68,0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(239,68,68,0.2)",
-    borderRadius: rw(12),
-    padding: rw(14),
-    marginBottom: rw(16),
-    gap: rw(4),
+    backgroundColor: T.error + "12",
+    borderRadius: R.card,
+    padding: S.sm,
+    marginBottom: S.md,
+    gap: 4,
   },
   warningTitle: {
-    fontSize: rf(12),
-    fontWeight: "700",
+    ...TYPE.label,
     color: T.error,
-    marginBottom: rw(4),
+    marginBottom: 4,
   },
   warningLine: {
-    fontSize: rf(12),
-    color: T.textMuted,
+    ...TYPE.caption,
+    color: T.textSub,
   },
   confirmInput: {
-    backgroundColor: T.bg,
-    borderRadius: rw(10),
-    borderWidth: 1.5,
-    borderColor: T.border,
-    paddingHorizontal: rw(14),
-    paddingVertical: rw(12),
-    fontSize: rf(14),
+    backgroundColor: T.surface2,
+    borderRadius: R.input,
+    paddingHorizontal: S.md,
+    paddingVertical: S.sm,
+    ...TYPE.body,
     color: T.text,
-    marginBottom: rw(20),
+    marginBottom: S.lg,
     letterSpacing: 2,
   },
 
-  // ── Action buttons ──
   sheetActions: {
     flexDirection: "row",
-    gap: rw(10),
+    gap: S.xs,
   },
   cancelBtn: {
     flex: 1,
     height: rw(48),
-    borderRadius: rw(12),
-    borderWidth: 1,
-    borderColor: T.border,
+    borderRadius: R.button,
+    backgroundColor: T.surface2,
     justifyContent: "center",
     alignItems: "center",
   },
   cancelText: {
-    fontSize: rf(14),
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: T.textMuted,
   },
   warnBtn: {
     flex: 1,
     height: rw(48),
-    borderRadius: rw(12),
+    borderRadius: R.button,
     backgroundColor: "#f59e0b",
     justifyContent: "center",
     alignItems: "center",
+    ...SHADOW.sm,
   },
   warnBtnText: {
-    fontSize: rf(14),
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
     color: "#000",
   },
   deleteBtn: {
     flex: 1,
     height: rw(48),
-    borderRadius: rw(12),
+    borderRadius: R.button,
     backgroundColor: T.error,
     justifyContent: "center",
     alignItems: "center",
+    ...SHADOW.sm,
   },
   deleteBtnText: {
-    fontSize: rf(14),
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
     color: "#fff",
   },

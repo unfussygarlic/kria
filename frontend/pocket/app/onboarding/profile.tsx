@@ -19,6 +19,8 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
+import { rw } from "@/constants/responsive";
 import { GenderType } from "@/types/database";
 import { StickyFooter } from "@/components/ui/StickyFooter";
 
@@ -236,7 +238,7 @@ const picker = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: T.text,
   },
   searchRow: {
@@ -255,7 +257,7 @@ const picker = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "SpaceGrotesk_400Regular",
+    fontFamily: "Inter_400Regular",
     color: T.text,
     padding: 0,
   },
@@ -269,12 +271,12 @@ const picker = StyleSheet.create({
   cityName: {
     fontSize: 15,
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    fontFamily: "Inter_600SemiBold",
     color: T.text,
   },
   stateName: {
     fontSize: 12,
-    fontFamily: "SpaceGrotesk_400Regular",
+    fontFamily: "Inter_400Regular",
     color: T.textMuted,
     marginTop: 2,
   },
@@ -642,67 +644,55 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 28,
-    paddingTop: 64,
-    paddingBottom: 24,
-    gap: 24,
+    paddingHorizontal: S.xl,
+    paddingTop: S.bigHero,
+    paddingBottom: S.lg,
+    gap: S.lg,
   },
   backText: {
-    fontSize: 16,
-    fontFamily: "SpaceGrotesk_500Medium",
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
     color: T.primary,
   },
 
   stepHeader: {
-    gap: 8,
+    gap: S.xs,
   },
   stepIndicator: {
-    fontSize: 13,
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    ...TYPE.label,
     color: T.primary,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
   },
   stepTitle: {
-    fontSize: 34,
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title1,
+    fontSize: 32,
+    lineHeight: 40,
     color: T.text,
-    lineHeight: 42,
   },
   stepSubtitle: {
-    fontSize: 15,
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.bodyLg,
     color: T.textSub,
-    lineHeight: 22,
   },
 
   nameRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: S.sm,
   },
   field: {
     gap: 6,
   },
   label: {
-    fontSize: 13,
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    ...TYPE.label,
     color: T.textSub,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
   },
   input: {
-    backgroundColor: T.surface3,
-    borderWidth: 1.5,
-    borderColor: T.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 52,
-    fontSize: 16,
-    fontFamily: "SpaceGrotesk_400Regular",
+    backgroundColor: T.surface2,
+    borderRadius: R.input,
+    paddingHorizontal: S.md,
+    height: rw(52),
+    ...TYPE.bodyLg,
     color: T.text,
+    ...SHADOW.sm,
   },
 
   // City picker button
@@ -710,92 +700,81 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: T.surface3,
-    borderWidth: 1.5,
-    borderColor: T.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 52,
+    backgroundColor: T.surface2,
+    borderRadius: R.input,
+    paddingHorizontal: S.md,
+    height: rw(52),
+    ...SHADOW.sm,
   },
   pickerButtonReadOnly: {
-    borderColor: T.primary + "55",
-    backgroundColor: T.primary + "0D",
+    backgroundColor: T.primary + "12",
   },
   pickerButtonText: {
-    fontSize: 16,
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.bodyLg,
     color: T.text,
   },
 
   // Date picker
   dateButton: {
-    backgroundColor: T.surface3,
-    borderWidth: 1.5,
-    borderColor: T.primary,
-    borderRadius: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    backgroundColor: T.primary + "12",
+    borderRadius: R.card,
+    paddingHorizontal: S.lg,
+    paddingVertical: S.md,
     gap: 4,
+    ...SHADOW.sm,
   },
   dateButtonLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    ...TYPE.label,
     color: T.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
   },
   dateButtonValue: {
-    fontSize: 18,
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    ...TYPE.title3,
     color: T.text,
   },
   pickerContainer: {
     backgroundColor: "#ffffff",
-    borderRadius: 14,
+    borderRadius: R.card,
     overflow: "hidden",
   },
   pickerDoneButton: {
     alignSelf: "flex-end",
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingHorizontal: S.lg,
+    paddingVertical: S.xs,
     backgroundColor: T.ctaBg,
-    borderRadius: 8,
+    borderRadius: R.button,
+    ...SHADOW.sm,
   },
   pickerDoneText: {
-    fontSize: 15,
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.ctaText,
   },
 
   // Gender
   genderRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: S.sm,
   },
   genderCard: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 20,
-    backgroundColor: T.surface3,
-    borderWidth: 1.5,
-    borderColor: T.border,
-    borderRadius: 16,
-    gap: 8,
+    paddingVertical: S.lg,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    gap: S.xs,
+    ...SHADOW.card,
   },
   genderCardSelected: {
-    borderColor: T.selBorder,
     backgroundColor: T.selBg,
   },
   genderEmoji: {
     fontSize: 28,
   },
   genderLabel: {
-    fontSize: 13,
+    ...TYPE.caption,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.textSub,
   },
   genderLabelSelected: {
@@ -804,24 +783,24 @@ const styles = StyleSheet.create({
 
   error: {
     color: T.error,
-    fontSize: 14,
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     textAlign: "center",
   },
   button: {
     backgroundColor: T.ctaBg,
-    height: 56,
-    borderRadius: 12,
+    height: rw(56),
+    borderRadius: R.button,
     justifyContent: "center",
     alignItems: "center",
+    ...SHADOW.md,
   },
   buttonDisabled: {
     opacity: 0.4,
   },
   buttonText: {
     color: T.ctaText,
-    fontSize: 18,
+    ...TYPE.title3,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
   },
 });

@@ -8,16 +8,18 @@ import {
   useWindowDimensions,
 } from "react-native";
 import * as Location from "expo-location";
+import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useShallow } from "zustand/react/shallow";
 import { useGigStore } from "@/stores/gigStore";
 import { useAuthStore } from "@/stores/authStore";
 import { Gig } from "@/types/database";
 import { T } from "@/constants/colors";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
 import { SwipeableJobCard } from "@/components/gig/SwipeableJobCard";
 import { JobCard } from "@/components/gig/JobCard";
 import { Feather } from "@expo/vector-icons";
-import { rf, rw } from "@/constants/responsive";
+import { rw } from "@/constants/responsive";
 import { MatchGigsParams } from "@/lib/api/gigs";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PressableScale } from "@/components/ui/PressableScale";
@@ -45,11 +47,10 @@ const cardSkStyles = StyleSheet.create({
   card: {
     width: "100%",
     aspectRatio: 2 / 3,
-    backgroundColor: "#1a1919",
-    borderRadius: rw(24),
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.07)",
+    backgroundColor: T.surface2,
+    borderRadius: R.hero,
     overflow: "hidden",
+    ...SHADOW.card,
   },
 });
 
@@ -286,6 +287,14 @@ export default function ExploreScreen() {
           <Feather name="map-pin" size={rw(12)} color={T.primary} />
           <Text style={styles.locationPillText}>{locationLabel}</Text>
         </View>
+        <Pressable
+          onPress={() => router.push("/(main)/(tabs)/search")}
+          style={styles.searchIconBtn}
+          hitSlop={8}
+        >
+          <Feather name="search" size={rw(16)} color={T.text} />
+          <Text style={styles.searchIconLabel}>Browse all</Text>
+        </Pressable>
       </View>
 
       {/* ── Empty state ── */}
@@ -378,8 +387,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: rw(40),
-    gap: rw(16),
+    padding: S.hero,
+    gap: S.md,
   },
 
   // Location / state screens
@@ -387,75 +396,86 @@ const styles = StyleSheet.create({
     width: rw(72),
     height: rw(72),
     borderRadius: rw(36),
-    backgroundColor: T.surface,
-    borderWidth: 1,
-    borderColor: T.border,
+    backgroundColor: T.surface1,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: rw(4),
+    marginBottom: S.xxs,
+    ...SHADOW.card,
   },
   emptyIconRing: {
     width: rw(72),
     height: rw(72),
     borderRadius: rw(36),
-    backgroundColor: T.primary + "14",
-    borderWidth: 1,
-    borderColor: T.primary + "30",
+    backgroundColor: T.primary + "18",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: rw(4),
+    marginBottom: S.xxs,
   },
   stateTitle: {
-    fontSize: rf(20),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title2,
     color: T.text,
     textAlign: "center",
   },
   stateSub: {
-    fontSize: rf(14),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.textSub,
     textAlign: "center",
-    lineHeight: rf(21),
   },
   ctaButton: {
-    marginTop: rw(8),
-    paddingHorizontal: rw(28),
-    paddingVertical: rw(12),
+    marginTop: S.xs,
+    paddingHorizontal: S.xl,
+    paddingVertical: S.sm,
     backgroundColor: T.ctaBg,
-    borderRadius: rw(12),
+    borderRadius: R.button,
+    ...SHADOW.sm,
   },
   ctaText: {
-    fontSize: rf(15),
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
     color: T.ctaText,
   },
 
   // Header
   header: {
-    paddingHorizontal: rw(20),
-    paddingTop: rw(12),
-    paddingBottom: rw(10),
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: S.lg,
+    paddingTop: S.sm,
+    paddingBottom: S.xs,
   },
   locationPill: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
-    gap: rw(5),
-    paddingHorizontal: rw(10),
-    paddingVertical: rw(5),
-    backgroundColor: T.surface,
-    borderRadius: rw(20),
-    borderWidth: 1,
-    borderColor: T.border,
+    gap: 5,
+    paddingHorizontal: S.sm,
+    paddingVertical: 6,
+    backgroundColor: T.surface1,
+    borderRadius: R.chip,
+    ...SHADOW.sm,
   },
   locationPillText: {
-    fontSize: rf(12),
+    ...TYPE.caption,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.textSub,
+  },
+  searchIconBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: S.sm,
+    paddingVertical: 6,
+    backgroundColor: T.surface1,
+    borderRadius: R.chip,
+    ...SHADOW.sm,
+  },
+  searchIconLabel: {
+    ...TYPE.caption,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+    color: T.text,
   },
 
   // Deck
@@ -463,8 +483,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    gap: rw(16),
-    paddingBottom: rw(16),
+    gap: S.md,
+    paddingBottom: S.md,
   },
   deckCenter: {
     alignItems: "stretch",
@@ -487,8 +507,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }, { translateY: 12 }],
   },
 
-  // Swipe hints (width injected inline from CARD_W in the component so it
-  // stays in sync with the responsive card sizing above)
+  // Swipe hints
   hintRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -497,36 +516,36 @@ const styles = StyleSheet.create({
   hintItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(3),
+    gap: 3,
   },
   counterWrap: {
     alignItems: "center",
-    gap: rw(4),
+    gap: 4,
   },
   applyHint: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(5),
-    paddingHorizontal: rw(14),
-    paddingVertical: rw(6),
+    gap: 5,
+    paddingHorizontal: S.md,
+    paddingVertical: 6,
     backgroundColor: T.selBg,
-    borderRadius: rw(20),
+    borderRadius: R.chip,
+    ...SHADOW.sm,
   },
   applyHintText: {
-    fontSize: rf(12),
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
     color: T.selText,
   },
   counterText: {
-    fontSize: rf(11),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.caption,
     color: T.textMuted,
   },
   hintText: {
-    fontSize: rf(11),
+    ...TYPE.caption,
+    fontFamily: "Inter_500Medium",
     fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
     color: T.textMuted,
   },
 });

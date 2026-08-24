@@ -13,14 +13,16 @@ import { useLocalSearchParams, router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useGigStore } from "@/stores/gigStore";
 import { useAuthStore } from "@/stores/authStore";
+import { useSavedGigsStore } from "@/stores/savedGigsStore";
 import { PressableScale } from "@/components/ui/PressableScale";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { HostAvatarChip } from "@/components/gig/HostAvatarChip";
 import { T, CategoryColors } from "@/constants/colors";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
 import { GigCategories } from "@/constants/config";
 import { Gig } from "@/types/database";
 import { StickyFooter } from "@/components/ui/StickyFooter";
-import { rf, rw } from "@/constants/responsive";
+import { rw } from "@/constants/responsive";
 
 export default function GigDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,6 +35,14 @@ export default function GigDetailScreen() {
   const myApplications = useGigStore((s) => s.myApplications);
   const hosts = useGigStore((s) => s.hosts);
   const profile = useAuthStore((s) => s.profile);
+  const savedIds = useSavedGigsStore((s) => s.ids);
+  const toggleSaved = useSavedGigsStore((s) => s.toggle);
+  const hydrateSaved = useSavedGigsStore((s) => s.hydrate);
+  const isSaved = id ? savedIds.has(id) : false;
+
+  useEffect(() => {
+    hydrateSaved();
+  }, [hydrateSaved]);
 
   useEffect(() => {
     if (!id) return;
@@ -102,9 +112,27 @@ export default function GigDetailScreen() {
           <Image source={{ uri: gig.cover_image_url }} style={styles.cover} resizeMode="cover" />
         )}
 
-        {/* Category Badge */}
-        <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
-          <Text style={styles.categoryText}>{categoryInfo?.label}</Text>
+        {/* Category Badge + Save toggle */}
+        <View style={styles.topRow}>
+          <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+            <Text style={styles.categoryText}>{categoryInfo?.label}</Text>
+          </View>
+          {!isOwnGig && (
+            <Pressable
+              onPress={() => id && toggleSaved(id)}
+              hitSlop={10}
+              style={[styles.saveButton, isSaved && styles.saveButtonActive]}
+            >
+              <Feather
+                name="bookmark"
+                size={18}
+                color={isSaved ? T.selText : T.text}
+              />
+              <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextActive]}>
+                {isSaved ? "Saved" : "Save"}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         {/* Title and Company */}
@@ -299,83 +327,105 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: rw(16),
-    paddingBottom: rw(24),
+    padding: S.md,
+    paddingBottom: S.lg,
   },
   cover: {
     width: "100%",
     aspectRatio: 4 / 5,
-    borderRadius: rw(16),
-    marginBottom: rw(16),
+    borderRadius: R.hero,
+    marginBottom: S.md,
     backgroundColor: T.surface2,
   },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: S.sm,
+    gap: S.xs,
+  },
   categoryBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: rw(12),
-    paddingVertical: rw(6),
-    borderRadius: rw(6),
-    marginBottom: rw(12),
+    paddingHorizontal: S.sm,
+    paddingVertical: 6,
+    borderRadius: R.chip,
+    ...SHADOW.sm,
   },
   categoryText: {
-    color: T.textInverse,
-    fontSize: rf(12),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    color: "#FFFFFF",
+    ...TYPE.label,
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: S.sm,
+    paddingVertical: 6,
+    borderRadius: R.chip,
+    backgroundColor: T.surface1,
+    ...SHADOW.sm,
+  },
+  saveButtonActive: {
+    backgroundColor: T.selBg,
+  },
+  saveButtonText: {
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "700",
+    color: T.text,
+  },
+  saveButtonTextActive: {
+    color: T.selText,
   },
   title: {
-    fontSize: rf(24),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title1,
     color: T.text,
   },
   company: {
-    fontSize: rf(16),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.bodyLg,
     color: T.textSub,
-    marginTop: rw(4),
+    marginTop: S.xxs,
   },
   eventName: {
-    fontSize: rf(14),
-    fontFamily: "SpaceGrotesk_500Medium",
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
     color: T.primary,
-    marginTop: rw(4),
+    marginTop: S.xxs,
   },
   hostChipRow: {
-    marginTop: rw(14),
+    marginTop: S.sm,
     alignSelf: "flex-start",
   },
   payContainer: {
     flexDirection: "row",
     alignItems: "baseline",
-    marginTop: rw(16),
-    gap: rw(4),
+    marginTop: S.md,
+    gap: S.xxs,
   },
   payAmount: {
-    fontSize: rf(28),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title1,
+    fontSize: 28,
     color: T.success,
   },
   payType: {
-    fontSize: rf(16),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.bodyLg,
     color: T.textSub,
   },
   details: {
-    backgroundColor: T.surface,
-    borderRadius: rw(12),
-    padding: rw(16),
-    marginTop: rw(20),
-    gap: rw(12),
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    padding: S.md,
+    marginTop: S.lg,
+    gap: S.sm,
+    ...SHADOW.card,
   },
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(12),
+    gap: S.sm,
   },
   detailText: {
-    fontSize: rf(14),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.text,
     flex: 1,
   },
@@ -384,51 +434,46 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
   section: {
-    marginTop: rw(24),
+    marginTop: S.xl,
   },
   sectionTitle: {
-    fontSize: rf(18),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    ...TYPE.title3,
     color: T.text,
-    marginBottom: rw(12),
+    marginBottom: S.sm,
   },
   description: {
-    fontSize: rf(14),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.textSub,
-    lineHeight: rf(22),
   },
   requirement: {
-    marginBottom: rw(12),
+    marginBottom: S.sm,
   },
   requirementLabel: {
-    fontSize: rf(12),
-    fontFamily: "SpaceGrotesk_500Medium",
+    ...TYPE.label,
     color: T.textMuted,
-    marginBottom: rw(4),
+    marginBottom: 4,
   },
   requirementValue: {
-    fontSize: rf(14),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.text,
   },
   primaryButton: {
     backgroundColor: T.ctaBg,
     height: rw(56),
-    borderRadius: rw(12),
+    borderRadius: R.button,
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
-    gap: rw(8),
+    gap: S.xs,
+    ...SHADOW.md,
   },
   primaryButtonDisabled: {
     backgroundColor: T.textMuted,
   },
   primaryButtonText: {
     color: T.ctaText,
-    fontSize: rf(18),
+    ...TYPE.title3,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
   },
 });

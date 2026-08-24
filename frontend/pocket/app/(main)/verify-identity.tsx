@@ -1,3 +1,11 @@
+/**
+ * Verify Identity — lists government ID types with per-type verification state.
+ * Launches VerificationCamera (id → selfie) then polls for the Inspector result.
+ *
+ * Redesigned 2026-08-23: SHADOW cards, TYPE tokens, S/R spacing. Verification
+ * flow (camera / upload / poll) preserved.
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -13,7 +21,8 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
-import { rf, rw } from "@/constants/responsive";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
+import { rw } from "@/constants/responsive";
 import {
   verifyIdentityWithImages,
   fetchIDVerificationStatus,
@@ -49,7 +58,7 @@ function failLabel(code: string | null): string {
 
 function hasActiveJob(statuses: Record<string, IDTypeStatus>): boolean {
   return Object.values(statuses).some(
-    (s) => s.status === "pending" || s.status === "processing"
+    (s) => s.status === "pending" || s.status === "processing",
   );
 }
 
@@ -67,38 +76,30 @@ export default function VerifyIdentityScreen() {
 
   const verifiedTypes: string[] = profile?.verified_id_types ?? [];
 
-  // ── Status polling ─────────────────────────────────────────────────────────
-
   const loadStatuses = useCallback(async () => {
     const { data } = await fetchIDVerificationStatus();
     if (data) {
       setStatuses(data.statuses);
-      // Refresh profile store if any type just became verified
       const anyNewlyVerified = Object.entries(data.statuses).some(
-        ([t, s]) => s.status === "verified" && !verifiedTypes.includes(t)
+        ([t, s]) => s.status === "verified" && !verifiedTypes.includes(t),
       );
       if (anyNewlyVerified) fetchProfile();
     }
     setStatusLoading(false);
   }, [verifiedTypes, fetchProfile]);
 
-  // Refresh on screen focus
   useFocusEffect(
     useCallback(() => {
       loadStatuses();
-    }, [loadStatuses])
+    }, [loadStatuses]),
   );
 
-  // Poll every 5 s while any job is active
   useEffect(() => {
     if (screen !== "list") return;
     if (!hasActiveJob(statuses) && !statusLoading) return;
-
     const id = setInterval(loadStatuses, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [screen, statuses, statusLoading, loadStatuses]);
-
-  // ── Camera handlers ────────────────────────────────────────────────────────
 
   function startVerification(idType: IDType) {
     setActiveIdType(idType);
@@ -130,8 +131,6 @@ export default function VerifyIdentityScreen() {
     }
   }
 
-  // ── Full-screen camera overlays ────────────────────────────────────────────
-
   if (screen === "camera_id") {
     return (
       <VerificationCamera
@@ -152,12 +151,10 @@ export default function VerifyIdentityScreen() {
     );
   }
 
-  // ── Uploading overlay ──────────────────────────────────────────────────────
-
   if (screen === "uploading") {
     return (
       <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <HeaderBar title="Verify Identity" onBack={() => setScreen("list")} />
+        <HeaderBar title="Verify identity" onBack={() => setScreen("list")} />
         <View style={styles.centeredContent}>
           <ActivityIndicator color={T.primary} size="large" />
           <Text style={styles.bigTitle}>Uploading…</Text>
@@ -167,17 +164,14 @@ export default function VerifyIdentityScreen() {
     );
   }
 
-  // ── List screen ────────────────────────────────────────────────────────────
-
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <HeaderBar title="Verify Identity" onBack={() => router.back()} />
+      <HeaderBar title="Verify identity" onBack={() => router.back()} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Upload error banner */}
         {uploadError && (
           <View style={styles.errorBanner}>
             <Feather name="alert-circle" size={16} color={T.error} />
@@ -185,29 +179,28 @@ export default function VerifyIdentityScreen() {
           </View>
         )}
 
-        {/* Earned badges */}
         {verifiedTypes.length > 0 && (
           <View style={styles.badgeSection}>
-            <Text style={styles.sectionLabel}>Your badges</Text>
+            <Text style={styles.sectionLabel}>YOUR BADGES</Text>
             <BadgeList earnedKeys={verifiedTypes} size="md" />
           </View>
         )}
 
-        {/* Intro card (first-time users) */}
         {verifiedTypes.length === 0 && !hasActiveJob(statuses) && (
           <View style={styles.introCard}>
-            <Feather name="shield" size={28} color={T.primary} />
+            <View style={styles.introIcon}>
+              <Feather name="shield" size={28} color={T.primary} />
+            </View>
             <View style={styles.introText}>
               <Text style={styles.introTitle}>Verify your identity</Text>
               <Text style={styles.introSub}>
-                Verified runners get more gig opportunities and higher visibility to posters.
+                Verified runners land more gigs and better pay. Takes about 30 seconds.
               </Text>
             </View>
           </View>
         )}
 
-        {/* ID type list */}
-        <Text style={styles.sectionLabel}>Government IDs</Text>
+        <Text style={styles.sectionLabel}>GOVERNMENT IDS</Text>
         <View style={styles.idList}>
           {statusLoading ? (
             <View style={styles.statusLoadingRow}>
@@ -232,7 +225,6 @@ export default function VerifyIdentityScreen() {
           )}
         </View>
 
-        {/* Active jobs hint */}
         {hasActiveJob(statuses) && (
           <View style={styles.pollingHint}>
             <ActivityIndicator color={T.textMuted} size="small" />
@@ -240,7 +232,6 @@ export default function VerifyIdentityScreen() {
           </View>
         )}
 
-        {/* Privacy note */}
         <View style={styles.infoCard}>
           <Feather name="lock" size={16} color={T.textMuted} />
           <Text style={styles.infoText}>
@@ -251,8 +242,6 @@ export default function VerifyIdentityScreen() {
     </View>
   );
 }
-
-// ── ID row ─────────────────────────────────────────────────────────────────────
 
 function IDRow({
   label, def, typeStatus, isLast, onVerify,
@@ -266,7 +255,7 @@ function IDRow({
   const { status, error_code } = typeStatus;
 
   return (
-    <View style={[styles.idRow, isLast && styles.idRowLast]}>
+    <View style={[styles.idRow, !isLast && styles.idRowDivider]}>
       <View style={[styles.idIcon, { backgroundColor: def.bg }]}>
         <Feather name={def.icon} size={20} color={def.color} />
       </View>
@@ -283,17 +272,12 @@ function IDRow({
   );
 }
 
-function StatusControl({
-  status, onVerify,
-}: {
-  status: IDVerificationStatus;
-  onVerify: () => void;
-}) {
+function StatusControl({ status, onVerify }: { status: IDVerificationStatus; onVerify: () => void }) {
   switch (status) {
     case "verified":
       return (
         <View style={styles.verifiedPill}>
-          <Feather name="check" size={12} color="#22c55e" />
+          <Feather name="check" size={12} color={T.success} />
           <Text style={styles.verifiedText}>Verified</Text>
         </View>
       );
@@ -310,12 +294,12 @@ function StatusControl({
     case "failed":
       return (
         <Pressable style={styles.retryBtn} onPress={onVerify}>
-          <Feather name="refresh-cw" size={12} color={T.ctaText} />
+          <Feather name="refresh-cw" size={12} color={T.error} />
           <Text style={styles.retryBtnText}>Retry</Text>
         </Pressable>
       );
 
-    default: // unverified
+    default:
       return (
         <Pressable style={styles.verifyBtn} onPress={onVerify}>
           <Text style={styles.verifyBtnText}>Verify</Text>
@@ -325,8 +309,6 @@ function StatusControl({
   }
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
 function HeaderBar({ title, onBack }: { title: string; onBack: () => void }) {
   return (
     <View style={styles.header}>
@@ -334,175 +316,178 @@ function HeaderBar({ title, onBack }: { title: string; onBack: () => void }) {
         <Feather name="arrow-left" size={22} color={T.text} />
       </Pressable>
       <Text style={styles.headerTitle}>{title}</Text>
-      <View style={{ width: 36 }} />
+      <View style={{ width: rw(36) }} />
     </View>
   );
 }
 
-// ── Styles ─────────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
   scroll: { flex: 1 },
-  listContent: { padding: rw(20), gap: rw(20), paddingBottom: 48 },
+  listContent: { padding: S.lg, gap: S.lg, paddingBottom: S.hero },
 
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: rw(16),
-    paddingVertical: rw(14),
-    backgroundColor: T.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    paddingHorizontal: S.md,
+    paddingVertical: S.sm,
   },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: rf(17), fontWeight: "600", color: T.text },
+  backButton: {
+    width: rw(36),
+    height: rw(36),
+    borderRadius: R.thumb,
+    backgroundColor: T.surface1,
+    justifyContent: "center",
+    alignItems: "center",
+    ...SHADOW.sm,
+  },
+  headerTitle: { ...TYPE.title3, color: T.text },
 
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(8),
-    backgroundColor: `${T.error}18`,
-    borderRadius: 10,
-    padding: rw(12),
-    borderWidth: 1,
-    borderColor: `${T.error}40`,
+    gap: S.xs,
+    backgroundColor: T.error + "18",
+    borderRadius: R.card,
+    padding: S.sm,
   },
-  errorBannerText: { flex: 1, fontSize: rf(13), color: T.error },
+  errorBannerText: { flex: 1, ...TYPE.body, color: T.error },
 
-  badgeSection: { gap: rw(10) },
+  badgeSection: { gap: S.xs },
 
   sectionLabel: {
-    fontSize: rf(12),
-    fontWeight: "700",
+    ...TYPE.label,
     color: T.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
   },
 
   introCard: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: rw(14),
-    backgroundColor: T.surface,
-    borderRadius: 14,
-    padding: rw(16),
-    borderWidth: 1,
-    borderColor: T.border,
+    gap: S.sm,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    padding: S.md,
+    ...SHADOW.card,
   },
-  introText: { flex: 1, gap: rw(4) },
-  introTitle: { fontSize: rf(15), fontWeight: "700", color: T.text },
-  introSub:  { fontSize: rf(13), color: T.textSub, lineHeight: rf(19) },
+  introIcon: {
+    width: rw(48),
+    height: rw(48),
+    borderRadius: R.thumb,
+    backgroundColor: T.primary + "18",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  introText: { flex: 1, gap: 4 },
+  introTitle: { ...TYPE.title3, color: T.text },
+  introSub:  { ...TYPE.body, color: T.textSub },
 
   idList: {
-    backgroundColor: T.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: T.border,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
     overflow: "hidden",
+    ...SHADOW.card,
   },
   idRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: rw(16),
-    paddingVertical: rw(14),
-    gap: rw(12),
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    paddingHorizontal: S.md,
+    paddingVertical: S.sm,
+    gap: S.sm,
   },
-  idRowLast: { borderBottomWidth: 0 },
+  idRowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: T.surface2,
+  },
   idIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: rw(40),
+    height: rw(40),
+    borderRadius: R.thumb,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   idLabelCol: { flex: 1, gap: 2 },
-  idLabel: { fontSize: rf(15), fontWeight: "600", color: T.text },
-  failReason: { fontSize: rf(11), color: T.error },
+  idLabel: { ...TYPE.body, fontFamily: "Inter_600SemiBold", fontWeight: "600", color: T.text },
+  failReason: { ...TYPE.caption, color: T.error },
 
   statusLoadingRow: {
-    padding: rw(20),
+    padding: S.lg,
     alignItems: "center",
   },
 
   verifiedPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(4),
-    backgroundColor: "#16a34a22",
-    paddingHorizontal: rw(10),
-    paddingVertical: rw(5),
-    borderRadius: 20,
+    gap: 4,
+    backgroundColor: T.success + "22",
+    paddingHorizontal: S.sm,
+    paddingVertical: 5,
+    borderRadius: R.chip,
   },
-  verifiedText: { fontSize: rf(13), fontWeight: "600", color: "#22c55e" },
+  verifiedText: { ...TYPE.caption, fontFamily: "Inter_600SemiBold", fontWeight: "600", color: T.success },
 
   pendingPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(4),
-    backgroundColor: T.surface,
-    paddingHorizontal: rw(10),
-    paddingVertical: rw(5),
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: T.border,
+    gap: 4,
+    backgroundColor: T.surface2,
+    paddingHorizontal: S.sm,
+    paddingVertical: 5,
+    borderRadius: R.chip,
   },
-  pendingText: { fontSize: rf(12), color: T.textMuted },
+  pendingText: { ...TYPE.caption, color: T.textMuted },
 
   verifyBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(2),
+    gap: 2,
     backgroundColor: T.ctaBg,
-    paddingHorizontal: rw(12),
-    paddingVertical: rw(7),
-    borderRadius: 20,
+    paddingHorizontal: S.sm,
+    paddingVertical: 7,
+    borderRadius: R.chip,
+    ...SHADOW.sm,
   },
-  verifyBtnText: { fontSize: rf(13), fontWeight: "700", color: T.ctaText },
+  verifyBtnText: { ...TYPE.caption, fontFamily: "Inter_700Bold", fontWeight: "700", color: T.ctaText },
 
   retryBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(4),
-    backgroundColor: `${T.error}22`,
-    paddingHorizontal: rw(12),
-    paddingVertical: rw(7),
-    borderRadius: 20,
+    gap: 4,
+    backgroundColor: T.error + "22",
+    paddingHorizontal: S.sm,
+    paddingVertical: 7,
+    borderRadius: R.chip,
   },
-  retryBtnText: { fontSize: rf(13), fontWeight: "700", color: T.error },
+  retryBtnText: { ...TYPE.caption, fontFamily: "Inter_700Bold", fontWeight: "700", color: T.error },
 
   pollingHint: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(8),
+    gap: S.xs,
     justifyContent: "center",
-    paddingVertical: rw(4),
+    paddingVertical: S.xxs,
   },
-  pollingHintText: { fontSize: rf(12), color: T.textMuted },
+  pollingHintText: { ...TYPE.caption, color: T.textMuted },
 
   infoCard: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: rw(10),
-    padding: rw(14),
-    backgroundColor: T.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: T.border,
+    gap: S.xs,
+    padding: S.sm,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    ...SHADOW.card,
   },
-  infoText: { flex: 1, fontSize: rf(12), color: T.textMuted, lineHeight: rf(18) },
+  infoText: { flex: 1, ...TYPE.caption, color: T.textMuted },
 
   centeredContent: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: rw(32),
-    gap: rw(16),
+    padding: S.xxl,
+    gap: S.md,
   },
-  bigTitle: { fontSize: rf(22), fontWeight: "800", color: T.text, textAlign: "center" },
-  subText:  { fontSize: rf(15), color: T.textSub, textAlign: "center", lineHeight: rf(22) },
+  bigTitle: { ...TYPE.title2, color: T.text, textAlign: "center" },
+  subText:  { ...TYPE.bodyLg, color: T.textSub, textAlign: "center" },
 });

@@ -69,21 +69,20 @@ function useScreenOptions() {
     tabBarActiveTintColor: T.primary,
     tabBarInactiveTintColor: T.textMuted,
     tabBarStyle: {
-      backgroundColor: "rgba(19,19,19,0.97)",
-      borderTopWidth: 1,
-      borderTopColor: T.border,
+      backgroundColor: T.surface1,
+      borderTopWidth: 0,
       height: 64,
       marginHorizontal: 16,
       marginBottom: Math.max(insets.bottom, 12),
       borderRadius: 24,
-      elevation: 12,
-      shadowColor: "#000",
+      elevation: 14,
+      shadowColor: "#3E1230",
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.4,
+      shadowOpacity: 0.12,
       shadowRadius: 20,
       paddingBottom: 0,
     },
-    tabBarLabelStyle: { fontSize: 11, fontWeight: "600" as const, fontFamily: "SpaceGrotesk_600SemiBold" },
+    tabBarLabelStyle: { fontSize: 11, fontWeight: "600" as const, fontFamily: "Inter_600SemiBold" },
     tabBarItemStyle: { paddingVertical: 4 },
   } as const;
 }
@@ -100,20 +99,15 @@ const EXPLORE_OPT = {
   tabBarIcon: ({ color, size, focused }: any) =>
     <AnimatedTabIcon name="compass" size={size} color={color} focused={focused} />,
 };
-const JOBS_OPT = {
-  title: L.TAB_JOBS,
-  tabBarIcon: ({ color, size, focused }: any) =>
-    <AnimatedTabIcon name="briefcase" size={size} color={color} focused={focused} />,
-};
 const SPACE_OPT = {
   title: L.TAB_SPACE,
   tabBarIcon: ({ color, size, focused }: any) =>
     <AnimatedTabIcon name="layers" size={size} color={color} focused={focused} />,
 };
-const ARENA_OPT = {
-  title: L.TAB_ARENA,
+const PROFILE_OPT = {
+  title: "Profile",
   tabBarIcon: ({ color, size, focused }: any) =>
-    <AnimatedTabIcon name="zap" size={size} color={color} focused={focused} />,
+    <AnimatedTabIcon name="user" size={size} color={color} focused={focused} />,
 };
 const HIDDEN = { href: null } as const;
 
@@ -144,12 +138,13 @@ const RunnerTabsNavigator = memo(function RunnerTabsNavigator() {
     <Tabs screenOptions={screenOptions}>
       <Tabs.Screen name="home"        options={HOME_OPT}    listeners={makeScrollListener("home")} />
       <Tabs.Screen name="explore"     options={EXPLORE_OPT} />
-      <Tabs.Screen name="search"      options={JOBS_OPT} />
-      <Tabs.Screen name="post"        options={HIDDEN} />
       <Tabs.Screen name="space"       options={SPACE_OPT}   listeners={makeScrollListener("space")} />
-      <Tabs.Screen name="arena"       options={ARENA_OPT}   listeners={makeScrollListener("arena")} />
+      <Tabs.Screen name="profile"     options={PROFILE_OPT} listeners={makeScrollListener("profile")} />
+      {/* Routes below stay reachable via router.push but are not in the bar. */}
+      <Tabs.Screen name="search"      options={HIDDEN} />
+      <Tabs.Screen name="arena"       options={HIDDEN} />
+      <Tabs.Screen name="post"        options={HIDDEN} />
       <Tabs.Screen name="chat"        options={HIDDEN} />
-      <Tabs.Screen name="profile"     options={HIDDEN} />
       <Tabs.Screen name="personality" options={HIDDEN} />
     </Tabs>
   );
@@ -165,10 +160,10 @@ const HostTabsNavigator = memo(function HostTabsNavigator() {
       <Tabs.Screen name="explore"     options={EXPLORE_OPT} />
       <Tabs.Screen name="post"        options={POST_OPT} />
       <Tabs.Screen name="space"       options={SPACE_OPT}   listeners={makeScrollListener("space")} />
-      <Tabs.Screen name="arena"       options={ARENA_OPT}   listeners={makeScrollListener("arena")} />
+      <Tabs.Screen name="profile"     options={PROFILE_OPT} listeners={makeScrollListener("profile")} />
+      <Tabs.Screen name="arena"       options={HIDDEN} />
       <Tabs.Screen name="chat"        options={HIDDEN} />
       <Tabs.Screen name="search"      options={HIDDEN} />
-      <Tabs.Screen name="profile"     options={HIDDEN} />
       <Tabs.Screen name="personality" options={HIDDEN} />
     </Tabs>
   );

@@ -1,50 +1,142 @@
-import { useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView, Share } from "react-native";
+/**
+ * Profile — the runner's page. Primary tab (2026-08-24 nav revamp).
+ *
+ * Redesigned 2026-08-24 for airier hierarchy — a personal identity block
+ * on top (avatar + name), one focal card (Momentum), a chip trust strip,
+ * a circular quick-action row (Instagram-style), then a menu list. Momentum
+ * tap opens Arena; verification / settings routed from the menu.
+ * Wallet was removed from the menu 2026-08-24 — not yet shipped.
+ *
+ * Design principles (from mobile-profile UX 2026 research):
+ *   - One dominant piece of information per section
+ *   - Whitespace over borders
+ *   - Circular action buttons > cramped tile grids for a small action set
+ *   - Bio / meta lines kept to a single short row
+ */
+
+import { useEffect, useRef } from "react";
+import {
+  View, Text, StyleSheet, Pressable, ScrollView, Share,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
 import { useMomentumStore } from "@/stores/momentumStore";
+import { useBadgeStore } from "@/stores/badgeStore";
 import { T } from "@/constants/colors";
-import { rf, rw } from "@/constants/responsive";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
+import { getBand } from "@/constants/momentum";
+import { rw } from "@/constants/responsive";
 import { calculateCompletion } from "@/lib/profileCompletion";
+import { scrollRegistry } from "@/lib/scrollRegistry";
+import { PressableScale } from "@/components/ui/PressableScale";
 
-// ── 2×2 quick action box ─────────────────────────────────────────────────────
+// ── Circular quick-action button ──────────────────────────────────────────────
 
-function QuickBox({
+function CircleAction({
   icon,
   label,
+  tint,
   onPress,
-  accent,
 }: {
   icon: React.ComponentProps<typeof Feather>["name"];
   label: string;
-  onPress?: () => void;
-  accent?: boolean;
+  tint: string;
+  onPress: () => void;
 }) {
   return (
-    <Pressable
-      style={({ pressed }) => [styles.quickBox, pressed && styles.quickBoxPressed]}
-      onPress={onPress}
-    >
-      <View style={[styles.quickIcon, accent && styles.quickIconAccent]}>
-        <Feather name={icon} size={20} color={accent ? T.avatarText : T.text} />
+    <PressableScale onPress={onPress} style={styles.circleWrap}>
+      <View style={[styles.circle, { backgroundColor: tint + "18" }]}>
+        <Feather name={icon} size={22} color={tint} />
       </View>
-      <Text style={styles.quickLabel}>{label}</Text>
+      <Text style={styles.circleLabel} numberOfLines={1}>{label}</Text>
+    </PressableScale>
+  );
+}
+
+// ── Chip in trust strip ───────────────────────────────────────────────────────
+
+function TrustChip({
+  icon,
+  emoji,
+  text,
+  color,
+}: {
+  icon?: React.ComponentProps<typeof Feather>["name"];
+  emoji?: string;
+  text: string;
+  color: string;
+}) {
+  return (
+    <View style={[styles.trustChip, { backgroundColor: color + "16" }]}>
+      {emoji ? (
+        <Text style={{ fontSize: 13 }}>{emoji}</Text>
+      ) : icon ? (
+        <Feather name={icon} size={12} color={color} />
+      ) : null}
+      <Text style={[styles.trustChipText, { color }]}>{text}</Text>
+    </View>
+  );
+}
+
+// ── Menu row ──────────────────────────────────────────────────────────────────
+
+function MenuRow({
+  icon,
+  label,
+  hint,
+  onPress,
+  tone,
+  right,
+}: {
+  icon: React.ComponentProps<typeof Feather>["name"];
+  label: string;
+  hint?: string;
+  onPress: () => void;
+  tone?: "danger";
+  right?: React.ReactNode;
+}) {
+  const color = tone === "danger" ? T.error : T.text;
+  return (
+    <Pressable style={styles.menuRow} onPress={onPress}>
+      <View
+        style={[
+          styles.menuIcon,
+          { backgroundColor: tone === "danger" ? T.error + "18" : T.surface2 },
+        ]}
+      >
+        <Feather name={icon} size={18} color={color} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.menuLabel, { color }]}>{label}</Text>
+        {hint && <Text style={styles.menuHint}>{hint}</Text>}
+      </View>
+      {right ?? <Feather name="chevron-right" size={18} color={T.textMuted} />}
     </Pressable>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+
   const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
   const { myMomentum, fetchMyMomentum } = useMomentumStore();
+  const { earnedCount, totalCount, fetchBadges } = useBadgeStore();
 
   useEffect(() => {
     fetchMyMomentum();
+    fetchBadges();
+    scrollRegistry.register("profile", () =>
+      scrollRef.current?.scrollTo({ y: 0, animated: true }),
+    );
+    return () => { scrollRegistry.unregister("profile"); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSignOut = async () => {
@@ -54,9 +146,6 @@ export default function ProfileScreen() {
 
   const handleShareProfile = async () => {
     if (!profile) return;
-    // public_slug is backfilled at migration time (0032), so this should
-    // always be set for anyone who's completed onboarding. Falls back to
-    // the raw user id if it isn't for any reason.
     const slug = profile.public_slug ?? profile.id;
     const url = `https://trykria.com/p/${slug}`;
     const name = profile.first_name || profile.display_name || "This runner";
@@ -75,290 +164,416 @@ export default function ProfileScreen() {
   const avatarLetter =
     (profile?.first_name?.charAt(0) || profile?.display_name?.charAt(0) || "?").toUpperCase();
 
+  const cityLine = [profile?.city, profile?.state].filter(Boolean).join(", ");
+  const joinedLine = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString("en-IN", {
+        month: "short",
+        year: "numeric",
+      })
+    : "";
+  const subLine = [cityLine, joinedLine ? `Joined ${joinedLine}` : null]
+    .filter(Boolean)
+    .join(" · ");
+
+  const momentumScore = myMomentum?.worker?.score ?? 0;
+  const band = getBand(momentumScore);
+  const bandPct = Math.min(100, Math.round((momentumScore / 1000) * 100));
+
+  const verifiedIds: string[] = profile?.verified_id_types ?? [];
+  const streak = profile?.streak_count ?? 0;
+  const isVerified = verifiedIds.length > 0;
+
   const completion = profile ? calculateCompletion(profile) : null;
 
-  const gigsDone = myMomentum?.worker?.gig_count ?? profile?.total_gigs_completed ?? 0;
-  const momentumScore = myMomentum?.worker?.score ?? 0;
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: rw(48) }}>
-      {/* Top nav bar */}
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <Pressable onPress={() => router.back()} style={styles.closeButton}>
-          <Feather name="x" size={22} color={T.text} />
-        </Pressable>
-        <Text style={styles.topBarTitle}>Profile</Text>
-        <View style={{ width: 34 }} />
-      </View>
-
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.avatarContainer}>
-          <Text style={styles.avatarText}>{avatarLetter}</Text>
+    <View style={styles.screen}>
+      <ScrollView
+        ref={scrollRef}
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + S.sm, paddingBottom: S.hero },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Top bar ── */}
+        <View style={styles.topBar}>
+          <Text style={styles.eyebrow}>PROFILE</Text>
+          <Pressable
+            onPress={() => router.push("/(main)/settings")}
+            style={styles.iconBtn}
+            hitSlop={10}
+          >
+            <Feather name="settings" size={20} color={T.text} />
+          </Pressable>
         </View>
-        <Text style={styles.name}>{displayName}</Text>
-        <Text style={styles.phone}>{profile?.phone}</Text>
 
-        {/* Verified badge */}
-        {profile?.is_verified && (
-          <View style={styles.verifiedBadge}>
-            <Feather name="check-circle" size={12} color="#16a34a" />
-            <Text style={styles.verifiedText}>Verified</Text>
-          </View>
-        )}
-
-        {/* Bio */}
-        {profile?.bio ? (
-          <Text style={styles.bio} numberOfLines={3}>{profile.bio}</Text>
-        ) : null}
-
-        {/* Skills chips (top 5) */}
-        {profile?.skills && profile.skills.length > 0 && (
-          <View style={styles.skillRow}>
-            {profile.skills.slice(0, 5).map((skill) => (
-              <View key={skill} style={styles.skillChip}>
-                <Text style={styles.skillChipText}>{skill.replace(/_/g, " ")}</Text>
-              </View>
-            ))}
-            {profile.skills.length > 5 && (
-              <View style={styles.skillChip}>
-                <Text style={styles.skillChipText}>+{profile.skills.length - 5}</Text>
+        {/* ── Identity block ── */}
+        <View style={styles.identity}>
+          <View style={styles.avatarRing}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{avatarLetter}</Text>
+            </View>
+            {isVerified && (
+              <View style={styles.avatarCheck}>
+                <Feather name="check" size={12} color={T.onGradAccent} />
               </View>
             )}
           </View>
-        )}
-      </View>
-
-      {/* Profile Completion Card (hidden at 100%) */}
-      {completion && completion.percentage < 100 && (
-        <View style={styles.completionCard}>
-          <View style={styles.completionRow}>
-            <Text style={styles.completionTitle}>Complete your profile</Text>
-            <Text style={styles.completionPct}>{completion.percentage}%</Text>
-          </View>
-          <View style={styles.progressTrack}>
-            <View
-              style={[styles.progressFill, { width: `${completion.percentage}%` as any }]}
-            />
-          </View>
-          {completion.missing.length > 0 && (
-            <Text style={styles.completionMissing} numberOfLines={2}>
-              Missing: {completion.missing.slice(0, 3).join(", ")}
-              {completion.missing.length > 3 ? ` +${completion.missing.length - 3} more` : ""}
-            </Text>
-          )}
-          <Pressable style={styles.completionButton} onPress={() => router.push("/(main)/edit-profile")}>
-            <Text style={styles.completionButtonText}>Complete Profile →</Text>
-          </Pressable>
+          <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
+          {subLine ? <Text style={styles.sub}>{subLine}</Text> : null}
         </View>
-      )}
 
-      {/* Stats — Gigs Done + Momentum + Streak */}
-      <View style={styles.stats}>
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>{gigsDone}</Text>
-          <Text style={styles.statLabel}>Gigs Done</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.stat}>
-          <Text style={[styles.statValue, { color: T.momentum }]}>{momentumScore}</Text>
-          <Text style={styles.statLabel}>Momentum</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.stat}>
-          <View style={styles.streakStatRow}>
-            {(profile?.streak_count ?? 0) > 0 && <Text style={styles.streakStatEmoji}>🔥</Text>}
-            <Text style={[styles.statValue, { color: "#FFC83D" }]}>{profile?.streak_count ?? 0}</Text>
-          </View>
-          <Text style={styles.statLabel}>Day Streak</Text>
-        </View>
-      </View>
-
-      {/* 2×2 Quick Actions */}
-      <View style={styles.quickGrid}>
-        <QuickBox
-          icon="edit-2"
-          label="Edit Profile"
-          accent
-          onPress={() => router.push("/(main)/edit-profile")}
-        />
-        <QuickBox
-          icon="share-2"
-          label="Share Profile"
-          onPress={handleShareProfile}
-        />
-        <QuickBox
-          icon="award"
-          label="My Badges"
-          onPress={() => router.push("/(main)/badges")}
-        />
-        <QuickBox
-          icon="settings"
-          label="Settings"
-          onPress={() => router.push("/(main)/settings")}
-        />
-      </View>
-
-      {/* Secondary list — Verify Identity */}
-      <View style={styles.menu}>
-        <Pressable
-          style={styles.menuItem}
-          onPress={() => router.push("/(main)/verify-identity")}
-        >
-          <Feather
-            name={(profile?.verified_id_types ?? []).length > 0 ? "shield" : "shield-off"}
-            size={20}
-            color={(profile?.verified_id_types ?? []).length > 0 ? T.success : T.text}
+        {/* ── Circular quick actions ── */}
+        <View style={styles.actionsRow}>
+          <CircleAction
+            icon="edit-2"
+            label="Edit"
+            tint={T.primary}
+            onPress={() => router.push("/(main)/edit-profile")}
           />
-          <Text style={styles.menuItemText}>Verify Identity</Text>
-          {(profile?.verified_id_types ?? []).length > 0 ? (
-            <Text style={styles.verifiedTag}>Verified</Text>
-          ) : (
-            <Feather name="chevron-right" size={20} color={T.textMuted} />
-          )}
+          <CircleAction
+            icon="star"
+            label="Skills"
+            tint="#a8f060"
+            onPress={() => router.push("/(main)/edit-skills")}
+          />
+          <CircleAction
+            icon="shield"
+            label={isVerified ? "ID" : "Verify"}
+            tint="#8097ff"
+            onPress={() => router.push("/(main)/verify-identity")}
+          />
+          <CircleAction
+            icon="share-2"
+            label="Share"
+            tint="#f472b6"
+            onPress={handleShareProfile}
+          />
+        </View>
+
+        {/* ── Momentum card — the one focal metric ── */}
+        <Pressable onPress={() => router.push("/(main)/(tabs)/arena")}>
+          <LinearGradient
+            colors={T.gradAccent}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.momentumCard}
+          >
+            <View style={styles.momentumHeader}>
+              <View style={styles.bandChip}>
+                <View style={[styles.bandDot, { backgroundColor: band.color }]} />
+                <Text style={styles.bandText}>{band.label.toUpperCase()}</Text>
+              </View>
+              <View style={styles.momentumLink}>
+                <Text style={styles.momentumLinkText}>Breakdown</Text>
+                <Feather name="chevron-right" size={14} color={T.onGradAccent} />
+              </View>
+            </View>
+
+            <View style={styles.momentumScoreRow}>
+              <Text style={styles.momentumScore}>{momentumScore}</Text>
+              <Text style={styles.momentumScoreDenom}>/ 1000</Text>
+            </View>
+            <Text style={styles.momentumCaption}>Momentum · your track record</Text>
+
+            <View style={styles.bandTrack}>
+              <View style={[styles.bandFill, { width: `${bandPct}%` as any }]} />
+            </View>
+          </LinearGradient>
         </Pressable>
-      </View>
 
-      {/* Sign Out */}
-      <Pressable style={styles.signOutButton} onPress={handleSignOut}>
-        <Feather name="log-out" size={20} color={T.error} />
-        <Text style={styles.signOutText}>Sign Out</Text>
-      </Pressable>
+        {/* ── Trust strip ── */}
+        <View style={styles.trustStrip}>
+          {isVerified ? (
+            <TrustChip
+              icon="shield"
+              text={`Verified · ${verifiedIds.length} ID${verifiedIds.length > 1 ? "s" : ""}`}
+              color="#8097ff"
+            />
+          ) : (
+            <Pressable onPress={() => router.push("/(main)/verify-identity")}>
+              <TrustChip icon="shield-off" text="Verify your ID" color={T.textMuted} />
+            </Pressable>
+          )}
+          {streak > 0 && (
+            <TrustChip emoji="🔥" text={`${streak}-day streak`} color="#FFC83D" />
+          )}
+          {totalCount > 0 && (
+            <TrustChip
+              icon="award"
+              text={`${earnedCount}/${totalCount} badges`}
+              color={T.primary}
+            />
+          )}
+        </View>
 
-      <Text style={styles.version}>Kria v1.0.0</Text>
-    </ScrollView>
+        {/* ── Profile completion (only <100%) ── */}
+        {completion && completion.percentage < 100 && (
+          <Pressable
+            style={styles.completionCard}
+            onPress={() => router.push("/(main)/edit-profile")}
+          >
+            <View style={styles.completionRow}>
+              <Text style={styles.completionTitle}>Complete your profile</Text>
+              <Text style={styles.completionPct}>{completion.percentage}%</Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View
+                style={[styles.progressFill, { width: `${completion.percentage}%` as any }]}
+              />
+            </View>
+            {completion.missing.length > 0 && (
+              <Text style={styles.completionMissing} numberOfLines={2}>
+                Missing: {completion.missing.slice(0, 3).join(", ")}
+                {completion.missing.length > 3 ? ` +${completion.missing.length - 3} more` : ""}
+              </Text>
+            )}
+          </Pressable>
+        )}
+
+        {/* ── Menu ── */}
+        <View style={styles.menu}>
+          <MenuRow
+            icon="award"
+            label="My badges"
+            hint={`${earnedCount} of ${totalCount} earned`}
+            onPress={() => router.push("/(main)/badges")}
+          />
+          <View style={styles.divider} />
+          <MenuRow
+            icon="settings"
+            label="Settings"
+            hint="Theme, account, privacy"
+            onPress={() => router.push("/(main)/settings")}
+          />
+        </View>
+
+        {/* ── Sign out ── */}
+        <Pressable style={styles.signOutBtn} onPress={handleSignOut}>
+          <Feather name="log-out" size={18} color={T.error} />
+          <Text style={styles.signOutText}>Sign out</Text>
+        </Pressable>
+
+        <Text style={styles.version}>Kria v1.0.0</Text>
+      </ScrollView>
+    </View>
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
     backgroundColor: T.bg,
   },
+  content: {
+    paddingHorizontal: S.lg,
+    gap: S.lg,
+  },
+
+  // Top bar
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: rw(16),
-    paddingBottom: rw(12),
-    backgroundColor: T.surface,
   },
-  closeButton: {
-    width: rw(34),
-    height: rw(34),
-    borderRadius: rw(17),
-    backgroundColor: T.bg,
+  eyebrow: {
+    ...TYPE.label,
+    color: T.textMuted,
+    letterSpacing: 1.6,
+  },
+  iconBtn: {
+    width: rw(36),
+    height: rw(36),
+    borderRadius: R.thumb,
+    backgroundColor: T.surface1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  topBarTitle: {
-    fontSize: rf(17),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: T.text,
+    ...SHADOW.sm,
   },
 
-  // ── Header ──
-  header: {
+  // Identity block
+  identity: {
     alignItems: "center",
-    paddingTop: rw(20),
-    paddingBottom: rw(24),
-    backgroundColor: T.surface,
+    gap: 4,
+    paddingTop: S.xs,
   },
-  avatarContainer: {
-    width: rw(80),
-    height: rw(80),
-    borderRadius: rw(40),
+  avatarRing: {
+    width: rw(96),
+    height: rw(96),
+    borderRadius: rw(48),
+    padding: 3,
+    backgroundColor: T.primary + "22",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: S.sm,
+    position: "relative",
+  },
+  avatar: {
+    width: "100%",
+    height: "100%",
+    borderRadius: rw(48),
     backgroundColor: T.avatarBg,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: rw(12),
   },
   avatarText: {
-    fontSize: rf(32),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.display,
+    fontSize: 38,
     color: T.avatarText,
   },
-  name: {
-    fontSize: rf(24),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
-  },
-  phone: {
-    fontSize: rf(14),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textSub,
-    marginTop: rw(4),
-  },
-  verifiedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rw(4),
-    paddingHorizontal: rw(10),
-    paddingVertical: rw(4),
+  avatarCheck: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: rw(24),
+    height: rw(24),
     borderRadius: rw(12),
-    backgroundColor: "#DCFCE7",
-    marginTop: rw(10),
-  },
-  verifiedText: {
-    fontSize: rf(12),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: "#16a34a",
-  },
-  bio: {
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textSub,
-    textAlign: "center",
-    lineHeight: rf(19),
-    marginTop: rw(14),
-    paddingHorizontal: rw(28),
-  },
-  skillRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    backgroundColor: "#8097ff",
     justifyContent: "center",
-    gap: rw(6),
-    marginTop: rw(14),
-    paddingHorizontal: rw(24),
-  },
-  skillChip: {
-    paddingHorizontal: rw(10),
-    paddingVertical: rw(4),
-    borderRadius: rw(999),
-    backgroundColor: T.surface2,
-    borderWidth: 1,
-    borderColor: T.border,
-  },
-  skillChipText: {
-    fontSize: rf(11),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: T.textSub,
-    letterSpacing: 0.2,
-  },
-  streakStatRow: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: rw(3),
+    borderWidth: 3,
+    borderColor: T.bg,
   },
-  streakStatEmoji: {
-    fontSize: rf(18),
+  name: {
+    ...TYPE.title1,
+    color: T.text,
+    textAlign: "center",
+  },
+  sub: {
+    ...TYPE.body,
+    color: T.textMuted,
+    textAlign: "center",
   },
 
-  // ── Completion card ──
+  // Circular actions
+  actionsRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "flex-start",
+    paddingHorizontal: S.xs,
+  },
+  circleWrap: {
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+  circle: {
+    width: rw(56),
+    height: rw(56),
+    borderRadius: rw(28),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  circleLabel: {
+    ...TYPE.caption,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+    color: T.text,
+  },
+
+  // Momentum card
+  momentumCard: {
+    borderRadius: R.hero,
+    padding: S.xl,
+    gap: S.xs,
+    ...SHADOW.lg,
+  },
+  momentumHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  bandChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: S.sm,
+    paddingVertical: 5,
+    borderRadius: R.chip,
+    backgroundColor: "rgba(255,255,255,0.22)",
+  },
+  bandDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  bandText: {
+    ...TYPE.label,
+    color: T.onGradAccent,
+  },
+  momentumLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  momentumLinkText: {
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "700",
+    color: T.onGradAccent,
+  },
+  momentumScoreRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 6,
+    marginTop: S.xs,
+  },
+  momentumScore: {
+    ...TYPE.display,
+    color: T.onGradAccent,
+  },
+  momentumScoreDenom: {
+    ...TYPE.title3,
+    color: T.onGradAccentMuted,
+  },
+  momentumCaption: {
+    ...TYPE.body,
+    color: T.onGradAccentSoft,
+    marginTop: 2,
+  },
+  bandTrack: {
+    height: 6,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    borderRadius: 3,
+    overflow: "hidden",
+    marginTop: S.sm,
+  },
+  bandFill: {
+    height: "100%",
+    backgroundColor: T.onGradAccent,
+    borderRadius: 3,
+  },
+
+  // Trust strip
+  trustStrip: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  trustChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: S.sm,
+    paddingVertical: 6,
+    borderRadius: R.chip,
+  },
+  trustChipText: {
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "700",
+  },
+
+  // Completion card
   completionCard: {
-    marginHorizontal: rw(16),
-    marginTop: rw(12),
-    backgroundColor: T.surface,
-    borderRadius: rw(16),
-    padding: rw(16),
-    gap: rw(10),
-    borderWidth: 1,
-    borderColor: T.primary,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    padding: S.md,
+    gap: S.xs,
+    ...SHADOW.card,
   },
   completionRow: {
     flexDirection: "row",
@@ -366,167 +581,88 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   completionTitle: {
-    fontSize: rf(14),
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
   },
   completionPct: {
-    fontSize: rf(20),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title3,
     color: T.primary,
   },
   progressTrack: {
-    height: rw(6),
-    backgroundColor: T.border,
-    borderRadius: rw(3),
+    height: 6,
+    backgroundColor: T.surface2,
+    borderRadius: 3,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
     backgroundColor: T.primary,
-    borderRadius: rw(3),
+    borderRadius: 3,
   },
   completionMissing: {
-    fontSize: rf(12),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.caption,
     color: T.textMuted,
   },
-  completionButton: {
-    alignSelf: "flex-end",
-  },
-  completionButtonText: {
-    fontSize: rf(13),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.primary,
-  },
 
-  // ── Stats ──
-  stats: {
-    flexDirection: "row",
-    backgroundColor: T.surface,
-    marginTop: rw(8),
-    paddingVertical: rw(20),
-    paddingHorizontal: rw(16),
-  },
-  stat: {
-    flex: 1,
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: rf(24),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
-  },
-  statLabel: {
-    fontSize: rf(12),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textSub,
-    marginTop: rw(4),
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: T.border,
-  },
-
-  // ── 2×2 Quick grid ──
-  quickGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: rw(10),
-    marginHorizontal: rw(16),
-    marginTop: rw(16),
-  },
-  quickBox: {
-    width: "47.5%",
-    backgroundColor: T.surface,
-    borderRadius: rw(16),
-    borderWidth: 1,
-    borderColor: T.border,
-    paddingVertical: rw(20),
-    paddingHorizontal: rw(16),
-    gap: rw(12),
-    alignItems: "flex-start",
-  },
-  quickBoxPressed: {
-    opacity: 0.75,
-  },
-  quickIcon: {
-    width: rw(40),
-    height: rw(40),
-    borderRadius: rw(12),
-    backgroundColor: T.surface2,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  quickIconAccent: {
-    backgroundColor: T.avatarBg,
-  },
-  quickLabel: {
-    fontSize: rf(14),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: T.text,
-  },
-
-  // ── Secondary menu ──
+  // Menu list
   menu: {
-    backgroundColor: T.surface,
-    marginTop: rw(16),
-    marginHorizontal: rw(16),
-    borderRadius: rw(16),
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: T.border,
+    ...SHADOW.card,
   },
-  menuItem: {
+  menuRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: rw(16),
-    paddingVertical: rw(16),
-    gap: rw(12),
+    gap: S.sm,
+    padding: S.md,
   },
-  menuItemText: {
-    flex: 1,
-    fontSize: rf(16),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.text,
+  menuIcon: {
+    width: rw(38),
+    height: rw(38),
+    borderRadius: R.thumb,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  verifiedTag: {
-    fontSize: rf(12),
+  menuLabel: {
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: "#16a34a",
+  },
+  menuHint: {
+    ...TYPE.caption,
+    color: T.textMuted,
+    marginTop: 2,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: T.surface2,
+    marginLeft: rw(66),
   },
 
-  // ── Footer ──
-  signOutButton: {
+  // Sign out
+  signOutBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: rw(8),
-    marginTop: rw(16),
-    marginHorizontal: rw(16),
-    paddingVertical: rw(16),
-    borderRadius: rw(16),
-    backgroundColor: T.surface,
-    borderWidth: 1,
-    borderColor: T.error,
+    gap: S.xs,
+    paddingVertical: S.sm,
+    backgroundColor: T.surface1,
+    borderRadius: R.button,
+    ...SHADOW.sm,
   },
   signOutText: {
-    fontSize: rf(16),
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.error,
   },
+
   version: {
-    textAlign: "center",
-    fontSize: rf(12),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.caption,
     color: T.textMuted,
-    marginTop: rw(20),
+    textAlign: "center",
   },
 });

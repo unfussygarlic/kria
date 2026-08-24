@@ -219,12 +219,17 @@ export default function NewGigPage() {
       await updateGigLocation(data.id, form.venue_lat, form.venue_lng, form.geocoded_address);
     }
 
-    // Auto-generate cover art. If the host uploaded a photo it goes into the
-    // template's photo slot; otherwise the compositor renders a template-only
-    // cover. Fire-and-forget so gig creation doesn't block on cover render.
-    generateGigCover(data.id, form.cover_photo ?? undefined).catch(() => {
-      // Non-fatal — gig is already created, cover can be regenerated later.
-    });
+    // Cover image is now OPTIONAL and only stored when the host actually
+    // uploads a photo. When no photo is provided, cover_image_url stays NULL
+    // and Pocket renders its all-native "poster" hero (category-tinted
+    // gradient + big icon + category name). No more auto-generated PNGs —
+    // that path was replaced 2026-08-24 because rendered images cause
+    // theme-adaptation + alignment issues on the swipe deck.
+    if (form.cover_photo) {
+      generateGigCover(data.id, form.cover_photo).catch(() => {
+        // Non-fatal — gig is already created, host can re-upload from edit.
+      });
+    }
 
     setSubmitting(false);
     router.replace(`/gigs/${data.id}`);

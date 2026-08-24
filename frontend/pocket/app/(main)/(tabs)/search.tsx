@@ -1,18 +1,23 @@
 import { View, Text, StyleSheet } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { T } from "@/constants/colors";
+import { S, TYPE } from "@/constants/design";
 import { SearchTab } from "@/components/explore/SearchTab";
 
 export default function JobsScreen() {
   const insets = useSafeAreaInsets();
+  // `q` is set when routed here from Home's "See all results" tail so the
+  // user's inline query flows through to the full browse-all experience.
+  const { q } = useLocalSearchParams<{ q?: string }>();
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Jobs</Text>
-        <Text style={styles.subtitle}>Browse all gigs & events</Text>
+        <Text style={styles.eyebrow}>JOBS</Text>
+        <Text style={styles.title}>Browse all gigs & events</Text>
       </View>
-      <SearchTab />
+      <SearchTab initialQuery={typeof q === "string" ? q : ""} />
     </View>
   );
 }
@@ -23,19 +28,18 @@ const styles = StyleSheet.create({
     backgroundColor: T.bg,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 4,
+    paddingHorizontal: S.lg,
+    paddingTop: S.sm,
+    paddingBottom: 0,
+    gap: 2,
+  },
+  eyebrow: {
+    ...TYPE.label,
+    color: T.textMuted,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title1,
     color: T.text,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: T.textMuted,
     marginTop: 2,
   },
 });

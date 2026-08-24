@@ -1,9 +1,21 @@
 /**
- * Arena — Trust & Momentum Hub
- * ─────────────────────────────
- * Shows momentum score pinned to the user's active session role.
- * Runner → worker score. Host → poster score.
- * No tab switcher — role is set at login.
+ * Arena — Momentum / Trust hub.
+ *
+ * Redesigned 2026-08-23 to match the new visual system (SHADOW.card, no
+ * borders, TYPE tokens, S/R spacing, one gradient hero moment). Preserves
+ * the Momentum computation flow + LevelUpModal celebration + the shared
+ * sub-components (ArenaHero, SkillGraph, NextUnlocks, MomentumBreakdown)
+ * from the earlier revamp.
+ *
+ * Layout (top → bottom):
+ *   1. Header — compact title + role subline
+ *   2. Momentum hero — gradient card with big score in band color + band chip
+ *   3. Streak / delta / percentile row (ArenaHero)
+ *   4. Skill graph card
+ *   5. Stats bento (Gigs done + Score band)
+ *   6. Next unlocks (top 3 locked badges)
+ *   7. How Momentum works
+ *   8. Coming soon
  */
 
 import { useEffect, useCallback, useRef, useState } from "react";
@@ -20,11 +32,13 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { T } from "@/constants/colors";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
 import { L } from "@/constants/labels";
 import { scrollRegistry } from "@/lib/scrollRegistry";
 import { getBand } from "@/constants/momentum";
@@ -74,18 +88,16 @@ export default function ArenaScreen() {
     fetchMyBreakdown();
     fetchMyPercentile();
     fetchBadges();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Once momentum lands, snapshot / diff for the "+X this week" chip.
   useEffect(() => {
     if (myMomentum?.worker.score !== undefined) {
       readWeeklyDelta(myMomentum.worker.score).then(setWeeklyDelta);
     }
   }, [myMomentum?.worker.score]);
 
-  const handleBreakdownOpen = useCallback(() => {
-    setShowBreakdown(true);
-  }, []);
+  const handleBreakdownOpen = useCallback(() => setShowBreakdown(true), []);
 
   const handleRefresh = useCallback(async () => {
     await Promise.all([fetchMyMomentum(), fetchMyBreakdown(), fetchMyPercentile()]);
@@ -94,51 +106,89 @@ export default function ArenaScreen() {
   const activeScore = myMomentum?.worker.score ?? 0;
   const activeData = myMomentum?.worker;
   const roleLabel = activeRole === "host" ? L.HOST : L.RUNNER;
+  const band = activeData ? getBand(activeScore) : null;
 
-  // Detect band promotions mid-session. First load just seeds the baseline —
-  // we never show a celebration for data we didn't watch happen.
+  // Detect band promotions mid-session — first load seeds the baseline.
   useEffect(() => {
     if (!activeData) return;
-    const band = getBand(activeScore);
+    const b = getBand(activeScore);
     if (prevBandRef.current === null) {
-      prevBandRef.current = band.label;
+      prevBandRef.current = b.label;
       return;
     }
-    if (prevBandRef.current !== band.label) {
+    if (prevBandRef.current !== b.label) {
       const oldIdx = BAND_ORDER.indexOf(prevBandRef.current);
-      const newIdx = BAND_ORDER.indexOf(band.label);
+      const newIdx = BAND_ORDER.indexOf(b.label);
       if (newIdx > oldIdx) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setLevelUp({ to: band.label, color: band.color });
+        setLevelUp({ to: b.label, color: b.color });
       }
-      prevBandRef.current = band.label;
+      prevBandRef.current = b.label;
     }
   }, [activeData, activeScore]);
 
   return (
-    <View style={styles.screen}>
-      {/* ── Header — role label, no tab switcher ── */}
-      <LinearGradient colors={T.gradDark} style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <View style={styles.roleRow}>
-          <Feather
-            name={activeRole === "host" ? "layers" : "briefcase"}
-            size={rw(14)}
-            color={T.textMuted}
-          />
-          <Text style={styles.roleLabel}>{roleLabel} · Momentum</Text>
-        </View>
-      </LinearGradient>
-
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isLoadingMy} onRefresh={handleRefresh} tintColor={T.secondary} />
+          <RefreshControl refreshing={isLoadingMy} onRefresh={handleRefresh} tintColor={T.primary} />
         }
       >
-        {/* ── Hero: streak + weekly delta + percentile (2026-08-07) ── */}
+        {/* ─── Header ─────────────────────────────────────────────────── */}
+        {/* Arena is reached via tap-through from Home / Profile (it's a
+            hidden tab, not in the primary bar), so we render our own back
+            button — tab routes don't auto-add one. */}
+        <View style={styles.header}>
+          {router.canGoBack() && (
+            <Pressable
+              onPress={() => router.back()}
+              style={styles.backBtn}
+              hitSlop={10}
+            >
+              <Feather name="arrow-left" size={20} color={T.text} />
+            </Pressable>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerEyebrow}>{roleLabel} · Momentum</Text>
+            <Text style={styles.headerTitle}>Your track record</Text>
+          </View>
+        </View>
+
+        {/* ─── Momentum hero (gradient) ──────────────────────────────── */}
+        <Pressable onPress={handleBreakdownOpen} style={styles.heroWrap}>
+          <LinearGradient
+            colors={T.gradAccent}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.hero}
+          >
+            <Text style={styles.heroLabel}>MOMENTUM SCORE</Text>
+            {isLoadingMy && !myMomentum ? (
+              <View style={{ height: rw(70), justifyContent: "center" }}>
+                <ActivityIndicator size="large" color="#FFFFFF" />
+              </View>
+            ) : (
+              <>
+                <Text style={styles.heroScore}>{activeScore}</Text>
+                <View style={styles.heroBandRow}>
+                  {band && (
+                    <View style={styles.heroBandChip}>
+                      <View style={[styles.heroBandDot, { backgroundColor: band.color }]} />
+                      <Text style={styles.heroBandText}>{band.label}</Text>
+                    </View>
+                  )}
+                  <Text style={styles.heroSub}>Tap to see the breakdown</Text>
+                </View>
+              </>
+            )}
+          </LinearGradient>
+        </Pressable>
+
+        {/* ─── Streak / weekly delta / percentile ─────────────────────── */}
         <ArenaHero
           streak={profile?.streak_count ?? 0}
           longestStreak={profile?.longest_streak ?? 0}
@@ -146,39 +196,40 @@ export default function ArenaScreen() {
           percentile={myPercentile}
         />
 
-        {/* ── Skill Graph ── */}
-        <View style={styles.gaugeCard}>
+        {/* ─── Skill graph card ──────────────────────────────────────── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Skill signals</Text>
           {isLoadingMy && !myMomentum ? (
             <View style={styles.gaugeLoading}>
               <ActivityIndicator size="large" color={T.primary} />
               <Text style={styles.loadingText}>Calculating Momentum…</Text>
             </View>
           ) : (
-            <SkillGraph
-              score={activeScore}
-              signals={myBreakdown?.signals ?? []}
-              onPress={handleBreakdownOpen}
-              size={rw(240)}
-            />
+            <View style={{ alignItems: "center", paddingVertical: S.sm }}>
+              <SkillGraph
+                score={activeScore}
+                signals={myBreakdown?.signals ?? []}
+                onPress={handleBreakdownOpen}
+                size={rw(240)}
+              />
+            </View>
           )}
         </View>
 
-        {/* ── Stats grid ── */}
-        {activeData && (
-          <StatsGrid score={activeData.score} gigCount={activeData.gig_count} />
-        )}
+        {/* ─── Stats bento ───────────────────────────────────────────── */}
+        {activeData && <StatsBento score={activeData.score} gigCount={activeData.gig_count} />}
 
-        {/* ── Next unlocks (2026-08-07 revamp) — top 3 badges closest to earn ── */}
+        {/* ─── Next unlocks ──────────────────────────────────────────── */}
         <NextUnlocks badges={badges} />
 
-        {/* ── How Momentum works ── */}
+        {/* ─── How Momentum works ────────────────────────────────────── */}
         <HowItWorksCard />
 
-        {/* ── Coming soon ── */}
+        {/* ─── Coming soon ───────────────────────────────────────────── */}
         <ComingSoonCard />
       </ScrollView>
 
-      {/* ── Breakdown modal ── */}
+      {/* Breakdown modal (external component) */}
       <MomentumBreakdown
         visible={showBreakdown}
         onClose={() => setShowBreakdown(false)}
@@ -186,21 +237,16 @@ export default function ArenaScreen() {
         isLoading={isLoadingBreakdown}
       />
 
-      {/* ── Level-up celebration ── */}
+      {/* Level-up celebration */}
       <LevelUpModal visible={!!levelUp} data={levelUp} onClose={() => setLevelUp(null)} />
     </View>
   );
 }
 
-/**
- * LevelUpModal — full-screen "Promoted!" celebration when the runner crosses
- * into a new band. Icon scales in with a spring, a band-color halo pulses
- * behind it, haptic success fires on mount (in parent).
- */
+// ── Level-up celebration modal ────────────────────────────────────────────────
+
 function LevelUpModal({
-  visible,
-  data,
-  onClose,
+  visible, data, onClose,
 }: {
   visible: boolean;
   data: { to: string; color: string } | null;
@@ -228,22 +274,22 @@ function LevelUpModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.levelUpBackdrop}>
+      <View style={levelUpStyles.backdrop}>
         <Animated.View
           style={[
-            styles.levelUpHalo,
+            levelUpStyles.halo,
             { backgroundColor: data.color + "33", transform: [{ scale: halo }] },
           ]}
         />
-        <Animated.View style={[styles.levelUpContent, { transform: [{ scale }] }]}>
-          <Text style={[styles.levelUpEyebrow, { color: data.color }]}>PROMOTED</Text>
-          <Text style={styles.levelUpTitle}>You're now</Text>
-          <Text style={[styles.levelUpBand, { color: data.color }]}>{data.to}</Text>
-          <Text style={styles.levelUpSub}>
+        <Animated.View style={[levelUpStyles.content, { transform: [{ scale }] }]}>
+          <Text style={[levelUpStyles.eyebrow, { color: data.color }]}>PROMOTED</Text>
+          <Text style={levelUpStyles.title}>You&apos;re now</Text>
+          <Text style={[levelUpStyles.band, { color: data.color }]}>{data.to}</Text>
+          <Text style={levelUpStyles.sub}>
             Your Momentum crossed a new band. Keep it going.
           </Text>
-          <Pressable style={[styles.levelUpCta, { backgroundColor: data.color }]} onPress={onClose}>
-            <Text style={styles.levelUpCtaText}>Nice</Text>
+          <Pressable style={[levelUpStyles.cta, { backgroundColor: data.color }]} onPress={onClose}>
+            <Text style={levelUpStyles.ctaText}>Nice</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -251,62 +297,36 @@ function LevelUpModal({
   );
 }
 
-// ── Stats grid ────────────────────────────────────────────────────────────────
+// ── Stats bento (Gigs done + Score band) ─────────────────────────────────────
 
-function StatsGrid({ score, gigCount }: { score: number; gigCount: number }) {
+function StatsBento({ score, gigCount }: { score: number; gigCount: number }) {
   const band = getBand(score);
-
-  const stats = [
-    { label: L.GIGS_DONE, value: gigCount.toString(), icon: "briefcase" as const },
-    { label: L.SCORE_BAND, value: band.label, color: band.color, icon: "award" as const },
-  ];
-
   return (
-    <View style={statsStyles.grid}>
-      {stats.map((s) => (
-        <View key={s.label} style={statsStyles.card}>
-          <Feather name={s.icon} size={rw(18)} color={s.color ?? T.primary} />
-          <Text style={[statsStyles.value, s.color ? { color: s.color } : undefined]}>
-            {s.value}
-          </Text>
-          <Text style={statsStyles.label}>{s.label}</Text>
+    <View style={styles.bentoRow}>
+      <View style={styles.bentoCard}>
+        <View style={styles.bentoTop}>
+          <Text style={styles.bentoLabel}>GIGS DONE</Text>
+          <Feather name="briefcase" size={rw(16)} color={T.textMuted} />
         </View>
-      ))}
+        <Text style={styles.bentoValue}>{gigCount}</Text>
+        <Text style={styles.bentoFoot}>completed shifts</Text>
+      </View>
+      <View style={styles.bentoCard}>
+        <View style={styles.bentoTop}>
+          <Text style={styles.bentoLabel}>BAND</Text>
+          <Feather name="award" size={rw(16)} color={band.color} />
+        </View>
+        <Text style={[styles.bentoValue, { color: band.color }]}>{band.label}</Text>
+        <View style={styles.bandRow}>
+          <View style={[styles.bandDot, { backgroundColor: band.color }]} />
+          <Text style={styles.bentoFoot}>current tier</Text>
+        </View>
+      </View>
     </View>
   );
 }
 
-const statsStyles = StyleSheet.create({
-  grid: {
-    flexDirection: "row",
-    gap: rw(12),
-    marginTop: rw(8),
-  },
-  card: {
-    flex: 1,
-    backgroundColor: T.surface,
-    borderRadius: rw(14),
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: rw(16),
-    alignItems: "center",
-    gap: rw(6),
-  },
-  value: {
-    fontSize: rf(20),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
-  },
-  label: {
-    fontSize: rf(11),
-    fontFamily: "SpaceGrotesk_500Medium",
-    color: T.textMuted,
-    textAlign: "center",
-  },
-});
-
-// ── How it works card ─────────────────────────────────────────────────────────
+// ── How Momentum works (rewritten in new system) ────────────────────────────
 
 function HowItWorksCard() {
   const points = [
@@ -315,82 +335,16 @@ function HowItWorksCard() {
     { icon: "refresh-cw" as const, text: "Recovery only through good behaviour — no passive reset." },
     { icon: "lock" as const, text: "Individual signals are private. Only you see the breakdown." },
   ];
-
   return (
-    <View style={howStyles.card}>
-      <Text style={howStyles.title}>How Momentum works</Text>
-      {points.map((p) => (
-        <View key={p.text} style={howStyles.row}>
-          <Feather name={p.icon} size={rw(14)} color={T.primary} />
-          <Text style={howStyles.text}>{p.text}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-const howStyles = StyleSheet.create({
-  card: {
-    backgroundColor: T.surface,
-    borderRadius: rw(16),
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: rw(20),
-    gap: rw(12),
-    marginTop: rw(8),
-  },
-  title: {
-    fontSize: rf(14),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
-    marginBottom: rw(4),
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: rw(10),
-  },
-  text: {
-    flex: 1,
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textSub,
-    lineHeight: rf(19),
-  },
-});
-
-// ── Coming soon card ──────────────────────────────────────────────────────────
-
-const UPCOMING_FEATURES = [
-  { icon: "activity" as const,   text: "Activity feed — every gig, rating, and badge in one timeline" },
-  { icon: "bar-chart-2" as const, text: "Leaderboards — see how you rank in your city" },
-  { icon: "target" as const,     text: "Milestones — streaks, early bird, top-tier badges" },
-  { icon: "users" as const,      text: "Crew — form teams and apply to gigs together" },
-];
-
-function ComingSoonCard() {
-  return (
-    <View style={csStyles.card}>
-      {/* Header */}
-      <View style={csStyles.header}>
-        <View style={csStyles.badge}>
-          <Text style={csStyles.badgeText}>COMING SOON</Text>
-        </View>
-        <Text style={csStyles.title}>Your Activity Hub</Text>
-        <Text style={csStyles.subtitle}>
-          We're building a richer Arena experience. Here's what's coming next.
-        </Text>
-      </View>
-
-      {/* Feature rows */}
-      <View style={csStyles.list}>
-        {UPCOMING_FEATURES.map((f) => (
-          <View key={f.text} style={csStyles.row}>
-            <View style={csStyles.iconWrap}>
-              <Feather name={f.icon} size={rw(14)} color={T.primary} />
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>How Momentum works</Text>
+      <View style={{ gap: S.md, marginTop: S.xs }}>
+        {points.map((p) => (
+          <View key={p.text} style={styles.row}>
+            <View style={styles.rowIcon}>
+              <Feather name={p.icon} size={rw(14)} color={T.primary} />
             </View>
-            <Text style={csStyles.rowText}>{f.text}</Text>
+            <Text style={styles.rowText}>{p.text}</Text>
           </View>
         ))}
       </View>
@@ -398,191 +352,296 @@ function ComingSoonCard() {
   );
 }
 
-const csStyles = StyleSheet.create({
-  card: {
-    borderRadius: rw(16),
-    borderWidth: 1,
-    borderColor: T.primary + "30",
-    overflow: "hidden",
-    marginTop: rw(8),
+// ── Coming soon (rewritten) ─────────────────────────────────────────────────
+
+const UPCOMING_FEATURES = [
+  { icon: "activity" as const,    text: "Activity feed — every gig, rating, and badge in one timeline" },
+  { icon: "bar-chart-2" as const, text: "Leaderboards — see how you rank in your city" },
+  { icon: "target" as const,      text: "Milestones — streaks, early bird, top-tier badges" },
+  { icon: "users" as const,       text: "Crew — form teams and apply to gigs together" },
+];
+
+function ComingSoonCard() {
+  return (
+    <View style={styles.card}>
+      <View style={styles.comingHeader}>
+        <View style={styles.comingBadge}>
+          <Text style={styles.comingBadgeText}>COMING SOON</Text>
+        </View>
+        <Text style={styles.cardTitle}>Your Activity Hub</Text>
+        <Text style={styles.cardSub}>
+          We&apos;re building a richer Arena. Here&apos;s what&apos;s next.
+        </Text>
+      </View>
+      <View style={{ gap: S.md, marginTop: S.md }}>
+        {UPCOMING_FEATURES.map((f) => (
+          <View key={f.text} style={styles.row}>
+            <View style={styles.rowIcon}>
+              <Feather name={f.icon} size={rw(14)} color={T.primary} />
+            </View>
+            <Text style={styles.rowText}>{f.text}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ── Styles ────────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: T.bg },
+  scroll: { flex: 1 },
+  content: {
+    paddingHorizontal: S.lg,
+    paddingBottom: S.section,
+    gap: S.md,
   },
+
+  // Header
   header: {
-    backgroundColor: T.primary + "0C",
-    paddingHorizontal: rw(20),
-    paddingTop: rw(20),
-    paddingBottom: rw(16),
-    gap: rw(6),
-    borderBottomWidth: 1,
-    borderBottomColor: T.primary + "20",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: S.sm,
+    paddingTop: S.sm,
+    paddingBottom: S.xs,
   },
-  badge: {
-    alignSelf: "flex-start",
-    backgroundColor: T.primary + "18",
-    borderRadius: 6,
-    paddingHorizontal: rw(8),
-    paddingVertical: rw(3),
-    borderWidth: 1,
-    borderColor: T.primary + "35",
-    marginBottom: rw(4),
+  backBtn: {
+    width: rw(36),
+    height: rw(36),
+    borderRadius: R.thumb,
+    backgroundColor: T.surface1,
+    justifyContent: "center",
+    alignItems: "center",
+    ...SHADOW.sm,
   },
-  badgeText: {
-    fontSize: rf(9),
+  headerEyebrow: {
+    ...TYPE.label,
+    color: T.textMuted,
+  },
+  headerTitle: {
+    ...TYPE.title1,
+    color: T.text,
+    marginTop: 2,
+  },
+
+  // Hero
+  heroWrap: {
+    borderRadius: R.hero,
+    ...SHADOW.lg,
+  },
+  hero: {
+    borderRadius: R.hero,
+    paddingHorizontal: S.xl,
+    paddingVertical: S.xl,
+    overflow: "hidden",
+  },
+  heroLabel: {
+    ...TYPE.label,
+    color: "rgba(255,255,255,0.85)",
+  },
+  heroScore: {
+    ...TYPE.display,
+    color: "#FFFFFF",
+    marginTop: S.xs,
+  },
+  heroBandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: S.sm,
+    marginTop: S.sm,
+    flexWrap: "wrap",
+  },
+  heroBandChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: S.sm,
+    paddingVertical: 6,
+    borderRadius: R.chip,
+    backgroundColor: "rgba(255,255,255,0.20)",
+  },
+  heroBandDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  heroBandText: {
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.primary,
-    letterSpacing: 1.2,
+    color: "#FFFFFF",
   },
-  title: {
-    fontSize: rf(16),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+  heroSub: {
+    ...TYPE.caption,
+    color: "rgba(255,255,255,0.85)",
+  },
+
+  // Generic card
+  card: {
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    padding: S.lg,
+    ...SHADOW.card,
+  },
+  cardTitle: {
+    ...TYPE.title3,
     color: T.text,
   },
-  subtitle: {
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
+  cardSub: {
+    ...TYPE.body,
     color: T.textSub,
-    lineHeight: rf(19),
+    marginTop: S.xxs,
   },
-  list: {
-    backgroundColor: T.surface,
-    paddingHorizontal: rw(20),
-    paddingVertical: rw(16),
-    gap: rw(14),
+
+  // Loading state inside skill-graph card
+  gaugeLoading: {
+    height: rw(200),
+    alignItems: "center",
+    justifyContent: "center",
+    gap: S.sm,
   },
+  loadingText: {
+    ...TYPE.body,
+    color: T.textMuted,
+  },
+
+  // Bento row
+  bentoRow: {
+    flexDirection: "row",
+    gap: S.sm,
+  },
+  bentoCard: {
+    flex: 1,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    padding: S.md,
+    ...SHADOW.card,
+  },
+  bentoTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: S.xs,
+  },
+  bentoLabel: {
+    ...TYPE.label,
+    color: T.textMuted,
+  },
+  bentoValue: {
+    ...TYPE.title1,
+    color: T.text,
+    marginTop: S.xxs,
+  },
+  bentoFoot: {
+    ...TYPE.body,
+    color: T.textSub,
+  },
+  bandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: S.xxs,
+  },
+  bandDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+
+  // Rows inside HowItWorks / ComingSoon
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: rw(12),
+    gap: S.sm,
   },
-  iconWrap: {
-    width: rw(28),
-    height: rw(28),
-    borderRadius: rw(8),
-    backgroundColor: T.primary + "12",
+  rowIcon: {
+    width: rw(30),
+    height: rw(30),
+    borderRadius: R.thumb,
+    backgroundColor: T.surface2,
     justifyContent: "center",
     alignItems: "center",
     flexShrink: 0,
-    marginTop: 1,
   },
   rowText: {
     flex: 1,
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.textSub,
-    lineHeight: rf(19),
+    paddingTop: 2,
+  },
+
+  // Coming soon header block
+  comingHeader: {
+    gap: S.xs,
+    marginBottom: S.xs,
+  },
+  comingBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: T.tertiary,
+    borderRadius: R.chip,
+    paddingHorizontal: S.sm,
+    paddingVertical: 4,
+    marginBottom: S.xs,
+  },
+  comingBadgeText: {
+    ...TYPE.label,
+    color: "#FFFFFF",
+    fontSize: rf(10),
   },
 });
 
-// ── Main styles ───────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: T.bg,
-  },
-  levelUpBackdrop: {
+const levelUpStyles = StyleSheet.create({
+  backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.82)",
     justifyContent: "center",
     alignItems: "center",
   },
-  levelUpHalo: {
+  halo: {
     position: "absolute",
     width: rw(320),
     height: rw(320),
     borderRadius: rw(160),
   },
-  levelUpContent: {
+  content: {
     alignItems: "center",
-    paddingHorizontal: rw(32),
-    gap: rw(6),
+    paddingHorizontal: S.xxl,
+    gap: S.xs,
   },
-  levelUpEyebrow: {
+  eyebrow: {
+    ...TYPE.label,
     fontSize: rf(12),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: 3,
-    marginBottom: rw(8),
+    marginBottom: S.xs,
   },
-  levelUpTitle: {
-    fontSize: rf(20),
+  title: {
+    ...TYPE.title2,
+    color: "#FFFFFF",
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: T.text,
   },
-  levelUpBand: {
-    fontSize: rf(48),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
-    letterSpacing: 1,
-    marginTop: rw(2),
+  band: {
+    ...TYPE.display,
+    fontSize: rf(52),
+    marginTop: S.xxs,
   },
-  levelUpSub: {
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textSub,
+  sub: {
+    ...TYPE.body,
+    color: "rgba(255,255,255,0.75)",
     textAlign: "center",
-    marginTop: rw(10),
-    paddingHorizontal: rw(20),
+    marginTop: S.sm,
+    paddingHorizontal: S.lg,
   },
-  levelUpCta: {
-    marginTop: rw(24),
-    paddingHorizontal: rw(40),
-    paddingVertical: rw(14),
-    borderRadius: rw(999),
+  cta: {
+    marginTop: S.xl,
+    paddingHorizontal: S.hero,
+    paddingVertical: S.md,
+    borderRadius: R.chip,
   },
-  levelUpCtaText: {
-    fontSize: rf(15),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
+  ctaText: {
+    ...TYPE.title3,
     color: "#0e0e0e",
     letterSpacing: 0.5,
-  },
-  header: {
-    paddingHorizontal: rw(20),
-    paddingBottom: rw(16),
-    justifyContent: "flex-end",
-  },
-  roleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rw(6),
-  },
-  roleLabel: {
-    fontSize: rf(13),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: T.textMuted,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    padding: rw(20),
-    paddingBottom: rw(40),
-    gap: rw(16),
-  },
-  gaugeCard: {
-    backgroundColor: T.surface,
-    borderRadius: rw(20),
-    borderWidth: 1,
-    borderColor: T.border,
-    alignItems: "center",
-    paddingVertical: rw(28),
-    paddingHorizontal: rw(16),
-  },
-  gaugeLoading: {
-    height: rw(200),
-    alignItems: "center",
-    justifyContent: "center",
-    gap: rw(12),
-  },
-  loadingText: {
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textMuted,
   },
 });

@@ -1,10 +1,9 @@
 /**
  * Intro carousel — 3-slide onboarding shown to new installs BEFORE the phone
- * OTP flow. Explains what Kria is, how earning works, and what verification
- * unlocks. Auto-skips to /login once a user has seen it (SecureStore flag).
+ * OTP flow. Auto-skips to /login once seen on this device.
  *
- * Fires once per install. Skip button + swipe-through both mark seen so the
- * runner never sees this again after finishing it.
+ * Redesigned 2026-08-23 for the new visual system: SHADOW-lifted icon rings,
+ * TYPE tokens, S/R spacing, gradient CTA.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -24,7 +23,8 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
 import { T } from "@/constants/colors";
-import { rf, rw } from "@/constants/responsive";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
+import { rw } from "@/constants/responsive";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const SEEN_KEY = "intro_seen_v1";
@@ -67,7 +67,6 @@ export default function IntroScreen() {
   const [checked, setChecked] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
-  // Auto-skip if the user has already been through this on this device.
   useEffect(() => {
     SecureStore.getItemAsync(SEEN_KEY)
       .then((seen) => {
@@ -99,15 +98,13 @@ export default function IntroScreen() {
     if (i !== index) setIndex(i);
   };
 
-  // Hide until the SecureStore check completes so we don't flash then redirect.
   if (!checked) return <View style={styles.screen} />;
 
   const isLast = index === SLIDES.length - 1;
 
   return (
     <View style={styles.screen}>
-      {/* Skip top-right */}
-      <View style={[styles.topBar, { paddingTop: insets.top + rw(8) }]}>
+      <View style={[styles.topBar, { paddingTop: insets.top + S.xs }]}>
         <Pressable onPress={finish} hitSlop={10}>
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
@@ -123,22 +120,22 @@ export default function IntroScreen() {
       >
         {SLIDES.map((s, i) => (
           <View key={i} style={[styles.slide, { width: SCREEN_W }]}>
-            {/* Big colored icon */}
             <View style={styles.iconStack}>
               <LinearGradient
-                colors={[s.accent + "44", "transparent"]}
+                colors={[s.accent + "33", "transparent"]}
                 start={{ x: 0.5, y: 0 }}
                 end={{ x: 0.5, y: 1 }}
                 style={styles.iconGlow}
               />
-              <View style={[styles.iconRing, { borderColor: s.accent + "55" }]}>
+              <View style={[styles.iconRing, { backgroundColor: s.accent + "18" }]}>
                 <Feather name={s.icon} size={rw(48)} color={s.accent} />
               </View>
             </View>
 
-            {/* Copy */}
             <View style={styles.copy}>
-              <Text style={[styles.eyebrow, { color: s.accent }]}>{s.eyebrow.toUpperCase()}</Text>
+              <Text style={[styles.eyebrow, { color: s.accent }]}>
+                {s.eyebrow.toUpperCase()}
+              </Text>
               <Text style={styles.title}>{s.title}</Text>
               <Text style={styles.body}>{s.body}</Text>
             </View>
@@ -146,8 +143,7 @@ export default function IntroScreen() {
         ))}
       </ScrollView>
 
-      {/* Dots + CTA */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + rw(20) }]}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + S.lg }]}>
         <View style={styles.dots}>
           {SLIDES.map((_, i) => (
             <View
@@ -160,9 +156,18 @@ export default function IntroScreen() {
           ))}
         </View>
         <Pressable style={styles.cta} onPress={handleNext}>
-          <LinearGradient colors={T.gradBrand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+          <LinearGradient
+            colors={T.gradAccent}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
           <Text style={styles.ctaText}>{isLast ? "Get Started" : "Next"}</Text>
-          <Feather name={isLast ? "arrow-right" : "chevron-right"} size={rw(18)} color="#0e0e0e" />
+          <Feather
+            name={isLast ? "arrow-right" : "chevron-right"}
+            size={rw(18)}
+            color="#FFFFFF"
+          />
         </Pressable>
       </View>
     </View>
@@ -177,22 +182,22 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    paddingHorizontal: rw(20),
-    paddingBottom: rw(8),
+    paddingHorizontal: S.lg,
+    paddingBottom: S.xs,
   },
   skipText: {
-    fontSize: rf(14),
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.textMuted,
-    padding: rw(4),
+    padding: 4,
   },
   slide: {
     flex: 1,
-    paddingHorizontal: rw(32),
+    paddingHorizontal: S.xxl,
     justifyContent: "center",
     alignItems: "center",
-    gap: rw(40),
+    gap: S.hero,
   },
   iconStack: {
     alignItems: "center",
@@ -209,68 +214,59 @@ const styles = StyleSheet.create({
     width: rw(120),
     height: rw(120),
     borderRadius: rw(60),
-    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(19,19,19,0.6)",
+    ...SHADOW.lg,
   },
   copy: {
     alignItems: "center",
-    gap: rw(10),
+    gap: S.sm,
   },
   eyebrow: {
-    fontSize: rf(11),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.label,
     letterSpacing: 2.4,
   },
   title: {
-    fontSize: rf(34),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title1,
+    fontSize: 34,
+    lineHeight: 40,
     color: T.text,
     textAlign: "center",
-    lineHeight: rf(40),
-    letterSpacing: -0.5,
   },
   body: {
-    fontSize: rf(15),
-    fontWeight: "400",
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.bodyLg,
     color: T.textSub,
     textAlign: "center",
-    lineHeight: rf(22),
-    marginTop: rw(4),
+    marginTop: S.xxs,
   },
   footer: {
-    paddingHorizontal: rw(24),
-    gap: rw(20),
+    paddingHorizontal: S.xl,
+    gap: S.lg,
   },
   dots: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: rw(6),
+    gap: 6,
   },
   dot: {
     width: rw(8),
     height: rw(8),
     borderRadius: rw(4),
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: T.surface2,
   },
   cta: {
-    height: rw(54),
-    borderRadius: rw(999),
+    height: rw(56),
+    borderRadius: R.chip,
     overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: rw(6),
+    gap: 6,
+    ...SHADOW.lg,
   },
   ctaText: {
-    fontSize: rf(16),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: "#0e0e0e",
+    ...TYPE.title3,
+    color: "#FFFFFF",
     letterSpacing: 0.3,
   },
 });

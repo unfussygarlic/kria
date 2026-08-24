@@ -74,14 +74,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: rf(17),
     fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: "#0e0e0e",
     letterSpacing: -0.2,
   },
   sub: {
     fontSize: rf(12),
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    fontFamily: "Inter_600SemiBold",
     color: "rgba(14,14,14,0.72)",
     marginTop: 2,
   },

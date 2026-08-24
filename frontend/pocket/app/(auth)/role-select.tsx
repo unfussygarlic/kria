@@ -1,21 +1,30 @@
+/**
+ * Role select — currently redirects straight to Runner since the Host mobile
+ * experience is disabled. Kept as a dedicated screen so we can re-enable the
+ * Host card without touching auth flow.
+ *
+ * Redesigned 2026-08-23: Runner card uses gradient hero + SHADOW; Host card
+ * uses a solid surface with primary accent.
+ */
+
 import { useEffect } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
 import { L } from "@/constants/labels";
-import { rf, rw } from "@/constants/responsive";
+import { rw } from "@/constants/responsive";
 
-// Set to true when the Host mobile experience is re-enabled.
 const SHOW_HOST_ROLE = false;
 
 export default function RoleSelectScreen() {
   const insets = useSafeAreaInsets();
   const setActiveRole = useAuthStore((s) => s.setActiveRole);
 
-  // While Host role is disabled, skip the selection screen entirely.
   useEffect(() => {
     if (!SHOW_HOST_ROLE) {
       setActiveRole("runner");
@@ -32,60 +41,62 @@ export default function RoleSelectScreen() {
     <View
       style={[
         styles.screen,
-        { paddingTop: insets.top + rw(8), paddingBottom: insets.bottom + rw(24) },
+        { paddingTop: insets.top + S.xs, paddingBottom: insets.bottom + S.lg },
       ]}
     >
-      {/* ── App wordmark ── */}
       <View style={styles.top}>
         <Text style={styles.appName}>{L.APP_NAME}</Text>
         <Text style={styles.title}>{L.ROLE_SELECT_TITLE}</Text>
         <Text style={styles.sub}>{L.ROLE_SELECT_SUB}</Text>
       </View>
 
-      {/* ── Role cards ── */}
       <View style={styles.cards}>
-
-        {/* Runner — electric lime */}
+        {/* Runner — brand gradient */}
         <Pressable
           style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
           onPress={() => handleSelect("runner")}
         >
-          <View style={styles.cardLime}>
-            <View style={[styles.iconWrap, styles.iconWrapLime]}>
-              <Feather name="briefcase" size={rw(32)} color="#000" />
+          <LinearGradient
+            colors={T.gradAccent}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.cardBody}
+          >
+            <View style={styles.iconWrapLight}>
+              <Feather name="briefcase" size={rw(32)} color="#FFFFFF" />
             </View>
-            <View style={styles.cardBody}>
-              <Text style={[styles.cardRole, styles.cardRoleDark]}>{L.RUNNER}</Text>
-              <Text style={[styles.cardTagline, styles.cardTaglineDark]}>{L.RUNNER_TAGLINE}</Text>
+            <View style={styles.cardCopy}>
+              <Text style={styles.cardRoleLight}>{L.RUNNER}</Text>
+              <Text style={styles.cardTaglineLight}>{L.RUNNER_TAGLINE}</Text>
             </View>
-            <View style={[styles.cardCta, styles.cardCtaLime]}>
-              <Text style={[styles.cardCtaText, { color: "#000" }]}>Enter as {L.RUNNER}</Text>
-              <Feather name="arrow-right" size={rw(15)} color="#000" />
+            <View style={styles.cardCtaLight}>
+              <Text style={styles.cardCtaTextLight}>Enter as {L.RUNNER}</Text>
+              <Feather name="arrow-right" size={rw(15)} color="#FFFFFF" />
             </View>
-          </View>
+          </LinearGradient>
         </Pressable>
 
-        {/* Host — glass surface with white accent (hidden until Grid mobile launches) */}
-        {SHOW_HOST_ROLE && <Pressable
-          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-          onPress={() => handleSelect("host")}
-        >
-          <View style={styles.cardGlass}>
-            {/* Cobalt glow at top-right */}
-            <View style={styles.cardGlowAccent} />
-            <View style={[styles.iconWrap, styles.iconWrapGlass]}>
-              <Feather name="layers" size={rw(32)} color={T.secondary} />
+        {/* Host — subdued surface card (kept for when the mobile Host experience returns) */}
+        {SHOW_HOST_ROLE && (
+          <Pressable
+            style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+            onPress={() => handleSelect("host")}
+          >
+            <View style={styles.cardBodyHost}>
+              <View style={styles.iconWrapHost}>
+                <Feather name="layers" size={rw(32)} color={T.secondary} />
+              </View>
+              <View style={styles.cardCopy}>
+                <Text style={styles.cardRole}>{L.HOST}</Text>
+                <Text style={styles.cardTagline}>{L.HOST_TAGLINE}</Text>
+              </View>
+              <View style={styles.cardCtaHost}>
+                <Text style={[styles.cardCtaText, { color: T.secondary }]}>Enter as {L.HOST}</Text>
+                <Feather name="arrow-right" size={rw(15)} color={T.secondary} />
+              </View>
             </View>
-            <View style={styles.cardBody}>
-              <Text style={styles.cardRole}>{L.HOST}</Text>
-              <Text style={[styles.cardTagline, styles.cardTaglineGlass]}>{L.HOST_TAGLINE}</Text>
-            </View>
-            <View style={[styles.cardCta, styles.cardCtaGlass]}>
-              <Text style={[styles.cardCtaText, { color: T.secondary }]}>Enter as {L.HOST}</Text>
-              <Feather name="arrow-right" size={rw(15)} color={T.secondary} />
-            </View>
-          </View>
-        </Pressable>}
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -95,136 +106,120 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: T.bg,
-    paddingHorizontal: rw(20),
+    paddingHorizontal: S.lg,
     justifyContent: "space-between",
   },
 
-  // ── Top ──────────────────────────────────────────────────────────────────
   top: {
-    paddingTop: rw(40),
-    gap: rw(10),
+    paddingTop: S.hero,
+    gap: S.sm,
   },
   appName: {
-    fontSize: rf(34),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title1,
+    fontSize: 34,
     color: T.primary,
     letterSpacing: -0.5,
   },
   title: {
-    fontSize: rf(22),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title2,
     color: T.text,
-    lineHeight: rf(30),
-    marginTop: rw(4),
+    marginTop: S.xxs,
   },
   sub: {
-    fontSize: rf(14),
+    ...TYPE.body,
     color: T.textMuted,
-    lineHeight: rf(20),
   },
 
-  // ── Cards ────────────────────────────────────────────────────────────────
   cards: {
-    gap: rw(14),
-    paddingBottom: rw(8),
+    gap: S.sm,
+    paddingBottom: S.xs,
   },
   card: {
-    borderRadius: rw(20),
+    borderRadius: R.hero,
     overflow: "hidden",
+    ...SHADOW.lg,
   },
   cardPressed: {
-    opacity: 0.88,
-  },
-
-  // Lime card (Runner)
-  cardLime: {
-    backgroundColor: T.primary,
-    padding: rw(24),
-    gap: rw(12),
-    overflow: "hidden",
-  },
-
-  // Glass card (Host)
-  cardGlass: {
-    backgroundColor: T.surface1,
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: rw(24),
-    gap: rw(12),
-    overflow: "hidden",
-  },
-  cardGlowAccent: {
-    position: "absolute",
-    top: -rw(30),
-    right: -rw(30),
-    width: rw(100),
-    height: rw(100),
-    borderRadius: rw(50),
-    backgroundColor: "rgba(255,255,255,0.08)",
-  },
-
-  iconWrap: {
-    width: rw(56),
-    height: rw(56),
-    borderRadius: rw(14),
-    backgroundColor: "rgba(0,0,0,0.12)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  iconWrapLime: {
-    backgroundColor: "rgba(0,0,0,0.15)",
-  },
-  iconWrapGlass: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    opacity: 0.9,
   },
 
   cardBody: {
-    gap: rw(4),
+    padding: S.xl,
+    gap: S.sm,
+    overflow: "hidden",
   },
-  cardRole: {
-    fontSize: rf(24),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: "#fff",
-  },
-  cardRoleDark: {
-    color: "#000",
-  },
-  cardTagline: {
-    fontSize: rf(14),
-    color: "rgba(255,255,255,0.75)",
-    lineHeight: rf(20),
-  },
-  cardTaglineDark: {
-    color: "rgba(0,0,0,0.65)",
-  },
-  cardTaglineGlass: {
-    color: T.textMuted,
+  cardBodyHost: {
+    backgroundColor: T.surface1,
+    padding: S.xl,
+    gap: S.sm,
   },
 
-  cardCta: {
+  iconWrapLight: {
+    width: rw(56),
+    height: rw(56),
+    borderRadius: R.thumb,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  iconWrapHost: {
+    width: rw(56),
+    height: rw(56),
+    borderRadius: R.thumb,
+    backgroundColor: T.secondary + "18",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  cardCopy: {
+    gap: 4,
+  },
+  cardRole: {
+    ...TYPE.title2,
+    color: T.text,
+  },
+  cardRoleLight: {
+    ...TYPE.title2,
+    color: "#FFFFFF",
+  },
+  cardTagline: {
+    ...TYPE.body,
+    color: T.textSub,
+  },
+  cardTaglineLight: {
+    ...TYPE.body,
+    color: "rgba(255,255,255,0.85)",
+  },
+
+  cardCtaLight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(6),
-    backgroundColor: "rgba(0,0,0,0.12)",
+    gap: 6,
+    backgroundColor: "rgba(255,255,255,0.22)",
     alignSelf: "flex-start",
-    paddingHorizontal: rw(14),
-    paddingVertical: rw(9),
-    borderRadius: rw(10),
+    paddingHorizontal: S.md,
+    paddingVertical: 9,
+    borderRadius: R.button,
   },
-  cardCtaLime: {
-    backgroundColor: "rgba(0,0,0,0.15)",
+  cardCtaTextLight: {
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
-  cardCtaGlass: {
-    backgroundColor: "rgba(255,255,255,0.07)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+  cardCtaHost: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: T.secondary + "18",
+    alignSelf: "flex-start",
+    paddingHorizontal: S.md,
+    paddingVertical: 9,
+    borderRadius: R.button,
   },
   cardCtaText: {
-    fontSize: rf(14),
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    color: "#fff",
   },
 });

@@ -19,7 +19,7 @@ export const L = {
   TAB_HOME: "Home",
   TAB_EXPLORE: "Explore",
   TAB_JOBS: "Jobs",
-  TAB_SPACE: "My Space",
+  TAB_SPACE: "Shifts",
   TAB_ARENA: "Arena",
 
   // ── Actions ───────────────────────────────────────────────────────────────

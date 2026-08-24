@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   contribBadge: {
     fontSize: rf(10),
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     borderRadius: 4,
     borderWidth: 1,
     paddingHorizontal: rw(6),

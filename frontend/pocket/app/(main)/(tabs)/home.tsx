@@ -1,1270 +1,877 @@
-import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
+/**
+ * Home tab — proof-of-concept for the new visual language (2026-08-22).
+ *
+ * Design principles that replace the old obsidian-outline system:
+ *
+ *   1. **Cards lift with shadow, not lines.** SHADOW.card token gives every
+ *      surface a soft warm shadow. Zero visible borders anywhere.
+ *   2. **Solid fills, no translucency.** Every background is a solid
+ *      palette color — no rgba(white, 0.72) overlays.
+ *   3. **Consistent spacing scale.** Every gap/padding is from S.* — no
+ *      ad-hoc numbers.
+ *   4. **Semantic radius.** Cards use R.card, chips R.chip, hero R.hero.
+ *   5. **Big display type for hero data.** Bold numbers dominate the
+ *      earnings hero. Body text stays humble.
+ *   6. **Gradient hero.** Pink→purple diagonal for the top block — a real
+ *      moment, not a flat card.
+ *   7. **Bottom-third thumb zone.** Primary CTAs positioned to reach.
+ *
+ * Layout (top → bottom):
+ *   1. Greeting bar (compact)
+ *   2. Earnings hero card (gradient, big number)
+ *   3. Momentum + Streak stat pair (bento)
+ *   4. Search bar (clean, no heavy outline)
+ *   5. Category tiles (2×3 grid, solid colored icons on white cards)
+ *   6. Hot gigs (horizontal scroll cards)
+ *   7. Events (horizontal scroll cards)
+ */
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ScrollView, View, Text, Pressable, StyleSheet,
-  FlatList, ActivityIndicator, Animated, Easing, PanResponder, RefreshControl,
+  ScrollView, View, Text, Pressable, StyleSheet, RefreshControl, TextInput,
 } from "react-native";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Location from "expo-location";
 import { useAuthStore } from "@/stores/authStore";
-import { useMomentumStore } from "@/stores/momentumStore";
 import { useGigStore } from "@/stores/gigStore";
-import { useBadgeStore, type Badge } from "@/stores/badgeStore";
+import { useMomentumStore } from "@/stores/momentumStore";
 import { useEarningsStore } from "@/stores/earningsStore";
 import { T, CategoryColors } from "@/constants/colors";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
 import { GigCategories } from "@/constants/config";
 import { getBand } from "@/constants/momentum";
-import { matchGigs, type MatchedGig } from "@/lib/api/gigs";
 import { rf, rw } from "@/constants/responsive";
+import { searchJobs, type SearchResultItem } from "@/lib/api/search";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { PressableScale } from "@/components/ui/PressableScale";
-import { EarningsCard } from "@/components/home/EarningsCard";
-import { PrimaryCTA } from "@/components/home/PrimaryCTA";
-import { MomentumChipRow } from "@/components/home/MomentumChipRow";
-import { GrowthNudge } from "@/components/home/GrowthNudge";
-import { scrollRegistry } from "@/lib/scrollRegistry";
-import * as Location from "expo-location";
+import { GigSearchBar } from "@/components/explore/GigSearchBar";
+import { GigResultsList } from "@/components/explore/GigResultsList";
+import type { Gig } from "@/types/database";
+import type { HostSummary } from "@/lib/api/gigs";
 
-const SHOW_HOST_ROLE = false;
+// ── Config ────────────────────────────────────────────────────────────────────
 
-// ── Band progress helper ──────────────────────────────────────────────────────
+const HOT_CATEGORIES = [
+  "hospitality_staff", "promoter", "photographer",
+  "event_helper",      "usher",    "front_desk",
+] as const;
 
-const BAND_RANGES = [
-  { min: 0,   max: 99,   label: "Newcomer" },
-  { min: 100, max: 299,  label: "Building" },
-  { min: 300, max: 499,  label: "Reliable" },
-  { min: 500, max: 699,  label: "Trusted"  },
-  { min: 700, max: 899,  label: "Elite"    },
-  { min: 900, max: 1000, label: "Legend"   },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getBandProgress(score: number) {
-  const idx = BAND_RANGES.findIndex((b) => score >= b.min && score <= b.max);
-  const band = BAND_RANGES[idx] ?? BAND_RANGES[0];
-  const next = BAND_RANGES[idx + 1];
-  const range = band.max - band.min + 1;
-  const progress = (score - band.min) / range;
-  const ptsToNext = next ? next.min - score : 0;
-  return { band, next, progress: Math.min(progress, 1), ptsToNext };
+function formatPay(amount: number | null, type: string | null): string {
+  if (amount == null) return "";
+  const base = `₹${amount.toLocaleString("en-IN")}`;
+  if (type === "hourly") return `${base}/hr`;
+  if (type === "daily")  return `${base}/day`;
+  return base;
 }
-
-// ── Category helpers ──────────────────────────────────────────────────────────
-
-function getCatIcon(category: string): React.ComponentProps<typeof Feather>["name"] {
-  return (GigCategories.find((c) => c.value === category)?.icon ?? "briefcase") as any;
+function formatDate(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  if (diff > 1 && diff < 7) return `In ${diff}d`;
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
-function getCatLabel(category: string): string {
-  return GigCategories.find((c) => c.value === category)?.label ?? category;
+function greetForHour(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
 }
-function formatPay(amount: number, type: string) {
-  return `₹${amount.toLocaleString("en-IN")}${type === "hourly" ? "/hr" : ""}`;
+function categoryLabel(cat: string): string {
+  return GigCategories.find((c) => c.value === cat)?.label ?? cat;
 }
-
-// ── Status config ─────────────────────────────────────────────────────────────
-
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  pending:  { label: "Applied",  color: "#FFC83D" },
-  accepted: { label: "Accepted", color: T.primary  },
-  rejected: { label: "Rejected", color: T.error    },
-};
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function HeroSkeleton() {
-  return (
-    <View style={heroSkStyles.card}>
-      <View style={heroSkStyles.topRow}>
-        <View style={heroSkStyles.left}>
-          <Skeleton width={rw(90)} height={rw(14)} borderRadius={rw(4)} />
-          <Skeleton width={rw(70)} height={rw(40)} borderRadius={rw(8)} style={{ marginTop: rw(6) }} />
-        </View>
-        <Skeleton width={rw(80)} height={rw(28)} borderRadius={rw(14)} />
-      </View>
-      <Skeleton width="100%" height={rw(6)} borderRadius={rw(3)} style={{ marginTop: rw(20) }} />
-      <Skeleton width="55%" height={rw(12)} borderRadius={rw(4)} style={{ marginTop: rw(8) }} />
-      <View style={heroSkStyles.statsRow}>
-        <Skeleton width={rw(50)} height={rw(28)} borderRadius={rw(6)} />
-        <Skeleton width={rw(50)} height={rw(28)} borderRadius={rw(6)} />
-        <Skeleton width={rw(90)} height={rw(28)} borderRadius={rw(6)} />
-      </View>
-    </View>
-  );
+function categoryIcon(cat: string): React.ComponentProps<typeof Feather>["name"] {
+  return (GigCategories.find((c) => c.value === cat)?.icon ?? "briefcase") as React.ComponentProps<typeof Feather>["name"];
 }
-
-const heroSkStyles = StyleSheet.create({
-  card: {
-    backgroundColor: T.surface,
-    borderRadius: rw(20),
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: rw(20),
-  },
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  left: { gap: rw(4) },
-  statsRow: {
-    flexDirection: "row",
-    gap: rw(12),
-    marginTop: rw(20),
-    justifyContent: "space-between",
-  },
-});
-
-const BandHeroCard = memo(function BandHeroCard({ score, gigsDone, streak }: {
-  score: number;
-  gigsDone: number;
-  streak: number;
-}) {
-  const band = getBand(score);
-  const { progress, ptsToNext, next } = getBandProgress(score);
-  const isLegend = !next;
-
-  // ── Animated score count-up ───────────────────────────────────────────────
-  const countAnim = useRef(new Animated.Value(0)).current;
-  const [displayScore, setDisplayScore] = useState(0);
-
-  useEffect(() => {
-    countAnim.setValue(0);
-    const listener = countAnim.addListener(({ value }) => {
-      setDisplayScore(Math.round(value));
-    });
-    Animated.timing(countAnim, {
-      toValue: score,
-      duration: 900,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-    return () => countAnim.removeListener(listener);
-  }, [score]);
-
-  // ── Progress bar slide-in ─────────────────────────────────────────────────
-  const barAnim = useRef(new Animated.Value(0)).current;
-  const barWidth = barAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0%", `${Math.round(progress * 100)}%`],
-  });
-
-  useEffect(() => {
-    barAnim.setValue(0);
-    Animated.timing(barAnim, {
-      toValue: 1,
-      duration: 1000,
-      delay: 300,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [score]);
-
-  // ── Glow pulse ────────────────────────────────────────────────────────────
-  const glowOpacity = useRef(new Animated.Value(0.08)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowOpacity, { toValue: 0.18, duration: 1800, useNativeDriver: true }),
-        Animated.timing(glowOpacity, { toValue: 0.08, duration: 1800, useNativeDriver: true }),
-      ])
-    ).start();
-    return () => glowOpacity.stopAnimation();
-  }, []);
-
-  return (
-    <PressableScale
-      scale={0.98}
-      style={styles.heroCard}
-      onPress={() => router.push("/(main)/(tabs)/arena")}
-    >
-      {/* Pulsing glow blob — top-right quadrant */}
-      <Animated.View style={[styles.heroGlow, { backgroundColor: band.color, opacity: glowOpacity }]} />
-
-      {/* Top row: animated score + band pill */}
-      <View style={styles.heroTop}>
-        <View>
-          <Text style={styles.heroScoreLabel}>MOMENTUM</Text>
-          <Text style={[styles.heroScore, { color: band.color }]}>{displayScore}</Text>
-        </View>
-        <View style={[styles.heroBandPill, { backgroundColor: band.color + "22", borderColor: band.color + "45" }]}>
-          <View style={[styles.heroBandDot, { backgroundColor: band.color }]} />
-          <Text style={[styles.heroBandLabel, { color: band.color }]}>{band.label}</Text>
-        </View>
-      </View>
-
-      {/* Animated progress bar */}
-      {!isLegend && (
-        <View style={styles.heroProgressSection}>
-          <View style={styles.heroProgressTrack}>
-            <Animated.View style={[styles.heroProgressFill, { width: barWidth, backgroundColor: band.color }]} />
-          </View>
-          <Text style={styles.heroProgressLabel}>
-            {ptsToNext} pts to <Text style={{ color: band.color }}>{next!.label}</Text>
-          </Text>
-        </View>
-      )}
-      {isLegend && (
-        <Text style={[styles.heroProgressLabel, { color: band.color, marginTop: 8 }]}>Maximum rank achieved</Text>
-      )}
-
-      {/* Bottom stats row */}
-      <View style={styles.heroStats}>
-        <View style={styles.heroStat}>
-          <Feather name="briefcase" size={12} color={T.textMuted} />
-          <Text style={styles.heroStatVal}>{gigsDone}</Text>
-          <Text style={styles.heroStatKey}>gigs</Text>
-        </View>
-        <View style={styles.heroStatDivider} />
-        <StreakStat streak={streak} />
-        <View style={styles.heroStatDivider} />
-        <View style={styles.heroStat}>
-          <Feather name="chevron-right" size={12} color={T.textMuted} />
-          <Text style={[styles.heroStatKey, { color: T.textMuted }]}>Full breakdown</Text>
-        </View>
-      </View>
-    </PressableScale>
-  );
-});
-
-/**
- * StreakStat — flame that pulses (opacity loop) when the runner has an active
- * streak. Falls back to a muted "start a streak" prompt at 0 so the space
- * doesn't feel empty. Kept inline so it can access home.tsx's shared styles.
- */
-function StreakStat({ streak }: { streak: number }) {
-  const flameOpacity = useRef(new Animated.Value(0.7)).current;
-
-  useEffect(() => {
-    if (streak <= 0) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(flameOpacity, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(flameOpacity, { toValue: 0.6, duration: 900, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [streak, flameOpacity]);
-
-  if (streak <= 0) {
-    return (
-      <View style={styles.heroStat}>
-        <Feather name="zap" size={12} color={T.textMuted} />
-        <Text style={[styles.heroStatKey, { color: T.textMuted }]}>Start a streak</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.streakChip}>
-      <Animated.Text style={[styles.streakEmoji, { opacity: flameOpacity }]}>🔥</Animated.Text>
-      <Text style={styles.streakVal}>{streak}</Text>
-      <Text style={styles.streakKey}>day streak</Text>
-    </View>
-  );
-}
-
-const GIG_CARD_W = rw(150);
-const GIG_CARD_GAP = rw(10);
-const GIG_STEP = GIG_CARD_W + GIG_CARD_GAP;
-
-function GigStripCard({ gig }: { gig: MatchedGig }) {
-  const catColor = CategoryColors[gig.category] ?? T.textMuted;
-
-  return (
-    <PressableScale
-      style={styles.gigCard}
-      onPress={() => router.push(`/(main)/gig/${gig.gig_id}` as any)}
-    >
-      {/* Category color glow gradient */}
-      <LinearGradient
-        colors={[catColor + "28", "transparent"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={[styles.gigStripe, { backgroundColor: catColor }]} />
-      <View style={styles.gigCardInner}>
-        <Text style={styles.gigTitle} numberOfLines={2}>{gig.title}</Text>
-        <View style={styles.gigFooter}>
-          <Text style={[styles.gigPay, { color: T.primary }]}>
-            {formatPay(gig.pay_amount, gig.pay_type)}
-          </Text>
-          {gig.distance_km != null && (
-            <View style={styles.gigDistRow}>
-              <Feather name="map-pin" size={9} color={T.textMuted} />
-              <Text style={styles.gigDist}>{gig.distance_km.toFixed(1)} km</Text>
-            </View>
-          )}
-        </View>
-      </View>
-    </PressableScale>
-  );
-}
-
-const GigMarquee = memo(function GigMarquee({ gigs, onGrab, onRelease }: {
-  gigs: MatchedGig[];
-  onGrab: () => void;
-  onRelease: () => void;
-}) {
-  const repeatCount = Math.max(3, Math.ceil((rw(400) * 2) / (gigs.length * GIG_STEP)));
-  const items = Array.from({ length: repeatCount }, () => gigs).flat();
-  const singlePassWidth = gigs.length * GIG_STEP;
-
-  const translateX = useRef(new Animated.Value(0)).current;
-  // posRef tracks current position via the animation listener (stays in sync with native side)
-  const posRef = useRef(0);
-  const dragStartX = useRef(0);
-  const animRef = useRef<{ stop: () => void } | null>(null);
-  const resumeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const spRef = useRef(singlePassWidth);
-  spRef.current = singlePassWidth;
-
-  useEffect(() => {
-    const id = translateX.addListener(({ value }) => { posRef.current = -value; });
-    return () => translateX.removeListener(id);
-  }, [translateX]);
-
-  const stopScroll = useCallback(() => {
-    animRef.current?.stop();
-    animRef.current = null;
-  }, []);
-
-  const startAutoScroll = useCallback((fromX: number) => {
-    stopScroll();
-    const sp = spRef.current;
-    const fullMs = Math.round((sp / 18.75) * 1000); // 18.75 px/sec ≈ original speed
-
-    const runLoop = () => {
-      translateX.setValue(0);
-      posRef.current = 0;
-      const anim = Animated.loop(
-        Animated.timing(translateX, {
-          toValue: -sp,
-          duration: fullMs,
-          easing: Easing.linear,
-          useNativeDriver: true, // runs on native thread — no JS jank
-        })
-      );
-      animRef.current = anim;
-      anim.start();
-    };
-
-    if (fromX > 0 && fromX < sp) {
-      // Finish the current pass at the same speed, then loop
-      const resumeMs = Math.round(((sp - fromX) / sp) * fullMs);
-      translateX.setValue(-fromX);
-      const anim = Animated.timing(translateX, {
-        toValue: -sp,
-        duration: resumeMs,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      });
-      animRef.current = anim;
-      anim.start(({ finished }) => { if (finished) runLoop(); });
-    } else {
-      runLoop();
-    }
-  }, [stopScroll, translateX]);
-
-  const scheduleResume = useCallback((currentX: number) => {
-    if (resumeRef.current) clearTimeout(resumeRef.current);
-    resumeRef.current = setTimeout(() => startAutoScroll(currentX), 1500);
-  }, [startAutoScroll]);
-
-  useEffect(() => {
-    startAutoScroll(0);
-    return () => { stopScroll(); if (resumeRef.current) clearTimeout(resumeRef.current); };
-  }, [startAutoScroll, stopScroll]);
-
-  const panResponder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gs) =>
-      Math.abs(gs.dx) > 5 && Math.abs(gs.dx) > Math.abs(gs.dy),
-    onPanResponderGrant: () => {
-      onGrab(); // disable parent ScrollView scroll
-      stopScroll();
-      if (resumeRef.current) { clearTimeout(resumeRef.current); resumeRef.current = null; }
-      dragStartX.current = posRef.current;
-    },
-    onPanResponderMove: (_, gs) => {
-      const sp = spRef.current;
-      let newX = dragStartX.current - gs.dx;
-      newX = ((newX % sp) + sp) % sp;
-      posRef.current = newX;
-      translateX.setValue(-newX);
-    },
-    onPanResponderRelease: () => { onRelease(); scheduleResume(posRef.current); },
-    onPanResponderTerminate: () => { onRelease(); scheduleResume(posRef.current); },
-  }), [stopScroll, scheduleResume, translateX, onGrab, onRelease]);
-
-  return (
-    <View style={styles.marqueeClip} {...panResponder.panHandlers}>
-      <Animated.View style={[styles.gigList, { transform: [{ translateX }] }]}>
-        {items.map((gig, i) => (
-          <GigStripCard key={`${gig.gig_id}-${i}`} gig={gig} />
-        ))}
-      </Animated.View>
-    </View>
-  );
-});
-
-// ── Badge marquee ─────────────────────────────────────────────────────────────
-
-const BADGE_CATEGORY_COLOR: Record<string, string> = {
-  milestone: T.primary,
-  streak:    "#FFC83D",
-  identity:  "#60a5fa",
-};
-const BADGE_CATEGORY_ICON: Record<string, React.ComponentProps<typeof Feather>["name"]> = {
-  milestone: "award",
-  streak:    "zap",
-  identity:  "shield",
-};
-const BADGE_CARD_W = rw(110);
-const BADGE_CARD_GAP = rw(8);
-const BADGE_STEP = rw(110) + rw(8); // card + gap
-
-const BadgeMarquee = memo(function BadgeMarquee({ badges, onGrab, onRelease }: {
-  badges: Badge[];
-  onGrab: () => void;
-  onRelease: () => void;
-}) {
-  const earned = badges.filter((b) => b.earned);
-  const shouldScroll = earned.length > 3;
-
-  const repeatCount = shouldScroll
-    ? Math.max(4, Math.ceil((rw(400) * 2) / (earned.length * BADGE_STEP)))
-    : 1;
-  const items = Array.from({ length: Math.max(repeatCount, 1) }, () => earned).flat();
-  const singlePassWidth = earned.length * BADGE_STEP;
-
-  const translateX = useRef(new Animated.Value(0)).current;
-  const posRef = useRef(0);
-  const dragStartX = useRef(0);
-  const animRef = useRef<{ stop: () => void } | null>(null);
-  const resumeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const spRef = useRef(singlePassWidth);
-  spRef.current = singlePassWidth;
-
-  useEffect(() => {
-    const id = translateX.addListener(({ value }) => { posRef.current = -value; });
-    return () => translateX.removeListener(id);
-  }, [translateX]);
-
-  const stopScroll = useCallback(() => {
-    animRef.current?.stop();
-    animRef.current = null;
-  }, []);
-
-  const startAutoScroll = useCallback((fromX: number) => {
-    stopScroll();
-    const sp = spRef.current;
-    const fullMs = Math.round((sp / 15.625) * 1000); // 15.625 px/sec ≈ original speed
-
-    const runLoop = () => {
-      translateX.setValue(0);
-      posRef.current = 0;
-      const anim = Animated.loop(
-        Animated.timing(translateX, {
-          toValue: -sp,
-          duration: fullMs,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      );
-      animRef.current = anim;
-      anim.start();
-    };
-
-    if (fromX > 0 && fromX < sp) {
-      const resumeMs = Math.round(((sp - fromX) / sp) * fullMs);
-      translateX.setValue(-fromX);
-      const anim = Animated.timing(translateX, {
-        toValue: -sp,
-        duration: resumeMs,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      });
-      animRef.current = anim;
-      anim.start(({ finished }) => { if (finished) runLoop(); });
-    } else {
-      runLoop();
-    }
-  }, [stopScroll, translateX]);
-
-  const scheduleResume = useCallback((currentX: number) => {
-    if (resumeRef.current) clearTimeout(resumeRef.current);
-    resumeRef.current = setTimeout(() => startAutoScroll(currentX), 1500);
-  }, [startAutoScroll]);
-
-  useEffect(() => {
-    if (!shouldScroll) return;
-    startAutoScroll(0);
-    return () => { stopScroll(); if (resumeRef.current) clearTimeout(resumeRef.current); };
-  }, [shouldScroll, startAutoScroll, stopScroll]);
-
-  const panResponder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gs) =>
-      Math.abs(gs.dx) > 5 && Math.abs(gs.dx) > Math.abs(gs.dy),
-    onPanResponderGrant: () => {
-      onGrab();
-      stopScroll();
-      if (resumeRef.current) { clearTimeout(resumeRef.current); resumeRef.current = null; }
-      dragStartX.current = posRef.current;
-    },
-    onPanResponderMove: (_, gs) => {
-      const sp = spRef.current;
-      let newX = dragStartX.current - gs.dx;
-      newX = ((newX % sp) + sp) % sp;
-      posRef.current = newX;
-      translateX.setValue(-newX);
-    },
-    onPanResponderRelease: () => { onRelease(); scheduleResume(posRef.current); },
-    onPanResponderTerminate: () => { onRelease(); scheduleResume(posRef.current); },
-  }), [stopScroll, scheduleResume, translateX, onGrab, onRelease]);
-
-  if (earned.length === 0) return null;
-
-  return (
-    <View style={styles.marqueeSection}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recent badges</Text>
-        <PressableScale scale={0.97} onPress={() => router.push("/(main)/badges")}>
-          <Text style={styles.sectionLink}>See all →</Text>
-        </PressableScale>
-      </View>
-      <View style={styles.marqueeClip} {...panResponder.panHandlers}>
-        <Animated.View style={[styles.marqueeList, { transform: [{ translateX }] }]}>
-          {items.map((badge, i) => {
-            const color = BADGE_CATEGORY_COLOR[badge.category] ?? T.textMuted;
-            const icon  = BADGE_CATEGORY_ICON[badge.category]  ?? "star";
-            return (
-              <PressableScale
-                key={`${badge.code}-${i}`}
-                style={styles.badgeCard}
-                onPress={() => router.push("/(main)/badges")}
-              >
-                <View style={[styles.badgeIconWrap, { backgroundColor: color + "18", borderColor: color + "35" }]}>
-                  <Feather name={icon} size={16} color={color} />
-                </View>
-                <Text style={styles.badgeName} numberOfLines={2}>{badge.name}</Text>
-                <Text style={[styles.badgeCat, { color }]}>{badge.category}</Text>
-              </PressableScale>
-            );
-          })}
-        </Animated.View>
-      </View>
-    </View>
-  );
-});
-
-const RecentGigCard = memo(function RecentGigCard({ gig, status }: { gig: any; status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? { label: status, color: T.textMuted };
-  const catColor = CategoryColors[gig.category] ?? T.textMuted;
-  const catLabel = getCatLabel(gig.category);
-
-  const dateStr = gig.event_date
-    ? new Date(gig.event_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
-    : null;
-
-  return (
-    <PressableScale
-      style={styles.recentGigCard}
-      onPress={() => router.push(`/(main)/gig/${gig.id}` as any)}
-    >
-      {/* Top: category stripe + status pill */}
-      <View style={styles.recentGigTop}>
-        <View style={[styles.recentCatPill, { backgroundColor: catColor + "18" }]}>
-          <View style={[styles.recentCatDot, { backgroundColor: catColor }]} />
-          <Text style={[styles.recentCatLabel, { color: catColor }]} numberOfLines={1}>{catLabel}</Text>
-        </View>
-        <View style={[styles.recentStatusPill, { backgroundColor: cfg.color + "18" }]}>
-          <Text style={[styles.recentStatusText, { color: cfg.color }]}>{cfg.label}</Text>
-        </View>
-      </View>
-
-      {/* Title */}
-      <Text style={styles.recentGigTitle} numberOfLines={2}>{gig.title}</Text>
-
-      {/* Footer */}
-      <View style={styles.recentGigFooter}>
-        <Text style={[styles.recentGigPay, { color: T.primary }]}>
-          {formatPay(gig.pay_amount, gig.pay_type)}
-        </Text>
-        {dateStr && (
-          <View style={styles.recentGigMeta}>
-            <Feather name="calendar" size={9} color={T.textMuted} />
-            <Text style={styles.recentGigMetaText}>{dateStr}</Text>
-          </View>
-        )}
-      </View>
-    </PressableScale>
-  );
-});
-
-// ── Shared separator ──────────────────────────────────────────────────────────
-
-const RecentGigSeparator = () => <View style={{ width: rw(10) }} />;
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const profile = useAuthStore((s) => s.profile);
-  const activeRole = useAuthStore((s) => s.activeRole);
+  const streak = profile?.streak_count ?? 0;
+
   const myMomentum = useMomentumStore((s) => s.myMomentum);
   const fetchMyMomentum = useMomentumStore((s) => s.fetchMyMomentum);
-  const myApplications = useGigStore((s) => s.myApplications);
-  const fetchMyApplications = useGigStore((s) => s.fetchMyApplications);
-  const badges = useBadgeStore((s) => s.badges);
-  const fetchBadges = useBadgeStore((s) => s.fetchBadges);
+  const worker = myMomentum?.worker ?? null;
+
   const earningsSummary = useEarningsStore((s) => s.summary);
   const fetchEarnings = useEarningsStore((s) => s.fetchSummary);
 
-  const [nearbyGigs, setNearbyGigs] = useState<MatchedGig[]>([]);
-  const [nearbyGigsCount, setNearbyGigsCount] = useState<number | null>(null);
-  const [gigsLoading, setGigsLoading] = useState(true);
+  const matchedGigs = useGigStore((s) => s.gigs);
+  const matchLoading = useGigStore((s) => s.isLoading);
+  const fetchMatchedGigs = useGigStore((s) => s.fetchGigs);
+  const hosts = useGigStore((s) => s.hosts);
+
+  const [events, setEvents] = useState<SearchResultItem[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [locationLabel, setLocationLabel] = useState<string>("Nearby");
   const [refreshing, setRefreshing] = useState(false);
 
-  const scrollViewRef = useRef<ScrollView>(null);
-  const onMarqueeGrab = useCallback(() => {
-    scrollViewRef.current?.setNativeProps({ scrollEnabled: false });
-  }, []);
-  const onMarqueeRelease = useCallback(() => {
-    scrollViewRef.current?.setNativeProps({ scrollEnabled: true });
-  }, []);
+  // ── Inline search ─────────────────────────────────────────────────────
+  // Typing swaps the feed (categories / hot gigs / events) for a live
+  // results list. Focusing pans the search bar to the top of the
+  // viewport so results are visible under the thumb.
+  const [searchQ, setSearchQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
+  const scrollRef = useRef<ScrollView>(null);
+  const searchBarY = useRef(0);
+  const searchInputRef = useRef<TextInput>(null);
+  const searchActive = debouncedQ.length > 0 || searchQ.length > 0;
 
   useEffect(() => {
-    scrollRegistry.register("home", () => scrollViewRef.current?.scrollTo({ y: 0, animated: true }));
-    return () => { scrollRegistry.unregister("home"); };
+    const t = setTimeout(() => setDebouncedQ(searchQ.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchQ]);
+
+  const handleSearchFocus = useCallback(() => {
+    // Pan the search bar to the top of the visible area so the results
+    // below it get maximum room.
+    scrollRef.current?.scrollTo({ y: Math.max(0, searchBarY.current - S.sm), animated: true });
   }, []);
 
-  const isHost = SHOW_HOST_ROLE && activeRole === "host";
+  const handleClearSearch = useCallback(() => {
+    setSearchQ("");
+    setDebouncedQ("");
+    searchInputRef.current?.blur();
+  }, []);
 
-  const firstName = profile?.first_name || profile?.display_name || "there";
-  const avatarLetter =
-    (profile?.first_name?.charAt(0) || profile?.display_name?.charAt(0) || "?").toUpperCase();
+  const loadEvents = useCallback(async () => {
+    setEventsLoading(true);
+    const res = await searchJobs({ type: "events", limit: 6 });
+    setEvents(res.data?.results ?? []);
+    setEventsLoading(false);
+  }, []);
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Morning" : hour < 17 ? "Afternoon" : "Evening";
-
-  const loadNearbyGigs = useCallback(async () => {
+  const loadLocation = useCallback(async () => {
     try {
-      // Show gigs immediately — don't block on GPS.
-      const initial = await matchGigs({ limit: 5 });
-      setNearbyGigs(initial.data?.gigs ?? []);
-      setNearbyGigsCount(initial.data?.total ?? null);
-      setGigsLoading(false);
-
-      // Try to get location in background; refresh cards with distance info if available.
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") return;
-
-      const last = await Location.getLastKnownPositionAsync();
-      const coords = last?.coords ?? (
-        await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low })
-      ).coords;
-
-      const located = await matchGigs({
-        limit: 5,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
+      const pos = await Location.getLastKnownPositionAsync();
+      if (!pos) return;
+      const [place] = await Location.reverseGeocodeAsync({
+        latitude: pos.coords.latitude, longitude: pos.coords.longitude,
       });
-      if (located.data) {
-        setNearbyGigs(located.data.gigs);
-        setNearbyGigsCount(located.data.total);
-      }
-    } catch {
-      setGigsLoading(false);
-    }
+      const label = place?.city ?? place?.district ?? place?.subregion ?? null;
+      if (label) setLocationLabel(label);
+    } catch { /* keep "Nearby" fallback */ }
   }, []);
+
+  const loadAll = useCallback(async () => {
+    await Promise.all([
+      fetchMatchedGigs(),
+      fetchMyMomentum(),
+      loadEvents(),
+      fetchEarnings(),
+    ]);
+  }, [fetchMatchedGigs, fetchMyMomentum, loadEvents, fetchEarnings]);
 
   useEffect(() => {
-    fetchMyMomentum();
-    fetchMyApplications();
-    fetchBadges();
-    fetchEarnings();
-    loadNearbyGigs();
+    loadAll();
+    loadLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleRefresh = useCallback(async () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    // momentum/applications/badges stores honour their own TTL; earnings + nearby
-    // gigs get force-refreshed so a PTR actually surfaces new data on demand.
-    await Promise.all([
-      fetchMyMomentum(),
-      fetchMyApplications(),
-      fetchBadges(),
-      fetchEarnings(true),
-      loadNearbyGigs(),
-    ]);
+    await loadAll();
     setRefreshing(false);
-  }, [fetchMyMomentum, fetchMyApplications, fetchBadges, fetchEarnings, loadNearbyGigs]);
+  };
 
-  const momentumData = myMomentum?.worker;
-  const score = momentumData?.score ?? 0;
-  const gigsDone = momentumData?.gig_count ?? profile?.total_gigs_completed ?? 0;
-  const streak = profile?.streak_count ?? 0;
+  const goSearch  = () => router.push("/(main)/(tabs)/search");
+  const goExplore = () => router.push("/(main)/(tabs)/explore");
+  const goGig     = (id: string) => router.push(`/(main)/gig/${id}`);
 
-  const activeApplications = useMemo(() => {
-    const now = new Date();
-    return myApplications.filter((a) => {
-      if (a.status !== "pending" && a.status !== "accepted") return false;
-      if (!a.gig?.event_date) return true;
-      const gigEnd = new Date(a.gig.event_date);
-      const [hh, mm] = (a.gig.shift_end_time || "23:59").split(":");
-      gigEnd.setHours(Number(hh ?? 23), Number(mm ?? 59), 0, 0);
-      return gigEnd >= now;
-    });
-  }, [myApplications]);
-
-  const renderRecentGig = useCallback(
-    ({ item }: { item: { gig: any; status: string } }) => (
-      <RecentGigCard gig={item.gig} status={item.status} />
-    ),
-    [],
-  );
+  const firstName = profile?.first_name ?? "there";
+  const band = worker ? getBand(worker.score) : null;
+  const weekEarnings = earningsSummary?.this_week ?? 0;
+  const weekGigs = earningsSummary?.week_gig_count ?? 0;
 
   return (
-    <ScrollView
-      ref={scrollViewRef}
-      style={styles.screen}
-      contentContainerStyle={{ paddingBottom: rw(40) }}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={T.primary}
-          colors={[T.primary]}
-        />
-      }
-    >
-      {/* ── Top bar ── */}
-      <View style={[styles.topBar, { paddingTop: insets.top + rw(10) }]}>
-        <View>
-          <Text style={styles.topGreeting}>Good {greeting}</Text>
-          <Text style={styles.topName}>{firstName}</Text>
-        </View>
-        <PressableScale
-          style={styles.avatarButton}
-          onPress={() => router.push("/(main)/(tabs)/profile")}
-        >
-          <Text style={styles.avatarLetter}>{avatarLetter}</Text>
-        </PressableScale>
-      </View>
-
-      {/* ── Earnings hero (NEW) — sets the tone: this app makes you money ── */}
-      <View style={styles.section}>
-        <EarningsCard
-          summary={earningsSummary}
-          onPress={() => router.push("/(main)/(tabs)/space")}
-        />
-      </View>
-
-      {/* ── Primary CTA (NEW) — answers "what do I do next?" ── */}
-      <View style={styles.sectionTight}>
-        <PrimaryCTA
-          nearbyCount={nearbyGigsCount}
-          cityLabel={profile?.city ?? null}
-          onPress={() => router.push("/(main)/(tabs)/explore")}
-        />
-      </View>
-
-      {/* ── Hot near you ── */}
-      <View style={styles.stripSection}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Hot near you</Text>
-          <PressableScale scale={0.97} onPress={() => router.push("/(main)/(tabs)/explore")}>
-            <Text style={styles.sectionLink}>See all →</Text>
-          </PressableScale>
-        </View>
-
-        {gigsLoading ? (
-          <View style={styles.gigsSkeletonRow}>
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} width={rw(150)} height={rw(96)} borderRadius={rw(14)} />
-            ))}
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{ paddingBottom: S.section }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.primary} />
+        }
+      >
+        {/* ─── Greeting bar ───────────────────────────────────────────── */}
+        <View style={styles.greetBar}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greetHi}>{greetForHour()},</Text>
+            <Text style={styles.greetName}>{firstName} 👋</Text>
           </View>
-        ) : nearbyGigs.length === 0 ? (
-          <View style={styles.gigsEmpty}>
-            <Feather name="compass" size={22} color={T.textMuted} />
-            <Text style={styles.gigsEmptyText}>No gigs nearby right now</Text>
+          <Pressable style={styles.locationPill} onPress={loadLocation}>
+            <Feather name="map-pin" size={rw(11)} color={T.text} />
+            <Text style={styles.locationText} numberOfLines={1}>{locationLabel}</Text>
+          </Pressable>
+        </View>
+
+        {/* ─── Earnings hero (gradient card) ──────────────────────────── */}
+        <View style={styles.heroWrap}>
+          <LinearGradient
+            colors={T.gradAccent}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.hero}
+          >
+            <View style={styles.heroTopRow}>
+              <Text style={styles.heroLabel}>THIS WEEK</Text>
+              <View style={styles.heroWeekPill}>
+                <Text style={styles.heroWeekPillText}>{weekGigs} gig{weekGigs === 1 ? "" : "s"}</Text>
+              </View>
+            </View>
+            <Text style={styles.heroAmount}>
+              ₹{weekEarnings.toLocaleString("en-IN")}
+            </Text>
+            <Text style={styles.heroSub}>
+              Keep going — payout on {earningsSummary?.next_payout_date
+                ? formatDate(earningsSummary.next_payout_date)
+                : "Monday"}
+            </Text>
+          </LinearGradient>
+        </View>
+
+        {/* ─── Momentum + Streak bento ────────────────────────────────── */}
+        <View style={styles.bentoRow}>
+          <Pressable style={styles.statCard} onPress={() => router.push("/(main)/(tabs)/arena")}>
+            <View style={styles.statTop}>
+              <Text style={styles.statLabel}>MOMENTUM</Text>
+              <Feather name="trending-up" size={rw(14)} color={T.textSub} />
+            </View>
+            <Text style={[styles.statValue, band ? { color: band.color } : null]}>
+              {worker?.score ?? "—"}
+            </Text>
+            <View style={styles.bandRow}>
+              {band && (
+                <View style={[styles.bandDot, { backgroundColor: band.color }]} />
+              )}
+              <Text style={styles.statFoot}>{band?.label ?? "Loading…"}</Text>
+            </View>
+          </Pressable>
+
+          <View style={styles.statCard}>
+            <View style={styles.statTop}>
+              <Text style={styles.statLabel}>STREAK</Text>
+              <Text style={{ fontSize: rf(18) }}>🔥</Text>
+            </View>
+            <Text style={styles.statValue}>{streak}</Text>
+            <Text style={styles.statFoot}>{streak === 1 ? "day" : "days"} in a row</Text>
+          </View>
+        </View>
+
+        {/* ─── Search bar (inline live search) ─────────────────────── */}
+        <View
+          style={styles.searchBarWrap}
+          onLayout={(e) => { searchBarY.current = e.nativeEvent.layout.y; }}
+        >
+          <GigSearchBar
+            ref={searchInputRef}
+            value={searchQ}
+            onChangeText={setSearchQ}
+            onFocus={handleSearchFocus}
+            onClear={handleClearSearch}
+          />
+        </View>
+
+        {searchActive ? (
+          /* ─── Inline search results — replaces the feed while typing ─ */
+          <View>
+            {searchQ !== debouncedQ ? (
+              <View style={styles.searchLoadingRow}>
+                <Text style={styles.searchLoadingText}>Searching…</Text>
+              </View>
+            ) : null}
+            {/* Static mode: no nested FlatList (would break windowing).
+                Caps at 15 items; "See all" tail routes to /search with
+                the query pre-filled. */}
+            <GigResultsList
+              query={debouncedQ}
+              mode="static"
+              maxItems={15}
+              bottomPadding={S.md}
+            />
           </View>
         ) : (
-          <GigMarquee gigs={nearbyGigs} onGrab={onMarqueeGrab} onRelease={onMarqueeRelease} />
+          <>
+            {/* ─── Browse-all CTA ──────────────────────────────────── */}
+            <Pressable style={styles.browseAllBtn} onPress={goSearch}>
+              <View style={styles.browseAllIcon}>
+                <Feather name="grid" size={rw(18)} color={T.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.browseAllTitle}>Browse all gigs & events</Text>
+                <Text style={styles.browseAllSub}>Filter by type, date, category</Text>
+              </View>
+              <Feather name="arrow-right" size={rw(18)} color={T.textMuted} />
+            </Pressable>
+
+            {/* ─── Categories ──────────────────────────────────────── */}
+            <SectionHeader title="Browse by role" />
+            <View style={styles.catGrid}>
+              {HOT_CATEGORIES.map((c) => (
+                <Pressable key={c} onPress={goSearch} style={styles.catTile}>
+                  <View style={[styles.catIconWrap, { backgroundColor: CategoryColors[c] ?? T.primary }]}>
+                    <Feather name={categoryIcon(c)} size={rw(20)} color="#FFFFFF" />
+                  </View>
+                  <Text style={styles.catLabel} numberOfLines={2}>{categoryLabel(c)}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* ─── Hot gigs ────────────────────────────────────────── */}
+            <SectionHeader title="Hot gigs" emoji="🔥" onSeeAll={goExplore} />
+            {matchLoading && matchedGigs.length === 0 ? (
+              <HotGigsSkeleton />
+            ) : matchedGigs.length === 0 ? (
+              <EmptyRow message="No gigs match right now. Check back soon." />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.hRow}
+              >
+                {matchedGigs.slice(0, 8).map((g) => (
+                  <HotGigCard
+                    key={g.id}
+                    gig={g}
+                    host={hosts[g.poster_id]}
+                    onPress={() => goGig(g.id)}
+                  />
+                ))}
+              </ScrollView>
+            )}
+
+            {/* ─── Events ──────────────────────────────────────────── */}
+            <SectionHeader title="Events near you" onSeeAll={goSearch} />
+            {eventsLoading ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hRow}>
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} width={rw(260)} height={rw(140)} borderRadius={R.card} style={{ marginRight: S.sm }} />
+                ))}
+              </ScrollView>
+            ) : events.length === 0 ? (
+              <EmptyRow message="No events open right now." />
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hRow}>
+                {events.slice(0, 5).map((e) => (
+                  <EventCard key={e.id} event={e} onPress={goSearch} />
+                ))}
+              </ScrollView>
+            )}
+          </>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function SectionHeader({ title, emoji, onSeeAll }: { title: string; emoji?: string; onSeeAll?: () => void }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>
+        {emoji ? `${emoji}  ` : ""}{title}
+      </Text>
+      {onSeeAll && (
+        <Pressable onPress={onSeeAll} hitSlop={8}>
+          <Text style={styles.seeAllText}>See all →</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+function HotGigCard({ gig, host, onPress }: { gig: Gig; host?: HostSummary; onPress: () => void }) {
+  const catColor = CategoryColors[gig.category] ?? T.primary;
+  return (
+    <Pressable onPress={onPress} style={styles.hotCard}>
+      <View style={styles.hotCardHeader}>
+        <View style={[styles.hotCardCatDot, { backgroundColor: catColor }]} />
+        <Text style={styles.hotCardCatText} numberOfLines={1}>{categoryLabel(gig.category)}</Text>
+      </View>
+      <Text style={styles.hotCardTitle} numberOfLines={2}>{gig.title}</Text>
+      <View style={styles.hotCardPayRow}>
+        <Text style={styles.hotCardPay}>{formatPay(gig.pay_amount, gig.pay_type)}</Text>
+      </View>
+      <View style={styles.hotCardFooter}>
+        <View style={styles.hotCardFooterItem}>
+          <Feather name="calendar" size={rw(11)} color={T.textSub} />
+          <Text style={styles.hotCardFooterText}>{formatDate(gig.event_date)}</Text>
+        </View>
+        <View style={styles.hotCardFooterDot} />
+        <View style={styles.hotCardFooterItem}>
+          <Feather name="map-pin" size={rw(11)} color={T.textSub} />
+          <Text style={styles.hotCardFooterText} numberOfLines={1}>{gig.city}</Text>
+        </View>
+      </View>
+      {host && (
+        <View style={styles.hotCardHost}>
+          <View style={styles.hostAvatar}>
+            <Text style={styles.hostAvatarText}>{host.display_name?.[0]?.toUpperCase() ?? "?"}</Text>
+          </View>
+          <Text style={styles.hostName} numberOfLines={1}>{host.display_name}</Text>
+          {host.is_verified && (
+            <Feather name="check-circle" size={rw(11)} color={T.success} />
+          )}
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+function EventCard({ event, onPress }: { event: SearchResultItem; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={styles.eventCard}>
+      <View style={styles.eventBadge}>
+        <Feather name="calendar" size={rw(10)} color="#FFFFFF" />
+        <Text style={styles.eventBadgeText}>EVENT</Text>
+      </View>
+      <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
+      <View style={styles.eventMeta}>
+        {event.event_date && <Text style={styles.eventMetaText}>{formatDate(event.event_date)}</Text>}
+        {event.city && (
+          <>
+            <Text style={styles.eventMetaDot}>·</Text>
+            <Text style={styles.eventMetaText} numberOfLines={1}>{event.city}</Text>
+          </>
         )}
       </View>
-
-      {/* ── Momentum snapshot (SHRUNK) — was the full hero, now a chip row ── */}
-      {myMomentum != null && (
-        <View style={styles.sectionTight}>
-          <MomentumChipRow
-            score={score}
-            streak={streak}
-            onPress={() => router.push("/(main)/(tabs)/arena")}
-          />
+      {event.open_job_count != null && event.open_job_count > 0 && (
+        <View style={styles.eventJobsChip}>
+          <Text style={styles.eventJobsText}>
+            {event.open_job_count} open job{event.open_job_count === 1 ? "" : "s"}
+          </Text>
         </View>
       )}
+    </Pressable>
+  );
+}
 
-      {/* ── Growth nudge (NEW) — one actionable next step, priority-based ── */}
-      <View style={styles.sectionTight}>
-        <GrowthNudge
-          profile={profile}
-          momentumScore={myMomentum != null ? score : null}
-          streakCount={streak}
-        />
-      </View>
-
-      {/* ── Recent badges ── */}
-      <BadgeMarquee badges={badges} onGrab={onMarqueeGrab} onRelease={onMarqueeRelease} />
-
-      {/* ── Recent gigs ── */}
-      {activeApplications.length > 0 && (
-        <View style={styles.stripSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent gigs</Text>
-            <PressableScale scale={0.97} onPress={() => router.push("/(main)/(tabs)/space")}>
-              <Text style={styles.sectionLink}>See all →</Text>
-            </PressableScale>
-          </View>
-          <FlatList
-            horizontal
-            data={activeApplications.slice(0, 6)}
-            keyExtractor={(item) => item.gig.id}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.recentGigList}
-            ItemSeparatorComponent={RecentGigSeparator}
-            renderItem={renderRecentGig}
-          />
-        </View>
-      )}
+function HotGigsSkeleton() {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hRow}>
+      {[0, 1, 2].map((i) => (
+        <Skeleton key={i} width={rw(240)} height={rw(190)} borderRadius={R.card} style={{ marginRight: S.sm }} />
+      ))}
     </ScrollView>
+  );
+}
+
+function EmptyRow({ message }: { message: string }) {
+  return (
+    <View style={styles.emptyRow}>
+      <Text style={styles.emptyText}>{message}</Text>
+    </View>
   );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: T.bg,
-  },
+  screen: { flex: 1, backgroundColor: T.bg },
 
-  // ── Top bar ──
-  topBar: {
+  // Greeting bar
+  greetBar: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingHorizontal: rw(20),
-    paddingBottom: rw(20),
+    alignItems: "center",
+    paddingHorizontal: S.lg,
+    paddingTop: S.sm,
+    paddingBottom: S.md,
+    gap: S.sm,
   },
-  topGreeting: {
-    fontSize: rf(12),
-    fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
-    color: T.textMuted,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+  greetHi: {
+    ...TYPE.body,
+    color: T.textSub,
   },
-  topName: {
-    fontSize: rf(24),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+  greetName: {
+    ...TYPE.title1,
     color: T.text,
-    marginTop: 1,
-  },
-  avatarButton: {
-    width: rw(42),
-    height: rw(42),
-    borderRadius: rw(21),
-    backgroundColor: "rgba(212,255,0,0.10)",
-    borderWidth: 1.5,
-    borderColor: "rgba(212,255,0,0.25)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarLetter: {
-    fontSize: rf(17),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.primary,
-  },
-
-  // ── Layout ──
-  section: {
-    paddingHorizontal: rw(16),
-    marginBottom: rw(24),
-  },
-  // Tighter vertical rhythm for the new card-per-section components
-  // (EarningsCard, PrimaryCTA, MomentumChipRow, GrowthNudge) — the taller
-  // hero card doesn't need to be followed by 28 px of dead space.
-  sectionTight: {
-    paddingHorizontal: rw(16),
-    marginBottom: rw(14),
-  },
-  stripSection: {
-    marginBottom: rw(28),
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: rw(20),
-    marginBottom: rw(12),
-  },
-  sectionTitle: {
-    fontSize: rf(15),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
-    letterSpacing: 0.1,
-  },
-  sectionLink: {
-    fontSize: rf(13),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: T.primary,
-  },
-
-  // ── Band hero card ──
-  heroCard: {
-    backgroundColor: T.surface,
-    borderRadius: rw(20),
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: rw(20),
-    overflow: "hidden",
-  },
-  heroGlow: {
-    position: "absolute",
-    top: -rw(40),
-    right: -rw(40),
-    width: rw(160),
-    height: rw(160),
-    borderRadius: rw(80),
-    opacity: 0.12,
-  },
-  heroTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: rw(16),
-  },
-  heroScoreLabel: {
-    fontSize: rf(10),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: T.textMuted,
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    marginBottom: 2,
-  },
-  heroScore: {
-    fontSize: rf(52),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    lineHeight: rf(56),
-  },
-  heroBandPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: rw(10),
-    paddingVertical: rw(5),
-    borderRadius: rw(20),
-    borderWidth: 1,
-    marginTop: rw(6),
-  },
-  heroBandDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  heroBandLabel: {
-    fontSize: rf(12),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-  },
-  heroProgressSection: {
-    gap: rw(6),
-    marginBottom: rw(16),
-  },
-  heroProgressTrack: {
-    height: 3,
-    backgroundColor: T.border,
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  heroProgressFill: {
-    height: "100%",
-    borderRadius: 2,
-  },
-  heroProgressLabel: {
-    fontSize: rf(11),
-    fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
-    color: T.textMuted,
-  },
-  heroStats: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rw(12),
-    paddingTop: rw(14),
-    borderTopWidth: 1,
-    borderTopColor: T.border,
-  },
-  heroStat: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  heroStatVal: {
-    fontSize: rf(13),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
-  },
-  heroStatKey: {
-    fontSize: rf(11),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textMuted,
-  },
-  heroStatDivider: {
-    width: 1,
-    height: rw(12),
-    backgroundColor: T.border,
-  },
-  streakChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: rw(8),
-    paddingVertical: rw(4),
-    borderRadius: rw(12),
-    backgroundColor: "rgba(255,199,61,0.14)",
-    borderWidth: 1,
-    borderColor: "rgba(255,199,61,0.35)",
-  },
-  streakEmoji: {
-    fontSize: rf(14),
-  },
-  streakVal: {
-    fontSize: rf(13),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: "#FFC83D",
-  },
-  streakKey: {
-    fontSize: rf(10),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: "#FFC83D",
-    opacity: 0.85,
-    letterSpacing: 0.2,
-  },
-
-  // ── Badge marquee ──
-  marqueeSection: {
-    marginBottom: rw(28),
-  },
-  marqueeList: {
-    flexDirection: "row",
-    paddingHorizontal: rw(16),
-    gap: BADGE_CARD_GAP,
-  },
-  badgeCard: {
-    width: BADGE_CARD_W,
-    backgroundColor: T.surface,
-    borderRadius: rw(14),
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: rw(12),
-    gap: rw(6),
-  },
-  badgeIconWrap: {
-    width: rw(34),
-    height: rw(34),
-    borderRadius: rw(10),
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  badgeName: {
-    fontSize: rf(12),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: T.text,
-    lineHeight: rf(16),
-  },
-  badgeCat: {
-    fontSize: rf(10),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    marginTop: 2,
     textTransform: "capitalize",
   },
+  locationPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: S.xxs + 2,
+    paddingHorizontal: S.sm,
+    paddingVertical: S.xs,
+    borderRadius: R.chip,
+    backgroundColor: T.surface1,
+    maxWidth: rw(120),
+    ...SHADOW.sm,
+  },
+  locationText: {
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "700",
+    color: T.text,
+  },
 
-  // ── Recent gig cards ──
-  recentGigList: {
-    paddingHorizontal: rw(16),
+  // Earnings hero
+  heroWrap: {
+    marginHorizontal: S.lg,
+    marginBottom: S.md,
+    borderRadius: R.hero,
+    ...SHADOW.lg,
   },
-  recentGigCard: {
-    width: rw(178),
-    backgroundColor: T.surface,
-    borderRadius: rw(16),
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: rw(14),
-    justifyContent: "space-between",
-    gap: rw(8),
+  hero: {
+    borderRadius: R.hero,
+    padding: S.xl,
+    overflow: "hidden",
   },
-  recentGigTop: {
+  heroTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: rw(6),
+    marginBottom: S.sm,
   },
-  recentCatPill: {
+  heroLabel: {
+    ...TYPE.label,
+    color: "rgba(255,255,255,0.85)",
+  },
+  heroWeekPill: {
+    paddingHorizontal: S.sm,
+    paddingVertical: 6,
+    borderRadius: R.chip,
+    backgroundColor: "rgba(255,255,255,0.22)",
+  },
+  heroWeekPillText: {
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  heroAmount: {
+    ...TYPE.display,
+    color: "#FFFFFF",
+  },
+  heroSub: {
+    ...TYPE.body,
+    marginTop: S.xs,
+    color: "rgba(255,255,255,0.85)",
+  },
+
+  // Bento row
+  bentoRow: {
+    flexDirection: "row",
+    paddingHorizontal: S.lg,
+    gap: S.sm,
+    marginBottom: S.md,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    padding: S.md,
+    ...SHADOW.card,
+  },
+  statTop: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: rw(7),
-    paddingVertical: rw(3),
-    borderRadius: rw(20),
-    flexShrink: 1,
+    justifyContent: "space-between",
+    marginBottom: S.xs,
   },
-  recentCatDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    flexShrink: 0,
+  statLabel: {
+    ...TYPE.label,
+    color: T.textMuted,
   },
-  recentCatLabel: {
-    fontSize: rf(9),
+  statValue: {
+    ...TYPE.title1,
+    color: T.text,
+    marginTop: S.xs,
+  },
+  bandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: S.xxs,
+  },
+  bandDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statFoot: {
+    ...TYPE.body,
+    color: T.textSub,
+  },
+
+  // Search bar wrapper — GigSearchBar renders the actual input.
+  searchBarWrap: {
+    marginHorizontal: S.lg,
+    marginBottom: S.md,
+  },
+
+  // Inline-search loading indicator (debounce gap)
+  searchLoadingRow: {
+    paddingHorizontal: S.lg,
+    paddingVertical: S.xs,
+  },
+  searchLoadingText: {
+    ...TYPE.caption,
+    color: T.textMuted,
+  },
+
+  // Browse-all CTA — sits directly below the search bar in normal mode.
+  browseAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: S.sm,
+    marginHorizontal: S.lg,
+    marginBottom: S.sm,
+    paddingHorizontal: S.md,
+    paddingVertical: S.sm,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    ...SHADOW.card,
+  },
+  browseAllIcon: {
+    width: rw(40),
+    height: rw(40),
+    borderRadius: R.thumb,
+    backgroundColor: T.primary + "18",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  browseAllTitle: {
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+    color: T.text,
+  },
+  browseAllSub: {
+    ...TYPE.caption,
+    color: T.textMuted,
+    marginTop: 2,
+  },
+
+  // Section header
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: S.lg,
+    marginTop: S.lg,
+    marginBottom: S.sm,
+  },
+  sectionTitle: {
+    ...TYPE.title2,
+    color: T.text,
+  },
+  seeAllText: {
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-    flexShrink: 1,
+    color: T.primary,
   },
-  recentStatusPill: {
-    paddingHorizontal: rw(7),
-    paddingVertical: rw(3),
-    borderRadius: rw(20),
-    flexShrink: 0,
+
+  // Category grid
+  catGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: S.lg,
+    gap: S.sm,
+    marginBottom: S.xs,
   },
-  recentStatusText: {
-    fontSize: rf(9),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+  catTile: {
+    // 3-per-row minus the two gaps
+    width: `${(100 - 6) / 3}%`,
+    aspectRatio: 1,
+    padding: S.sm,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    ...SHADOW.card,
   },
-  recentGigTitle: {
-    fontSize: rf(13),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+  catIconWrap: {
+    width: rw(48),
+    height: rw(48),
+    borderRadius: R.thumb,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  catLabel: {
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "800",
     color: T.text,
     lineHeight: rf(18),
-    flex: 1,
-  },
-  recentGigFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  recentGigPay: {
-    fontSize: rf(13),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-  },
-  recentGigMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-  },
-  recentGigMetaText: {
-    fontSize: rf(10),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textMuted,
   },
 
-  // ── Shared marquee clip (constrains touch area to visible region) ──
-  marqueeClip: {
-    overflow: "hidden",
+  // Horizontal card row (used for hot gigs + events)
+  hRow: {
+    paddingHorizontal: S.lg,
+    gap: S.sm,
+    paddingBottom: S.xs,
+    paddingTop: S.xxs,
   },
-  gigList: {
+
+  // Hot gig card
+  hotCard: {
+    width: rw(240),
+    padding: S.md,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    gap: S.xs,
+    ...SHADOW.card,
+  },
+  hotCardHeader: {
     flexDirection: "row",
-    paddingHorizontal: rw(16),
-    gap: GIG_CARD_GAP,
+    alignItems: "center",
+    gap: S.xxs + 2,
   },
-  gigCard: {
-    width: rw(150),
-    backgroundColor: T.surface,
-    borderRadius: rw(14),
-    borderWidth: 1,
-    borderColor: T.border,
-    flexDirection: "row",
-    overflow: "hidden",
+  hotCardCatDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  gigStripe: {
-    width: 3,
+  hotCardCatText: {
+    ...TYPE.label,
+    color: T.textSub,
+    letterSpacing: 0.8,
   },
-  gigCardInner: {
-    flex: 1,
-    padding: rw(11),
-    gap: rw(8),
-  },
-  gigTitle: {
-    fontSize: rf(13),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+  hotCardTitle: {
+    ...TYPE.title3,
     color: T.text,
-    lineHeight: rf(17),
+    marginTop: S.xxs,
   },
-  gigFooter: {
-    gap: rw(3),
+  hotCardPayRow: {
+    marginTop: S.xxs,
   },
-  gigPay: {
-    fontSize: rf(13),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+  hotCardPay: {
+    ...TYPE.money,
+    color: T.primary,
   },
-  gigDistRow: {
+  hotCardFooter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
+    gap: S.xs,
+    marginTop: S.xxs,
+    flexWrap: "wrap",
   },
-  gigDist: {
-    fontSize: rf(10),
-    fontFamily: "SpaceGrotesk_400Regular",
-    color: T.textMuted,
+  hotCardFooterItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  hotCardFooterText: {
+    ...TYPE.body,
+    color: T.textSub,
+  },
+  hotCardFooterDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: T.textMuted,
+  },
+  hotCardHost: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: S.xxs + 2,
+    marginTop: S.xs,
+    paddingTop: S.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: T.border,
+  },
+  hostAvatar: {
+    width: rw(20),
+    height: rw(20),
+    borderRadius: R.avatar,
+    backgroundColor: T.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  hostAvatarText: {
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "800",
+    color: T.textOnPrimary,
+  },
+  hostName: {
+    ...TYPE.body,
+    flex: 1,
+    color: T.textSub,
   },
 
-  // ── Loaders / empty ──
-  gigsLoader: {
-    height: rw(210),
-    justifyContent: "center",
-    alignItems: "center",
+  // Event card
+  eventCard: {
+    width: rw(260),
+    padding: S.md,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    gap: S.xs,
+    ...SHADOW.card,
   },
-  gigsSkeletonRow: {
+  eventBadge: {
     flexDirection: "row",
-    gap: rw(10),
-    paddingHorizontal: rw(16),
-    paddingVertical: rw(4),
-  },
-  gigsEmpty: {
-    height: rw(120),
-    justifyContent: "center",
     alignItems: "center",
-    gap: rw(8),
-    marginHorizontal: rw(16),
-    backgroundColor: T.surface,
-    borderRadius: rw(16),
-    borderWidth: 1,
-    borderColor: T.border,
+    alignSelf: "flex-start",
+    gap: 4,
+    paddingHorizontal: S.xs,
+    paddingVertical: 4,
+    borderRadius: R.chip,
+    backgroundColor: T.tertiary,
   },
-  gigsEmptyText: {
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
+  eventBadgeText: {
+    ...TYPE.label,
+    fontSize: rf(10),
+    color: "#FFFFFF",
+    letterSpacing: 0.9,
+  },
+  eventTitle: {
+    ...TYPE.title3,
+    color: T.text,
+  },
+  eventMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  eventMetaText: {
+    ...TYPE.body,
+    color: T.textSub,
+  },
+  eventMetaDot: {
+    ...TYPE.body,
+    color: T.textMuted,
+  },
+  eventJobsChip: {
+    marginTop: S.xs,
+    alignSelf: "flex-start",
+    paddingHorizontal: S.sm,
+    paddingVertical: 5,
+    borderRadius: R.chip,
+    backgroundColor: T.surface2,
+  },
+  eventJobsText: {
+    ...TYPE.label,
+    color: T.text,
+    letterSpacing: 0.8,
+  },
+
+  // Empty row
+  emptyRow: {
+    marginHorizontal: S.lg,
+    padding: S.lg,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    alignItems: "center",
+    ...SHADOW.sm,
+  },
+  emptyText: {
+    ...TYPE.body,
     color: T.textMuted,
   },
 });

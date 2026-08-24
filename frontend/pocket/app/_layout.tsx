@@ -9,14 +9,16 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   useFonts,
-  SpaceGrotesk_400Regular,
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
-  SpaceGrotesk_700Bold,
-} from "@expo-google-fonts/space-grotesk";
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from "@expo-google-fonts/inter";
 import { useAuthStore } from "@/stores/authStore";
 import { useMomentumStore } from "@/stores/momentumStore";
 import { T } from "@/constants/colors";
+import { currentTheme } from "@/constants/theme";
 import { registerForPushNotifications } from "@/lib/notifications";
 
 // Prevent splash screen from auto-hiding
@@ -31,10 +33,11 @@ export default function RootLayout() {
   const responseListener = useRef<Notifications.EventSubscription>();
 
   const [fontsLoaded] = useFonts({
-    SpaceGrotesk_400Regular,
-    SpaceGrotesk_500Medium,
-    SpaceGrotesk_600SemiBold,
-    SpaceGrotesk_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
   });
 
   useEffect(() => {
@@ -92,7 +95,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: T.bg }}>
-        <StatusBar style="light" backgroundColor={T.bg} />
+        <StatusBar style={currentTheme === "dark" ? "light" : "dark"} backgroundColor={T.bg} />
         <Stack
           screenOptions={{
             headerShown: false,

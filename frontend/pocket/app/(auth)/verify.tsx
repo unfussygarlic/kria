@@ -1,3 +1,10 @@
+/**
+ * Verify — OTP entry step. Six boxes fed by an off-screen hidden input.
+ *
+ * Redesigned 2026-08-23: SHADOW-based boxes (no borders), TYPE tokens, S/R
+ * spacing. Filled state uses primary tint; active state uses selection bg.
+ */
+
 import { useState, useRef, useEffect } from "react";
 import {
   View,
@@ -11,9 +18,11 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
-import { rf, rw } from "@/constants/responsive";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
+import { rw } from "@/constants/responsive";
 
 const OTP_LENGTH = 6;
 
@@ -30,20 +39,18 @@ export default function VerifyScreen() {
   const sendOtp = useAuthStore((s) => s.sendOtp);
   const hiddenInputRef = useRef<TextInput>(null);
 
-  // Blinking cursor animation for the active box
   const cursorOpacity = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     const blink = Animated.loop(
       Animated.sequence([
         Animated.timing(cursorOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
         Animated.timing(cursorOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-      ])
+      ]),
     );
     blink.start();
     return () => blink.stop();
   }, []);
 
-  // Resend timer countdown
   useEffect(() => {
     if (resendTimer > 0) {
       const t = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
@@ -82,7 +89,6 @@ export default function VerifyScreen() {
     await sendOtp(phone);
   };
 
-  // The active box is the one at the current cursor position
   const activeIndex = Math.min(otpValue.length, OTP_LENGTH - 1);
 
   return (
@@ -90,22 +96,20 @@ export default function VerifyScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={[styles.content, { paddingTop: insets.top + rw(20) }]}>
-        {/* Back button */}
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>← Back</Text>
+      <View style={[styles.content, { paddingTop: insets.top + S.lg }]}>
+        <Pressable style={styles.backButton} onPress={() => router.back()} hitSlop={12}>
+          <Feather name="arrow-left" size={rw(20)} color={T.text} />
+          <Text style={styles.backButtonText}>Back</Text>
         </Pressable>
 
-        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Verify Phone</Text>
+          <Text style={styles.title}>Verify phone</Text>
           <Text style={styles.subtitle}>
             Enter the 6-digit code sent to{"\n"}
             <Text style={styles.phone}>{phone}</Text>
           </Text>
         </View>
 
-        {/* OTP boxes — tap any to focus the hidden input */}
         <Pressable style={styles.otpContainer} onPress={() => hiddenInputRef.current?.focus()}>
           {Array(OTP_LENGTH).fill(0).map((_, i) => {
             const digit = otpValue[i] ?? "";
@@ -131,7 +135,6 @@ export default function VerifyScreen() {
           })}
         </Pressable>
 
-        {/* Hidden input that actually receives keyboard events */}
         <TextInput
           ref={hiddenInputRef}
           value={otpValue}
@@ -150,7 +153,6 @@ export default function VerifyScreen() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        {/* Resend */}
         <View style={styles.resendContainer}>
           {resendTimer > 0 ? (
             <Text style={styles.resendTimer}>Resend code in {resendTimer}s</Text>
@@ -174,77 +176,74 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    // paddingTop is injected inline (insets.top + rw(20)) so it respects
-    // the status bar / notch on every device.
+    paddingHorizontal: S.xl,
   },
   backButton: {
-    marginBottom: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    marginBottom: S.xl,
   },
   backButtonText: {
-    fontSize: 16,
-    color: T.primary,
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+    color: T.text,
   },
   header: {
-    marginBottom: 40,
+    marginBottom: S.hero,
+    gap: S.xs,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
+    ...TYPE.title1,
     color: T.text,
-    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    ...TYPE.bodyLg,
     color: T.textSub,
-    lineHeight: 24,
   },
   phone: {
-    fontWeight: "600",
+    fontFamily: "Inter_700Bold",
+    fontWeight: "700",
     color: T.text,
   },
   otpContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 16,
-    gap: rw(8),
+    marginBottom: S.md,
+    gap: S.xs,
   },
   otpBox: {
     flex: 1,
     height: rw(60),
-    backgroundColor: T.surface,
-    borderWidth: 1.5,
-    borderColor: T.border,
-    borderRadius: rw(14),
+    backgroundColor: T.surface1,
+    borderRadius: R.input,
     justifyContent: "center",
     alignItems: "center",
+    ...SHADOW.sm,
   },
   otpBoxActive: {
-    borderColor: T.selBorder,
-    borderWidth: 2,
     backgroundColor: T.selBg,
   },
   otpBoxFilled: {
-    borderColor: T.primary,
-    backgroundColor: T.surface,
+    backgroundColor: T.primary + "18",
   },
   otpBoxError: {
-    borderColor: T.error,
-    backgroundColor: "rgba(239,68,68,0.08)",
+    backgroundColor: T.error + "18",
   },
   otpDigit: {
-    fontSize: rf(22),
-    fontWeight: "700",
+    ...TYPE.title1,
+    fontSize: 22,
+    lineHeight: 28,
     color: T.text,
-    lineHeight: rf(28),
   },
   cursor: {
     width: 2,
     height: rw(24),
-    backgroundColor: T.selText,
+    backgroundColor: T.text,
     borderRadius: 1,
   },
-  // Invisible — positioned far off-screen; avoids Android autofill overlay over boxes
   hiddenInput: {
     position: "absolute",
     width: 1,
@@ -255,27 +254,28 @@ const styles = StyleSheet.create({
   },
   error: {
     color: T.error,
-    fontSize: 14,
+    ...TYPE.body,
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: S.md,
   },
   resendContainer: {
     alignItems: "center",
-    marginTop: 24,
+    marginTop: S.xl,
   },
   resendTimer: {
-    fontSize: 14,
+    ...TYPE.body,
     color: T.textMuted,
   },
   resendButton: {
-    fontSize: 14,
-    color: T.primary,
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
+    color: T.primary,
   },
   loadingText: {
-    fontSize: 16,
+    ...TYPE.bodyLg,
     color: T.primary,
     textAlign: "center",
-    marginTop: 24,
+    marginTop: S.xl,
   },
 });

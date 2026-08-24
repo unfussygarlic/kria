@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   avatarInitial: {
     fontSize: 14,
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: T.avatarText,
   },
   verifiedDot: {
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 12,
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: T.text,
   },
 });

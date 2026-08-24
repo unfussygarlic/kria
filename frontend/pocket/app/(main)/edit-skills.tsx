@@ -1,3 +1,10 @@
+/**
+ * Edit skills — grouped skill chip picker.
+ *
+ * Redesigned 2026-08-23 for the new visual system: SHADOW chips, TYPE tokens,
+ * S/R spacing. Selection logic + sticky save footer preserved.
+ */
+
 import { useState } from "react";
 import {
   View,
@@ -13,6 +20,8 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
+import { rw } from "@/constants/responsive";
 import { SkillCategories } from "@/constants/config";
 import { StickyFooter } from "@/components/ui/StickyFooter";
 
@@ -26,7 +35,7 @@ export default function EditSkillsScreen() {
 
   const toggle = (value: string) => {
     setSelected((prev) =>
-      prev.includes(value) ? prev.filter((s) => s !== value) : [...prev, value]
+      prev.includes(value) ? prev.filter((s) => s !== value) : [...prev, value],
     );
   };
 
@@ -42,8 +51,7 @@ export default function EditSkillsScreen() {
       style={styles.screen}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + S.sm }]}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Feather name="arrow-left" size={22} color={T.text} />
         </Pressable>
@@ -56,7 +64,7 @@ export default function EditSkillsScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {SkillCategories.map((cat) => (
           <View key={cat.category} style={styles.category}>
-            <Text style={styles.categoryLabel}>{cat.category}</Text>
+            <Text style={styles.categoryLabel}>{cat.category.toUpperCase()}</Text>
             <View style={styles.chipWrap}>
               {cat.skills.map((skill) => {
                 const on = selected.includes(skill.value);
@@ -92,7 +100,7 @@ export default function EditSkillsScreen() {
           disabled={isLoading}
         >
           <Text style={styles.buttonText}>
-            {isLoading ? "Saving..." : "Save Skills"}
+            {isLoading ? "Saving..." : "Save skills"}
           </Text>
         </Pressable>
       </StickyFooter>
@@ -108,30 +116,28 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: T.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
-    gap: 12,
+    paddingHorizontal: S.md,
+    paddingBottom: S.md,
+    gap: S.sm,
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
     flex: 1,
-    fontSize: 17,
-    fontWeight: "600",
+    ...TYPE.title3,
     color: T.text,
   },
   headerBadge: {
     backgroundColor: T.selBg,
-    paddingHorizontal: 10,
+    paddingHorizontal: S.sm,
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: R.chip,
+    ...SHADOW.sm,
   },
   headerBadgeText: {
-    fontSize: 13,
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
     color: T.selText,
   },
@@ -139,60 +145,56 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 20,
-    gap: 24,
-    paddingBottom: 40,
+    padding: S.lg,
+    gap: S.lg,
+    paddingBottom: S.hero,
   },
   category: {
-    gap: 10,
+    gap: S.xs,
   },
   categoryLabel: {
-    fontSize: 12,
-    fontWeight: "700",
+    ...TYPE.label,
     color: T.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
   },
   chipWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: S.xs,
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: S.sm,
     paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: T.surface,
-    borderWidth: 1,
-    borderColor: T.border,
+    borderRadius: R.chip,
+    backgroundColor: T.surface1,
+    ...SHADOW.sm,
   },
   chipOn: {
     backgroundColor: T.selBg,
-    borderColor: T.selBorder,
   },
   chipText: {
-    fontSize: 13,
+    ...TYPE.caption,
     color: T.textSub,
   },
   chipTextOn: {
     color: T.selText,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   button: {
     backgroundColor: T.ctaBg,
-    height: 54,
-    borderRadius: 12,
+    height: rw(54),
+    borderRadius: R.button,
     justifyContent: "center",
     alignItems: "center",
+    ...SHADOW.md,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonText: {
     color: T.ctaText,
-    fontSize: 17,
-    fontWeight: "600",
+    ...TYPE.title3,
   },
 });

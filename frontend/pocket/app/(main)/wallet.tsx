@@ -1,13 +1,22 @@
+/**
+ * Wallet — Momentum balance + transaction history.
+ *
+ * Redesigned 2026-08-23: gradient balance hero, SHADOW cards for actions +
+ * transactions, TYPE tokens, S/R spacing.
+ */
+
 import { useEffect } from "react";
 import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Stack } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useWalletStore } from "@/stores/walletStore";
 import { T } from "@/constants/colors";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
+import { rw } from "@/constants/responsive";
 
 export default function WalletScreen() {
-  const { wallet, transactions, fetchWallet, fetchTransactions } =
-    useWalletStore();
+  const { wallet, transactions, fetchWallet, fetchTransactions } = useWalletStore();
 
   useEffect(() => {
     fetchWallet();
@@ -28,55 +37,55 @@ export default function WalletScreen() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerTitle: "Momentum Wallet",
-        }}
-      />
+      <Stack.Screen options={{ headerShown: true, headerTitle: "Momentum Wallet" }} />
       <View style={styles.container}>
-        {/* Balance Card */}
-        <View style={styles.balanceCard}>
-          <Feather name="zap" size={32} color={T.momentum} />
-          <Text style={styles.balanceLabel}>Current Balance</Text>
-          <Text style={styles.balanceAmount}>{wallet?.balance || 0}</Text>
-          <View style={styles.lifetimeStats}>
-            <View style={styles.lifetimeStat}>
-              <Text style={styles.lifetimeValue}>
-                +{wallet?.lifetime_earned || 0}
-              </Text>
-              <Text style={styles.lifetimeLabel}>Earned</Text>
-            </View>
-            <View style={styles.lifetimeDivider} />
-            <View style={styles.lifetimeStat}>
-              <Text style={styles.lifetimeValue}>
-                -{wallet?.lifetime_spent || 0}
-              </Text>
-              <Text style={styles.lifetimeLabel}>Spent</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          <Pressable style={styles.actionButton}>
-            <Feather name="trending-up" size={20} color={T.primary} />
-            <Text style={styles.actionText}>How to Earn</Text>
-          </Pressable>
-          <Pressable style={styles.actionButton}>
-            <Feather name="gift" size={20} color={T.secondary} />
-            <Text style={styles.actionText}>Spend Momentum</Text>
-          </Pressable>
-        </View>
-
-        {/* Transaction History */}
-        <View style={styles.historyHeader}>
-          <Text style={styles.historyTitle}>History</Text>
-        </View>
-
         <FlatList
           data={transactions}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={{ height: S.xs }} />}
+          ListHeaderComponent={
+            <>
+              {/* Balance hero */}
+              <LinearGradient
+                colors={T.gradAccent}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.balanceCard}
+              >
+                <Text style={styles.balanceEyebrow}>CURRENT BALANCE</Text>
+                <View style={styles.balanceRow}>
+                  <Feather name="zap" size={28} color="#FFFFFF" />
+                  <Text style={styles.balanceAmount}>{wallet?.balance || 0}</Text>
+                </View>
+                <View style={styles.lifetimeStats}>
+                  <View style={styles.lifetimeStat}>
+                    <Text style={styles.lifetimeValue}>+{wallet?.lifetime_earned || 0}</Text>
+                    <Text style={styles.lifetimeLabel}>Earned</Text>
+                  </View>
+                  <View style={styles.lifetimeDivider} />
+                  <View style={styles.lifetimeStat}>
+                    <Text style={styles.lifetimeValue}>-{wallet?.lifetime_spent || 0}</Text>
+                    <Text style={styles.lifetimeLabel}>Spent</Text>
+                  </View>
+                </View>
+              </LinearGradient>
+
+              {/* Actions */}
+              <View style={styles.actions}>
+                <Pressable style={styles.actionButton}>
+                  <Feather name="trending-up" size={20} color={T.primary} />
+                  <Text style={styles.actionText}>How to earn</Text>
+                </Pressable>
+                <Pressable style={styles.actionButton}>
+                  <Feather name="gift" size={20} color={T.secondary} />
+                  <Text style={styles.actionText}>Spend</Text>
+                </Pressable>
+              </View>
+
+              <Text style={styles.historyTitle}>HISTORY</Text>
+            </>
+          }
           renderItem={({ item }) => (
             <View style={styles.transaction}>
               <View
@@ -84,9 +93,7 @@ export default function WalletScreen() {
                   styles.transactionIcon,
                   {
                     backgroundColor:
-                      item.amount >= 0
-                        ? "rgba(22, 163, 74, 0.1)"
-                        : "rgba(220, 38, 38, 0.1)",
+                      item.amount >= 0 ? T.success + "22" : T.error + "22",
                   },
                 ]}
               >
@@ -97,7 +104,7 @@ export default function WalletScreen() {
                 />
               </View>
               <View style={styles.transactionInfo}>
-                <Text style={styles.transactionDesc}>
+                <Text style={styles.transactionDesc} numberOfLines={1}>
                   {item.description || item.type.replace(/_/g, " ")}
                 </Text>
                 <Text style={styles.transactionDate}>
@@ -120,14 +127,11 @@ export default function WalletScreen() {
               </Text>
             </View>
           )}
-          contentContainerStyle={styles.transactionList}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Feather name="inbox" size={48} color={T.textMuted} />
               <Text style={styles.emptyText}>No transactions yet</Text>
-              <Text style={styles.emptySubtext}>
-                Complete gigs to earn momentum
-              </Text>
+              <Text style={styles.emptySubtext}>Complete gigs to earn Momentum</Text>
             </View>
           }
         />
@@ -141,98 +145,100 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: T.bg,
   },
-  balanceCard: {
-    backgroundColor: T.momentumLight,
-    margin: 16,
-    padding: 24,
-    borderRadius: 16,
-    alignItems: "center",
+  list: {
+    padding: S.md,
+    paddingBottom: S.hero,
+    gap: S.xs,
   },
-  balanceLabel: {
-    fontSize: 14,
-    color: T.textSub,
-    marginTop: 8,
+
+  balanceCard: {
+    padding: S.xl,
+    borderRadius: R.hero,
+    alignItems: "center",
+    marginBottom: S.md,
+    ...SHADOW.lg,
+  },
+  balanceEyebrow: {
+    ...TYPE.label,
+    color: "rgba(255,255,255,0.9)",
+  },
+  balanceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: S.xs,
+    marginTop: S.xs,
   },
   balanceAmount: {
-    fontSize: 48,
-    fontWeight: "bold",
-    color: T.momentum,
-    marginTop: 4,
+    ...TYPE.display,
+    fontSize: 52,
+    color: "#FFFFFF",
   },
   lifetimeStats: {
     flexDirection: "row",
-    marginTop: 20,
-    gap: 32,
+    marginTop: S.md,
+    gap: S.xxl,
   },
   lifetimeStat: {
     alignItems: "center",
   },
   lifetimeValue: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: T.text,
+    ...TYPE.title3,
+    color: "#FFFFFF",
   },
   lifetimeLabel: {
-    fontSize: 12,
-    color: T.textMuted,
+    ...TYPE.caption,
+    color: "rgba(255,255,255,0.75)",
     marginTop: 2,
   },
   lifetimeDivider: {
     width: 1,
-    backgroundColor: T.border,
+    backgroundColor: "rgba(255,255,255,0.28)",
   },
+
   actions: {
     flexDirection: "row",
-    paddingHorizontal: 16,
-    gap: 12,
-    marginBottom: 16,
+    gap: S.sm,
+    marginBottom: S.md,
   },
   actionButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    backgroundColor: T.surface,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: T.border,
+    gap: S.xs,
+    backgroundColor: T.surface1,
+    paddingVertical: S.sm,
+    borderRadius: R.button,
+    ...SHADOW.card,
   },
   actionText: {
-    fontSize: 14,
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: T.text,
   },
-  historyHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: T.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
-  },
+
   historyTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: T.text,
+    ...TYPE.label,
+    color: T.textMuted,
+    marginTop: S.xs,
+    marginBottom: S.xs,
+    marginLeft: 4,
   },
-  transactionList: {
-    paddingBottom: 32,
-  },
+
   transaction: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: T.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
-    gap: 12,
+    padding: S.sm,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    gap: S.sm,
+    ...SHADOW.card,
   },
   transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: rw(40),
+    height: rw(40),
+    borderRadius: rw(20),
     justifyContent: "center",
     alignItems: "center",
   },
@@ -240,31 +246,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   transactionDesc: {
-    fontSize: 14,
+    ...TYPE.body,
     color: T.text,
     textTransform: "capitalize",
   },
   transactionDate: {
-    fontSize: 12,
+    ...TYPE.caption,
     color: T.textMuted,
     marginTop: 2,
   },
   transactionAmount: {
-    fontSize: 16,
-    fontWeight: "600",
+    ...TYPE.title3,
   },
   empty: {
     alignItems: "center",
-    paddingVertical: 48,
-    gap: 8,
+    paddingVertical: S.hero,
+    gap: S.xs,
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: "600",
+    ...TYPE.title3,
     color: T.textSub,
   },
   emptySubtext: {
-    fontSize: 14,
+    ...TYPE.body,
     color: T.textMuted,
   },
 });

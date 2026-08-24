@@ -10,6 +10,7 @@
 - [Data Access](architecture/data_access.md) — Supabase direct vs FastAPI, auth patterns, key utils
 
 ## Apps
+- [Pocket Revamp (in progress)](pocket-revamp/README.md) — 2026-08-22 redesign: dropped obsidian contours, added SHADOW/S/R design tokens, master color controller with 8 presets. Home tab done as reference; other tabs pending.
 - [Mobile: Theming](apps/mobile/theming.md) — Solar Flare palette, semantic tokens, fonts, responsive, band colors (6-band, 0–1000)
 - [Mobile: Navigation](apps/mobile/navigation.md) — tabs, routing, SHOW_HOST_ROLE flags, header patterns
 - [Mobile: Screens](apps/mobile/screens.md) — screen-by-screen UX decisions (incl. verify-identity multi-ID flow)

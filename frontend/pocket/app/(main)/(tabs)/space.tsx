@@ -1,3 +1,20 @@
+/**
+ * Shifts (was "My Space") — accepted shifts (Runner) + posted gigs/events (Host).
+ *
+ * 2026-08-24: renamed "My Space" → "Shifts", added "Saved" sub-tab.
+ * Saved list is hydrated from `useSavedGigsStore` (SecureStore IDs) via
+ * `getGig(id)` fan-out; toggling save on gig-detail flows through the same
+ * store so the list stays in sync.
+ *
+ * Redesigned 2026-08-23 for the new visual system: SHADOW.card + no borders,
+ * TYPE tokens, S/R spacing, solid surfaces (no glass/rgba), a "next shift"
+ * gradient hero at the top of the Upcoming list, a pill sub-tab bar, and
+ * polished bottom-sheet details.
+ *
+ * Preserved: OTP check-in flow, cancel flow, share flow, rating flow,
+ * countdown pill, deep-link routing, Host tab structure.
+ */
+
 import { useEffect, useCallback, useRef, useState } from "react";
 import {
   View,
@@ -13,6 +30,7 @@ import {
   Modal,
   Animated,
   ScrollView,
+  Share,
 } from "react-native";
 import { Easing } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -26,6 +44,7 @@ import { useGigStore } from "@/stores/gigStore";
 import { useAuthStore } from "@/stores/authStore";
 import { Gig, MyEventSummary } from "@/types/database";
 import { T, CategoryColors } from "@/constants/colors";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
 import { L } from "@/constants/labels";
 import { JobCard, formatDate } from "@/components/gig/JobCard";
 import { RatingModal } from "@/components/ui/RatingModal";
@@ -33,7 +52,7 @@ import { getMyAcceptedGigs, AcceptedGigItem, cancelAssignment } from "@/lib/api/
 import { verifyOtp, finalizeExpiredAssignments } from "@/lib/api/ratings";
 import { openDirections } from "@/lib/openMaps";
 import { CountdownPill } from "@/components/space/CountdownPill";
-import { Share } from "react-native";
+import { useSavedGigsStore } from "@/stores/savedGigsStore";
 
 // ── Poster tab items ──────────────────────────────────────────────────────────
 
@@ -43,23 +62,26 @@ type SpaceItem =
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getStatusChip(item: AcceptedGigItem, isHistory = false): { label: string; color: string; bg: string } {
+function getStatusChip(
+  item: AcceptedGigItem,
+  isHistory = false,
+): { label: string; color: string; bg: string } {
   if (!item.assignment_status || item.assignment_status === "assigned") {
-    if (isHistory) return { label: "Past", color: T.textMuted, bg: T.border };
+    if (isHistory) return { label: "Past", color: T.textMuted, bg: T.surface2 };
     return { label: "Upcoming", color: T.selText, bg: T.selBg };
   }
   if (item.assignment_status === "completed") {
-    return { label: "Done", color: T.success, bg: T.success + "25" };
+    return { label: "Done", color: T.success, bg: T.success + "22" };
   }
   if (item.assignment_status === "no_show") {
-    return { label: "No-Show", color: T.error, bg: T.error + "25" };
+    return { label: "No-Show", color: T.error, bg: T.error + "22" };
   }
-  return { label: item.assignment_status, color: T.textMuted, bg: T.border };
+  return { label: item.assignment_status, color: T.textMuted, bg: T.surface2 };
 }
 
 function getTimeLabel(
   eventDate: string | null,
-  shiftStart: string
+  shiftStart: string,
 ): { label: string; color: string } {
   if (!eventDate) return { label: "Date TBD", color: T.textMuted };
   const today = new Date();
@@ -83,46 +105,233 @@ function isUpcoming(item: AcceptedGigItem, now: Date): boolean {
   return gigEnd >= now;
 }
 
-// ── Compact upcoming card ─────────────────────────────────────────────────────
+function isWithin24h(item: AcceptedGigItem, now: Date): boolean {
+  if (!item.event_date) return false;
+  const start = new Date(item.event_date);
+  const [hh, mm] = (item.shift_start_time || "09:00").split(":");
+  start.setHours(Number(hh ?? 9), Number(mm ?? 0), 0, 0);
+  const ms = start.getTime() - now.getTime();
+  return ms >= 0 && ms <= 24 * 60 * 60 * 1000;
+}
 
-function UpcomingGigCard({ item, onPress }: { item: AcceptedGigItem; onPress: () => void }) {
-  const { label, color } = getTimeLabel(item.event_date, item.shift_start_time);
-  const chip = getStatusChip(item);
-  const catColor = (CategoryColors as Record<string, string>)[item.category] ?? T.textMuted;
+// ── Next-shift hero (top of Upcoming) ────────────────────────────────────────
+
+function NextShiftHero({
+  item,
+  onPress,
+}: {
+  item: AcceptedGigItem;
+  onPress: () => void;
+}) {
+  const dateStr = item.event_date
+    ? new Date(item.event_date).toLocaleDateString("en-IN", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      })
+    : "Date TBD";
+  const canDirect = item.venue_lat != null && item.venue_lng != null;
 
   return (
-    <PressableScale style={gcStyles.card} onPress={onPress}>
-      <View style={[gcStyles.accent, { backgroundColor: catColor }]} />
-      <View style={gcStyles.content}>
-        <View style={gcStyles.topRow}>
-          <Text style={gcStyles.title} numberOfLines={1}>{item.title}</Text>
-          <Text style={[gcStyles.timeLabel, { color }]}>{label}</Text>
-        </View>
-        <View style={gcStyles.bottomRow}>
-          <Text style={gcStyles.sub} numberOfLines={1}>
-            {item.company_name ?? item.city}
-          </Text>
-          {/* Compact countdown pill trumps the static status chip when the
-              shift is within 24h — creates urgency at a glance. */}
+    <View style={heroStyles.wrap}>
+      <LinearGradient
+        colors={T.gradAccent}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={heroStyles.hero}
+      >
+        <View style={heroStyles.eyebrowRow}>
+          <Text style={heroStyles.eyebrow}>NEXT SHIFT</Text>
           <CountdownPill
             eventDate={item.event_date}
             shiftStart={item.shift_start_time}
             shiftEnd={item.shift_end_time}
             compact
           />
-          <View style={[gcStyles.pill, { backgroundColor: chip.bg }]}>
-            <Text style={[gcStyles.pillText, { color: chip.color }]}>{chip.label}</Text>
+        </View>
+
+        <Text style={heroStyles.title} numberOfLines={2}>{item.title}</Text>
+
+        <View style={heroStyles.metaRow}>
+          <View style={heroStyles.metaItem}>
+            <Feather name="calendar" size={rw(13)} color={T.onGradAccentSoft} />
+            <Text style={heroStyles.metaText}>
+              {dateStr} · {item.shift_start_time.slice(0, 5)}
+            </Text>
+          </View>
+          <View style={heroStyles.metaItem}>
+            <Feather name="map-pin" size={rw(13)} color={T.onGradAccentSoft} />
+            <Text style={heroStyles.metaText} numberOfLines={1}>
+              {item.venue_name}
+            </Text>
+          </View>
+        </View>
+
+        <View style={heroStyles.actionRow}>
+          {canDirect && (
+            <PressableScale
+              style={heroStyles.primaryBtn}
+              onPress={() =>
+                openDirections(
+                  { latitude: item.venue_lat!, longitude: item.venue_lng! },
+                  item.venue_name,
+                )
+              }
+            >
+              <Feather name="navigation" size={rw(14)} color={T.onPrimary} />
+              <Text style={heroStyles.primaryBtnText}>Directions</Text>
+            </PressableScale>
+          )}
+          <PressableScale style={heroStyles.secondaryBtn} onPress={onPress}>
+            <Text style={heroStyles.secondaryBtnText}>Details</Text>
+            <Feather name="arrow-right" size={rw(14)} color={T.onGradAccent} />
+          </PressableScale>
+        </View>
+      </LinearGradient>
+    </View>
+  );
+}
+
+const heroStyles = StyleSheet.create({
+  wrap: {
+    borderRadius: R.hero,
+    ...SHADOW.lg,
+    marginBottom: S.md,
+  },
+  hero: {
+    borderRadius: R.hero,
+    padding: S.xl,
+    gap: S.sm,
+    overflow: "hidden",
+  },
+  eyebrowRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: S.sm,
+  },
+  eyebrow: {
+    ...TYPE.label,
+    color: T.onGradAccentSoft,
+  },
+  title: {
+    ...TYPE.title1,
+    color: T.onGradAccent,
+    marginTop: S.xxs,
+  },
+  metaRow: {
+    gap: S.xs,
+    marginTop: S.xs,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  metaText: {
+    ...TYPE.body,
+    color: T.onGradAccentSoft,
+    flex: 1,
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: S.sm,
+    marginTop: S.md,
+  },
+  // "Directions" primary button — inverse of the hero background. Uses the
+  // page surface so contrast is guaranteed regardless of the gradient.
+  primaryBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: T.surface1,
+    borderRadius: R.button,
+    paddingVertical: S.sm,
+  },
+  primaryBtnText: {
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "700",
+    color: T.text,
+  },
+  // "Details" secondary — translucent overlay on the gradient. The 18%
+  // alpha is picked from onGradAccent so the tint stays legible whether
+  // the gradient reads dark (white 18%) or light (near-black 18%).
+  secondaryBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: T.onGradAccent + "2E", // ~18% alpha overlay
+    borderRadius: R.button,
+    paddingVertical: S.sm,
+  },
+  secondaryBtnText: {
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "700",
+    color: T.onGradAccent,
+  },
+});
+
+// ── Compact upcoming card ─────────────────────────────────────────────────────
+
+function UpcomingGigCard({
+  item,
+  onPress,
+}: {
+  item: AcceptedGigItem;
+  onPress: () => void;
+}) {
+  const { label, color } = getTimeLabel(item.event_date, item.shift_start_time);
+  const chip = getStatusChip(item);
+  const catColor = (CategoryColors as Record<string, string>)[item.category] ?? T.textMuted;
+
+  return (
+    <PressableScale style={cardStyles.card} onPress={onPress}>
+      <View style={[cardStyles.accent, { backgroundColor: catColor }]} />
+      <View style={cardStyles.content}>
+        <View style={cardStyles.topRow}>
+          <Text style={cardStyles.title} numberOfLines={1}>{item.title}</Text>
+          <Text style={[cardStyles.timeLabel, { color }]}>{label}</Text>
+        </View>
+        <View style={cardStyles.bottomRow}>
+          <Text style={cardStyles.sub} numberOfLines={1}>
+            {item.company_name ?? item.city}
+          </Text>
+          <CountdownPill
+            eventDate={item.event_date}
+            shiftStart={item.shift_start_time}
+            shiftEnd={item.shift_end_time}
+            compact
+          />
+          <View style={[cardStyles.pill, { backgroundColor: chip.bg }]}>
+            <Text style={[cardStyles.pillText, { color: chip.color }]}>{chip.label}</Text>
           </View>
         </View>
       </View>
-      <Feather name="chevron-right" size={rw(16)} color={T.border} style={{ alignSelf: "center", marginRight: rw(12) }} />
+      <Feather
+        name="chevron-right"
+        size={rw(16)}
+        color={T.textMuted}
+        style={{ alignSelf: "center", marginRight: S.sm }}
+      />
     </PressableScale>
   );
 }
 
 // ── Compact history card ──────────────────────────────────────────────────────
 
-function HistoryGigCard({ item, onPress }: { item: AcceptedGigItem; onPress: () => void }) {
+function HistoryGigCard({
+  item,
+  onPress,
+}: {
+  item: AcceptedGigItem;
+  onPress: () => void;
+}) {
   const chip = getStatusChip(item, true);
   const catColor = (CategoryColors as Record<string, string>)[item.category] ?? T.textMuted;
   const dateLabel = item.event_date ? formatDate(item.event_date) : "—";
@@ -130,29 +339,29 @@ function HistoryGigCard({ item, onPress }: { item: AcceptedGigItem; onPress: () 
   const isNoShow = item.assignment_status === "no_show";
 
   return (
-    <PressableScale style={gcStyles.card} onPress={onPress}>
-      <View style={[gcStyles.accent, { backgroundColor: catColor }]} />
-      <View style={gcStyles.content}>
-        <View style={gcStyles.topRow}>
-          <Text style={gcStyles.title} numberOfLines={1}>{item.title}</Text>
+    <PressableScale style={cardStyles.card} onPress={onPress}>
+      <View style={[cardStyles.accent, { backgroundColor: catColor }]} />
+      <View style={cardStyles.content}>
+        <View style={cardStyles.topRow}>
+          <Text style={cardStyles.title} numberOfLines={1}>{item.title}</Text>
           {isCompleted && (
-            <View style={gcStyles.completedDot}>
+            <View style={cardStyles.completedDot}>
               <Feather name="check" size={9} color="#0e0e0e" />
             </View>
           )}
           {isNoShow && (
-            <View style={gcStyles.noShowDot}>
+            <View style={cardStyles.noShowDot}>
               <Feather name="x" size={9} color="#fff" />
             </View>
           )}
-          <Text style={gcStyles.historyDate}>{dateLabel}</Text>
+          <Text style={cardStyles.historyDate}>{dateLabel}</Text>
         </View>
-        <View style={gcStyles.bottomRow}>
-          <Text style={gcStyles.sub}>
+        <View style={cardStyles.bottomRow}>
+          <Text style={cardStyles.sub}>
             ₹{item.pay_amount.toLocaleString("en-IN")} / {item.pay_type.replace("_", " ")}
           </Text>
-          <View style={[gcStyles.pill, { backgroundColor: chip.bg }]}>
-            <Text style={[gcStyles.pillText, { color: chip.color }]}>{chip.label}</Text>
+          <View style={[cardStyles.pill, { backgroundColor: chip.bg }]}>
+            <Text style={[cardStyles.pillText, { color: chip.color }]}>{chip.label}</Text>
           </View>
         </View>
       </View>
@@ -160,19 +369,15 @@ function HistoryGigCard({ item, onPress }: { item: AcceptedGigItem; onPress: () 
   );
 }
 
-const gcStyles = StyleSheet.create({
+const cardStyles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "stretch",
-    backgroundColor: T.surface,
-    borderRadius: rw(12),
-    borderWidth: 1,
-    borderColor: T.border,
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
     overflow: "hidden",
-    minHeight: rw(68),
-  },
-  historyCard: {
-    opacity: 0.85,
+    minHeight: rw(72),
+    ...SHADOW.card,
   },
   accent: {
     width: rw(4),
@@ -180,36 +385,33 @@ const gcStyles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingVertical: rw(12),
-    paddingHorizontal: rw(12),
+    paddingVertical: S.sm,
+    paddingHorizontal: S.md,
     justifyContent: "center",
-    gap: rw(5),
+    gap: 6,
   },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(8),
+    gap: S.xs,
   },
   bottomRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(8),
+    gap: S.xs,
   },
   title: {
     flex: 1,
-    fontSize: rf(14),
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
     color: T.text,
-  },
-  historyTitle: {
-    color: T.textSub,
   },
   completedDot: {
     width: rw(18),
     height: rw(18),
     borderRadius: rw(9),
-    backgroundColor: T.primary,
+    backgroundColor: T.success,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -224,33 +426,30 @@ const gcStyles = StyleSheet.create({
     flexShrink: 0,
   },
   timeLabel: {
-    fontSize: rf(12),
+    ...TYPE.caption,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
     flexShrink: 0,
   },
   historyDate: {
-    fontSize: rf(12),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.caption,
     color: T.textMuted,
     flexShrink: 0,
   },
   sub: {
     flex: 1,
-    fontSize: rf(12),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.caption,
     color: T.textMuted,
   },
   pill: {
-    paddingHorizontal: rw(7),
-    paddingVertical: rw(2),
-    borderRadius: rw(6),
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: R.chip,
     flexShrink: 0,
   },
   pillText: {
+    ...TYPE.label,
     fontSize: rf(10),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
   },
 });
 
@@ -298,15 +497,14 @@ function GigDetailSheet({
         useNativeDriver: true,
       }).start(() => setDisplayItem(null));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item]);
 
   const [celebrating, setCelebrating] = useState(false);
+  const celebrateScale = useRef(new Animated.Value(0.3)).current;
+  const celebrateHalo = useRef(new Animated.Value(0.4)).current;
 
   const handleShareGig = useCallback(async (gig: AcceptedGigItem) => {
-    // Deep-link to the gig detail via trykria.com. That URL doesn't render
-    // a public page for gig detail yet (only /p/{slug} for runners), but the
-    // Play Store listing catches the app-scheme redirect. Good enough for
-    // WhatsApp-share-then-open.
     const url = `https://trykria.com/gig/${gig.gig_id}`;
     const dateStr = gig.event_date
       ? new Date(gig.event_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
@@ -315,7 +513,7 @@ function GigDetailSheet({
     try {
       await Share.share({ message: msg, url });
     } catch {
-      // User cancelled — silent
+      // Cancelled — silent.
     }
   }, []);
 
@@ -343,8 +541,6 @@ function GigDetailSheet({
       ],
     );
   }, [onClose, onCancelSuccess]);
-  const celebrateScale = useRef(new Animated.Value(0.3)).current;
-  const celebrateHalo = useRef(new Animated.Value(0.4)).current;
 
   const handleVerifyOtp = async () => {
     if (!displayItem?.assignment_id) return;
@@ -367,7 +563,6 @@ function GigDetailSheet({
       return;
     }
 
-    // Success — celebrate for ~1.5s before firing the rating flow.
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setCelebrating(true);
     celebrateScale.setValue(0.3);
@@ -409,60 +604,64 @@ function GigDetailSheet({
         onRequestClose={onClose}
         statusBarTranslucent
       >
-        <Pressable style={shStyles.backdrop} onPress={onClose} />
+        <Pressable style={sheetStyles.backdrop} onPress={onClose} />
 
         <Animated.View
           style={[
-            shStyles.sheet,
-            { paddingBottom: insets.bottom + rw(16), transform: [{ translateY: slideAnim }] },
+            sheetStyles.sheet,
+            { paddingBottom: insets.bottom + S.md, transform: [{ translateY: slideAnim }] },
           ]}
         >
-          {/* Post-OTP celebration — covers sheet content for ~1.5s */}
           {celebrating && (
-            <View style={shStyles.celebrationOverlay}>
+            <View style={sheetStyles.celebrationOverlay}>
               <Animated.View
-                style={[shStyles.celebrationHalo, { transform: [{ scale: celebrateHalo }] }]}
+                style={[sheetStyles.celebrationHalo, { transform: [{ scale: celebrateHalo }] }]}
               />
-              <Animated.View style={{ transform: [{ scale: celebrateScale }], alignItems: "center", gap: rw(10) }}>
-                <View style={shStyles.celebrationIconRing}>
-                  <Feather name="check" size={rw(46)} color="#0e0e0e" />
+              <Animated.View
+                style={{
+                  transform: [{ scale: celebrateScale }],
+                  alignItems: "center",
+                  gap: S.sm,
+                }}
+              >
+                <View style={sheetStyles.celebrationIconRing}>
+                  <Feather name="check" size={rw(46)} color="#FFFFFF" />
                 </View>
-                <Text style={shStyles.celebrationTitle}>You're checked in!</Text>
-                <Text style={shStyles.celebrationSub}>Nice work. Now go crush the shift.</Text>
+                <Text style={sheetStyles.celebrationTitle}>You&apos;re checked in!</Text>
+                <Text style={sheetStyles.celebrationSub}>Nice work. Now go crush the shift.</Text>
               </Animated.View>
             </View>
           )}
 
-          <View style={shStyles.handle} />
+          <View style={sheetStyles.handle} />
 
           {displayItem && (
             <>
-              {/* Header */}
-              <View style={shStyles.header}>
-                <View style={{ flex: 1, gap: rw(2) }}>
-                  <Text style={shStyles.gigTitle}>{displayItem.title}</Text>
+              <View style={sheetStyles.header}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={sheetStyles.gigTitle}>{displayItem.title}</Text>
                   {displayItem.company_name && (
-                    <Text style={shStyles.gigCompany}>{displayItem.company_name}</Text>
+                    <Text style={sheetStyles.gigCompany}>{displayItem.company_name}</Text>
                   )}
                 </View>
-                <Pressable style={shStyles.closeBtn} onPress={onClose}>
+                <Pressable style={sheetStyles.closeBtn} onPress={onClose}>
                   <Feather name="x" size={20} color={T.textMuted} />
                 </Pressable>
               </View>
 
               <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={shStyles.body}
+                contentContainerStyle={sheetStyles.body}
                 keyboardShouldPersistTaps="handled"
               >
-                {/* Meta details */}
-                <View style={shStyles.metaSection}>
+                {/* Meta */}
+                <View style={sheetStyles.metaSection}>
                   <Pressable
-                    style={shStyles.metaRow}
+                    style={sheetStyles.metaRow}
                     onPress={() => {
                       if (displayItem.venue_lat != null && displayItem.venue_lng != null) {
                         Linking.openURL(
-                          `https://www.google.com/maps/search/?api=1&query=${displayItem.venue_lat},${displayItem.venue_lng}`
+                          `https://www.google.com/maps/search/?api=1&query=${displayItem.venue_lat},${displayItem.venue_lng}`,
                         );
                       }
                     }}
@@ -475,8 +674,8 @@ function GigDetailSheet({
                     />
                     <Text
                       style={[
-                        shStyles.metaText,
-                        displayItem.venue_lat != null && shStyles.metaLink,
+                        sheetStyles.metaText,
+                        displayItem.venue_lat != null && sheetStyles.metaLink,
                       ]}
                     >
                       {displayItem.venue_name}, {displayItem.city}
@@ -485,47 +684,47 @@ function GigDetailSheet({
                       <Feather name="external-link" size={11} color={T.primary} />
                     )}
                   </Pressable>
-                  <View style={shStyles.metaRow}>
+                  <View style={sheetStyles.metaRow}>
                     <Feather name="calendar" size={14} color={T.textMuted} />
-                    <Text style={shStyles.metaText}>
+                    <Text style={sheetStyles.metaText}>
                       {displayItem.event_date ? formatDate(displayItem.event_date) : "Date TBD"}
                     </Text>
                   </View>
-                  <View style={shStyles.metaRow}>
+                  <View style={sheetStyles.metaRow}>
                     <Feather name="clock" size={14} color={T.textMuted} />
-                    <Text style={shStyles.metaText}>
+                    <Text style={sheetStyles.metaText}>
                       {displayItem.shift_start_time.slice(0, 5)} – {displayItem.shift_end_time.slice(0, 5)}
                     </Text>
                   </View>
                 </View>
 
-                {/* Pay + poster row */}
-                <View style={shStyles.payPosterRow}>
-                  <View style={shStyles.posterChip}>
-                    <View style={shStyles.posterAvatar}>
-                      <Text style={shStyles.posterAvatarText}>
+                {/* Pay + host row */}
+                <View style={sheetStyles.payPosterRow}>
+                  <View style={sheetStyles.posterChip}>
+                    <View style={sheetStyles.posterAvatar}>
+                      <Text style={sheetStyles.posterAvatarText}>
                         {(displayItem.poster.display_name[0] ?? "?").toUpperCase()}
                       </Text>
                     </View>
-                    <Text style={shStyles.posterName}>{displayItem.poster.display_name}</Text>
+                    <Text style={sheetStyles.posterName}>{displayItem.poster.display_name}</Text>
                     {displayItem.poster.reputation != null && (
-                      <View style={shStyles.repChip}>
+                      <View style={sheetStyles.repChip}>
                         <Feather name="star" size={9} color="#f59e0b" />
-                        <Text style={shStyles.repText}>
+                        <Text style={sheetStyles.repText}>
                           {displayItem.poster.reputation.toFixed(1)}
                         </Text>
                       </View>
                     )}
                   </View>
-                  <Text style={shStyles.payAmount}>
+                  <Text style={sheetStyles.payAmount}>
                     ₹{displayItem.pay_amount.toLocaleString("en-IN")}
-                    <Text style={shStyles.payType}> / {displayItem.pay_type.replace("_", " ")}</Text>
+                    <Text style={sheetStyles.payType}> / {displayItem.pay_type.replace("_", " ")}</Text>
                   </Text>
                 </View>
 
-                {/* Countdown pill — upcoming only, refreshes every 30s */}
+                {/* Countdown */}
                 {isUpcomingItem && (
-                  <View style={shStyles.countdownWrap}>
+                  <View style={sheetStyles.countdownWrap}>
                     <CountdownPill
                       eventDate={displayItem.event_date}
                       shiftStart={displayItem.shift_start_time}
@@ -534,12 +733,12 @@ function GigDetailSheet({
                   </View>
                 )}
 
-                {/* Action row — Directions | Share | Cancel — upcoming only */}
+                {/* Directions / Share / Cancel */}
                 {isUpcomingItem && (
-                  <View style={shStyles.actionRow}>
+                  <View style={sheetStyles.actionRow}>
                     {displayItem.venue_lat !== null && displayItem.venue_lng !== null && (
                       <PressableScale
-                        style={shStyles.actionIconBtn}
+                        style={sheetStyles.actionIconBtn}
                         onPress={() =>
                           openDirections(
                             { latitude: displayItem.venue_lat!, longitude: displayItem.venue_lng! },
@@ -548,50 +747,50 @@ function GigDetailSheet({
                         }
                       >
                         <Feather name="navigation" size={rw(15)} color={T.primary} />
-                        <Text style={shStyles.actionIconLabel}>Directions</Text>
+                        <Text style={sheetStyles.actionIconLabel}>Directions</Text>
                       </PressableScale>
                     )}
                     <PressableScale
-                      style={shStyles.actionIconBtn}
+                      style={sheetStyles.actionIconBtn}
                       onPress={() => handleShareGig(displayItem)}
                     >
                       <Feather name="share-2" size={rw(15)} color={T.textSub} />
-                      <Text style={[shStyles.actionIconLabel, { color: T.textSub }]}>Share</Text>
+                      <Text style={[sheetStyles.actionIconLabel, { color: T.textSub }]}>Share</Text>
                     </PressableScale>
                     <PressableScale
-                      style={shStyles.actionIconBtn}
+                      style={sheetStyles.actionIconBtn}
                       onPress={() => handleCancelShift(displayItem)}
                     >
                       <Feather name="x-circle" size={rw(15)} color={T.error} />
-                      <Text style={[shStyles.actionIconLabel, { color: T.error }]}>Cancel</Text>
+                      <Text style={[sheetStyles.actionIconLabel, { color: T.error }]}>Cancel</Text>
                     </PressableScale>
                   </View>
                 )}
 
-                {/* View Gig — upcoming only */}
+                {/* View gig */}
                 {isUpcomingItem && (
                   <PressableScale
-                    style={shStyles.viewGigBtn}
+                    style={sheetStyles.viewGigBtn}
                     onPress={() => { onClose(); router.push(`/(main)/gig/${displayItem!.gig_id}`); }}
                   >
                     <Feather name="external-link" size={rw(14)} color={T.textSub} />
-                    <Text style={shStyles.viewGigBtnText}>View Gig</Text>
+                    <Text style={sheetStyles.viewGigBtnText}>View Gig</Text>
                   </PressableScale>
                 )}
 
-                {/* OTP check-in — upcoming only */}
+                {/* OTP */}
                 {canOtp && (
-                  <View style={shStyles.actionZone}>
-                    <View style={shStyles.actionLabelRow}>
+                  <View style={sheetStyles.actionZone}>
+                    <View style={sheetStyles.actionLabelRow}>
                       <Feather name="key" size={13} color={T.textSub} />
-                      <Text style={shStyles.actionLabel}>Check-in OTP</Text>
+                      <Text style={sheetStyles.actionLabel}>Check-in OTP</Text>
                     </View>
-                    <View style={shStyles.otpBoxRow}>
+                    <View style={sheetStyles.otpBoxRow}>
                       {otpDigits.map((digit, i) => (
                         <TextInput
                           key={i}
                           ref={otpRefs[i]}
-                          style={[shStyles.otpBox, digit !== "" && shStyles.otpBoxFilled]}
+                          style={[sheetStyles.otpBox, digit !== "" && sheetStyles.otpBoxFilled]}
                           value={digit}
                           onChangeText={(t) => {
                             const d = t.replace(/\D/g, "").slice(-1);
@@ -617,37 +816,37 @@ function GigDetailSheet({
                       ))}
                     </View>
                     <PressableScale
-                      style={[shStyles.confirmBtn, otpSubmitting && { opacity: 0.6 }]}
+                      style={[sheetStyles.confirmBtn, otpSubmitting && { opacity: 0.6 }]}
                       onPress={handleVerifyOtp}
                       disabled={otpSubmitting}
                     >
                       {otpSubmitting ? (
                         <ActivityIndicator size="small" color={T.ctaText} />
                       ) : (
-                        <Text style={shStyles.confirmText}>Confirm</Text>
+                        <Text style={sheetStyles.confirmText}>Confirm</Text>
                       )}
                     </PressableScale>
                   </View>
                 )}
 
                 {canRate && (
-                  <PressableScale style={shStyles.rateBtn} onPress={() => setRatingOpen(true)}>
+                  <PressableScale style={sheetStyles.rateBtn} onPress={() => setRatingOpen(true)}>
                     <Feather name="star" size={14} color={T.ctaText} />
-                    <Text style={shStyles.rateBtnText}>Rate Host</Text>
+                    <Text style={sheetStyles.rateBtnText}>Rate Host</Text>
                   </PressableScale>
                 )}
 
                 {alreadyRated && (
-                  <View style={shStyles.stateRow}>
+                  <View style={sheetStyles.stateRow}>
                     <Feather name="check-circle" size={14} color={T.success} />
-                    <Text style={[shStyles.stateText, { color: T.success }]}>You rated this host</Text>
+                    <Text style={[sheetStyles.stateText, { color: T.success }]}>You rated this host</Text>
                   </View>
                 )}
 
                 {isNoShow && (
-                  <View style={shStyles.stateRow}>
+                  <View style={sheetStyles.stateRow}>
                     <Feather name="alert-circle" size={14} color={T.error} />
-                    <Text style={[shStyles.stateText, { color: T.error }]}>Marked as no-show</Text>
+                    <Text style={[sheetStyles.stateText, { color: T.error }]}>Marked as no-show</Text>
                   </View>
                 )}
               </ScrollView>
@@ -675,16 +874,16 @@ function GigDetailSheet({
   );
 }
 
-const shStyles = StyleSheet.create({
+const sheetStyles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.65)",
+    backgroundColor: "rgba(0,0,0,0.55)",
   },
   celebrationOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: T.surface2,
-    borderTopLeftRadius: rw(28),
-    borderTopRightRadius: rw(28),
+    backgroundColor: T.surface1,
+    borderTopLeftRadius: R.hero,
+    borderTopRightRadius: R.hero,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 20,
@@ -694,7 +893,7 @@ const shStyles = StyleSheet.create({
     width: rw(260),
     height: rw(260),
     borderRadius: rw(130),
-    backgroundColor: "rgba(212,255,0,0.16)",
+    backgroundColor: T.primary + "22",
   },
   celebrationIconRing: {
     width: rw(92),
@@ -705,15 +904,12 @@ const shStyles = StyleSheet.create({
     justifyContent: "center",
   },
   celebrationTitle: {
-    fontSize: rf(22),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title2,
     color: T.text,
-    marginTop: rw(6),
+    marginTop: S.xs,
   },
   celebrationSub: {
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.textSub,
     textAlign: "center",
   },
@@ -722,64 +918,58 @@ const shStyles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: T.surface2,
-    borderTopLeftRadius: rw(28),
-    borderTopRightRadius: rw(28),
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: T.borderStrong,
-    paddingHorizontal: rw(24),
-    paddingTop: rw(10),
+    backgroundColor: T.surface1,
+    borderTopLeftRadius: R.hero,
+    borderTopRightRadius: R.hero,
+    paddingHorizontal: S.xl,
+    paddingTop: S.sm,
     maxHeight: "85%",
+    ...SHADOW.xl,
   },
   handle: {
     width: rw(36),
     height: 4,
-    backgroundColor: T.borderStrong,
+    backgroundColor: T.surface2,
     borderRadius: 2,
     alignSelf: "center",
-    marginBottom: rw(20),
+    marginBottom: S.lg,
   },
   header: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: rw(12),
-    marginBottom: rw(20),
+    gap: S.sm,
+    marginBottom: S.lg,
   },
   gigTitle: {
-    fontSize: rf(18),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title2,
     color: T.text,
   },
   gigCompany: {
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.textSub,
   },
   closeBtn: {
-    padding: rw(4),
-    marginTop: rw(2),
+    padding: 4,
+    marginTop: 2,
   },
   body: {
-    gap: rw(20),
-    paddingBottom: rw(8),
+    gap: S.lg,
+    paddingBottom: S.xs,
   },
   metaSection: {
-    gap: rw(10),
-    backgroundColor: T.bg,
-    borderRadius: rw(12),
-    padding: rw(14),
+    gap: S.sm,
+    backgroundColor: T.surface2,
+    borderRadius: R.card,
+    padding: S.md,
   },
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(8),
+    gap: S.xs,
   },
   metaText: {
     flex: 1,
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.textSub,
   },
   metaLink: {
@@ -794,7 +984,7 @@ const shStyles = StyleSheet.create({
   posterChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(6),
+    gap: 6,
   },
   posterAvatar: {
     width: rw(28),
@@ -805,87 +995,77 @@ const shStyles = StyleSheet.create({
     alignItems: "center",
   },
   posterAvatarText: {
-    fontSize: rf(12),
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
     color: T.avatarText,
   },
   posterName: {
-    fontSize: rf(13),
-    fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
+    ...TYPE.body,
     color: T.textSub,
   },
   repChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(2),
+    gap: 2,
     backgroundColor: "#f59e0b22",
-    borderRadius: rw(4),
-    paddingHorizontal: rw(5),
-    paddingVertical: rw(2),
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
   },
   repText: {
+    ...TYPE.label,
     fontSize: rf(10),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
     color: "#f59e0b",
   },
   payAmount: {
-    fontSize: rf(18),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title2,
     color: T.text,
   },
   payType: {
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.textMuted,
   },
   actionZone: {
-    backgroundColor: T.bg,
-    borderRadius: rw(14),
-    padding: rw(16),
-    gap: rw(12),
-    borderWidth: 1,
-    borderColor: T.border,
+    backgroundColor: T.surface2,
+    borderRadius: R.card,
+    padding: S.md,
+    gap: S.sm,
   },
   actionLabelRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(6),
+    gap: 6,
   },
   actionLabel: {
-    fontSize: rf(13),
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.textSub,
   },
   otpBoxRow: {
     flexDirection: "row",
-    gap: rw(10),
+    gap: S.xs,
   },
   otpBox: {
     flex: 1,
     height: rw(58),
-    backgroundColor: T.surface,
-    borderRadius: rw(12),
-    borderWidth: 1.5,
-    borderColor: T.border,
+    backgroundColor: T.surface1,
+    borderRadius: R.input,
     fontSize: rf(26),
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: T.text,
     textAlign: "center",
+    ...SHADOW.sm,
   },
   otpBoxFilled: {
-    borderColor: T.primary,
-    backgroundColor: T.primary + "15",
+    backgroundColor: T.primary + "18",
   },
   confirmBtn: {
     height: rw(48),
     backgroundColor: T.ctaBg,
-    borderRadius: rw(10),
+    borderRadius: R.button,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -893,93 +1073,165 @@ const shStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: rw(7),
-    paddingVertical: rw(13),
-    borderRadius: rw(12),
-    borderWidth: 1,
-    borderColor: T.border,
-    backgroundColor: T.surface,
+    gap: 6,
+    paddingVertical: S.sm,
+    borderRadius: R.button,
+    backgroundColor: T.surface2,
   },
   countdownWrap: {
     alignItems: "flex-start",
-    marginBottom: rw(4),
+    marginBottom: S.xxs,
   },
   actionRow: {
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "stretch",
-    gap: rw(8),
-    paddingVertical: rw(6),
+    gap: S.xs,
   },
   actionIconBtn: {
     flex: 1,
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: rw(4),
-    paddingVertical: rw(12),
-    paddingHorizontal: rw(8),
-    borderRadius: rw(12),
-    borderWidth: 1,
-    borderColor: T.border,
-    backgroundColor: T.surface,
+    gap: 4,
+    paddingVertical: S.sm,
+    paddingHorizontal: S.xs,
+    borderRadius: R.button,
+    backgroundColor: T.surface2,
   },
   actionIconLabel: {
+    ...TYPE.label,
     fontSize: rf(11),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
     color: T.primary,
-    letterSpacing: 0.3,
   },
   viewGigBtnText: {
-    fontSize: rf(14),
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.textSub,
   },
   confirmText: {
-    fontSize: rf(14),
+    ...TYPE.body,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
     color: T.ctaText,
   },
   rateBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: rw(8),
+    gap: S.xs,
     backgroundColor: T.ctaBg,
-    borderRadius: rw(12),
-    paddingVertical: rw(14),
+    borderRadius: R.button,
+    paddingVertical: S.md,
   },
   rateBtnText: {
-    fontSize: rf(15),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title3,
     color: T.ctaText,
   },
   stateRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: rw(6),
-    paddingVertical: rw(10),
+    gap: 6,
+    paddingVertical: S.sm,
   },
   stateText: {
-    fontSize: rf(13),
+    ...TYPE.body,
+    fontFamily: "Inter_500Medium",
     fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
+  },
+});
+
+// ── Saved gig card ───────────────────────────────────────────────────────────
+// Compact card for the Saved sub-tab. Tap → gig detail. Bookmark toggle
+// removes from the saved list via the SecureStore-backed store.
+
+function SavedGigCard({
+  gig,
+  onPress,
+  onUnsave,
+}: {
+  gig: Gig;
+  onPress: () => void;
+  onUnsave: () => void;
+}) {
+  const catColor = (CategoryColors as Record<string, string>)[gig.category] ?? T.textMuted;
+  const dateLabel = gig.event_date ? formatDate(gig.event_date) : "Date TBD";
+
+  return (
+    <PressableScale style={cardStyles.card} onPress={onPress}>
+      <View style={[cardStyles.accent, { backgroundColor: catColor }]} />
+      <View style={cardStyles.content}>
+        <View style={cardStyles.topRow}>
+          <Text style={cardStyles.title} numberOfLines={1}>{gig.title}</Text>
+          <Text style={cardStyles.historyDate}>{dateLabel}</Text>
+        </View>
+        <View style={cardStyles.bottomRow}>
+          <Text style={cardStyles.sub} numberOfLines={1}>
+            ₹{gig.pay_amount.toLocaleString("en-IN")} / {gig.pay_type.replace("_", " ")}
+            {gig.venue_name ? ` · ${gig.venue_name}` : ""}
+          </Text>
+        </View>
+      </View>
+      <Pressable onPress={onUnsave} hitSlop={12} style={savedStyles.unsaveBtn}>
+        <Feather name="bookmark" size={rw(18)} color={T.primary} />
+      </Pressable>
+    </PressableScale>
+  );
+}
+
+const savedStyles = StyleSheet.create({
+  unsaveBtn: {
+    alignSelf: "center",
+    marginRight: S.sm,
+    padding: 4,
   },
 });
 
 // ── Runner tab ────────────────────────────────────────────────────────────────
 
+type SubTab = "upcoming" | "saved" | "history";
+
 function RunnerTab() {
   const [items, setItems] = useState<AcceptedGigItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState<"upcoming" | "history">("upcoming");
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>("upcoming");
   const [selectedGig, setSelectedGig] = useState<AcceptedGigItem | null>(null);
+
+  // ── Saved gigs ─────────────────────────────────────────────────────────
+  // IDs live in SecureStore via useSavedGigsStore; we hydrate the full Gig
+  // objects lazily on tab focus so we don't fan-out fetch on mount.
+  const savedIds = useSavedGigsStore((s) => s.ids);
+  const hydrateSaved = useSavedGigsStore((s) => s.hydrate);
+  const toggleSaved = useSavedGigsStore((s) => s.toggle);
+  const getGig = useGigStore((s) => s.getGig);
+  const [savedGigs, setSavedGigs] = useState<Gig[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+
+  const loadSaved = useCallback(async () => {
+    const ids = Array.from(savedIds);
+    if (ids.length === 0) {
+      setSavedGigs([]);
+      return;
+    }
+    setSavedLoading(true);
+    const results = await Promise.all(ids.map((id) => getGig(id)));
+    // Drop null (deleted/expired) so the list only shows valid gigs.
+    setSavedGigs(results.filter((g): g is Gig => g !== null));
+    setSavedLoading(false);
+  }, [savedIds, getGig]);
+
+  useEffect(() => {
+    hydrateSaved().then(loadSaved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (activeSubTab === "saved") loadSaved();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSubTab, savedIds.size]);
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -1013,9 +1265,20 @@ function RunnerTab() {
 
   const displayItems = activeSubTab === "upcoming" ? upcoming : history;
 
+  // Only surface the top card as a "next shift" hero when it's within 24h
+  // AND we're on the Upcoming tab. Otherwise the hero eats space for no
+  // added urgency.
+  const firstUpcoming = upcoming[0];
+  const heroItem =
+    activeSubTab === "upcoming" && firstUpcoming && isWithin24h(firstUpcoming, now)
+      ? firstUpcoming
+      : null;
+  const listItems = heroItem ? displayItems.slice(1) : displayItems;
+
+  const savedCount = savedIds.size;
+
   return (
     <>
-      {/* Sub-tab bar */}
       <View style={styles.subTabBar}>
         <Pressable
           style={[styles.subTab, activeSubTab === "upcoming" && styles.subTabActive]}
@@ -1023,6 +1286,14 @@ function RunnerTab() {
         >
           <Text style={[styles.subTabText, activeSubTab === "upcoming" && styles.subTabTextActive]}>
             Upcoming{upcoming.length > 0 ? ` (${upcoming.length})` : ""}
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.subTab, activeSubTab === "saved" && styles.subTabActive]}
+          onPress={() => setActiveSubTab("saved")}
+        >
+          <Text style={[styles.subTabText, activeSubTab === "saved" && styles.subTabTextActive]}>
+            Saved{savedCount > 0 ? ` (${savedCount})` : ""}
           </Text>
         </Pressable>
         <Pressable
@@ -1035,64 +1306,107 @@ function RunnerTab() {
         </Pressable>
       </View>
 
-      <FlatList
-        style={{ flex: 1 }}
-        data={displayItems}
-        keyExtractor={(item) => item.gig_id}
-        renderItem={({ item }) =>
-          activeSubTab === "upcoming" ? (
-            <UpcomingGigCard item={item} onPress={() => setSelectedGig(item)} />
-          ) : (
-            <HistoryGigCard item={item} onPress={() => setSelectedGig(item)} />
-          )
-        }
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={T.primary} />
-        }
-        ListEmptyComponent={
-          loading ? (
-            <View style={styles.center}>
-              <ActivityIndicator size="large" color={T.primary} />
-            </View>
-          ) : (
-            <View style={styles.center}>
-              <Feather
-                name={activeSubTab === "upcoming" ? "calendar" : "clock"}
-                size={rw(40)}
-                color={T.textMuted}
+      {activeSubTab === "saved" ? (
+        <FlatList
+          style={{ flex: 1 }}
+          data={savedGigs}
+          keyExtractor={(g) => g.id}
+          renderItem={({ item }) => (
+            <SavedGigCard
+              gig={item}
+              onPress={() => router.push(`/(main)/gig/${item.id}`)}
+              onUnsave={() => {
+                toggleSaved(item.id);
+                setSavedGigs((prev) => prev.filter((g) => g.id !== item.id));
+              }}
+            />
+          )}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={savedLoading} onRefresh={loadSaved} tintColor={T.primary} />
+          }
+          ListEmptyComponent={
+            savedLoading ? (
+              <View style={styles.center}>
+                <ActivityIndicator size="large" color={T.primary} />
+              </View>
+            ) : (
+              <View style={styles.center}>
+                <Feather name="bookmark" size={rw(40)} color={T.textMuted} />
+                <Text style={styles.emptyTitle}>No saved gigs yet</Text>
+                <Text style={styles.emptySubtitle}>
+                  Tap the bookmark on any gig to save it for later. It won&apos;t apply — just pins it here so you can come back.
+                </Text>
+              </View>
+            )
+          }
+          ItemSeparatorComponent={() => <View style={{ height: S.sm }} />}
+        />
+      ) : (
+        <FlatList
+          style={{ flex: 1 }}
+          data={listItems}
+          keyExtractor={(item) => item.gig_id}
+          renderItem={({ item }) =>
+            activeSubTab === "upcoming" ? (
+              <UpcomingGigCard item={item} onPress={() => setSelectedGig(item)} />
+            ) : (
+              <HistoryGigCard item={item} onPress={() => setSelectedGig(item)} />
+            )
+          }
+          contentContainerStyle={styles.list}
+          ListHeaderComponent={
+            heroItem ? (
+              <NextShiftHero
+                item={heroItem}
+                onPress={() => setSelectedGig(heroItem)}
               />
-              <Text style={styles.emptyTitle}>
-                {activeSubTab === "upcoming" ? "Nothing on the calendar" : "No track record yet"}
-              </Text>
-              <Text style={styles.emptySubtitle}>
-                {activeSubTab === "upcoming"
-                  ? "Once a host accepts you, your next shift lands here. Swipe on Explore to find one."
-                  : "Every gig you complete builds your Momentum and shows up here — your permanent track record."}
-              </Text>
-            </View>
-          )
-        }
-        ItemSeparatorComponent={() => <View style={{ height: rw(8) }} />}
-      />
+            ) : null
+          }
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={T.primary} />
+          }
+          ListEmptyComponent={
+            loading ? (
+              <View style={styles.center}>
+                <ActivityIndicator size="large" color={T.primary} />
+              </View>
+            ) : heroItem ? null : (
+              <View style={styles.center}>
+                <Feather
+                  name={activeSubTab === "upcoming" ? "calendar" : "clock"}
+                  size={rw(40)}
+                  color={T.textMuted}
+                />
+                <Text style={styles.emptyTitle}>
+                  {activeSubTab === "upcoming" ? "Nothing on the calendar" : "No track record yet"}
+                </Text>
+                <Text style={styles.emptySubtitle}>
+                  {activeSubTab === "upcoming"
+                    ? "Once a host accepts you, your next shift lands here. Swipe on Explore to find one."
+                    : "Every gig you complete builds your Momentum and shows up here — your permanent track record."}
+                </Text>
+              </View>
+            )
+          }
+          ItemSeparatorComponent={() => <View style={{ height: S.sm }} />}
+        />
+      )}
 
       <GigDetailSheet
         item={selectedGig}
         onClose={() => setSelectedGig(null)}
         onOtpSuccess={(gigId) => {
           setItems((prev) =>
-            prev.map((i) => i.gig_id === gigId ? { ...i, assignment_status: "completed" } : i)
+            prev.map((i) => i.gig_id === gigId ? { ...i, assignment_status: "completed" } : i),
           );
         }}
         onRateSuccess={(gigId) => {
           setItems((prev) =>
-            prev.map((i) => i.gig_id === gigId ? { ...i, has_been_rated: true } : i)
+            prev.map((i) => i.gig_id === gigId ? { ...i, has_been_rated: true } : i),
           );
         }}
         onCancelSuccess={(assignmentId) => {
-          // Drop the cancelled item from the list entirely — it's neither
-          // Upcoming (no assignment anymore) nor History (not a completed
-          // record). A follow-up load() will refetch fresh state.
           setItems((prev) => prev.filter((i) => i.assignment_id !== assignmentId));
         }}
       />
@@ -1100,7 +1414,7 @@ function RunnerTab() {
   );
 }
 
-// ── Event card (Poster tab) ───────────────────────────────────────────────────
+// ── Event card (Host tab) ─────────────────────────────────────────────────────
 
 function EventCard({ event, onPress }: { event: MyEventSummary; onPress: () => void }) {
   const statusColor =
@@ -1160,9 +1474,9 @@ function HostTab() {
 
   const loadAll = useCallback(async () => {
     await Promise.all([fetchMyPostedGigs(), fetchMyPostedEvents()]);
-  }, []);
+  }, [fetchMyPostedGigs, fetchMyPostedEvents]);
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => { loadAll(); }, [loadAll]);
 
   const items: SpaceItem[] = [
     ...myPostedGigs.map((g): SpaceItem => ({ kind: "gig", data: g, created_at: g.created_at })),
@@ -1210,7 +1524,7 @@ function HostTab() {
           </View>
         )
       }
-      ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+      ItemSeparatorComponent={() => <View style={{ height: S.sm }} />}
     />
   );
 }
@@ -1226,19 +1540,10 @@ export default function SpaceScreen() {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={T.gradDark} style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.headerTitle}>My Space</Text>
-        <View style={styles.roleRow}>
-          <Feather
-            name={isHost ? "layers" : "briefcase"}
-            size={rw(14)}
-            color={T.textMuted}
-          />
-          <Text style={styles.roleLabel}>
-            {isHost ? L.HOST : L.RUNNER}
-          </Text>
-        </View>
-      </LinearGradient>
+      <View style={[styles.header, { paddingTop: insets.top + S.sm }]}>
+        <Text style={styles.headerEyebrow}>{isHost ? L.HOST : L.RUNNER} · SHIFTS</Text>
+        <Text style={styles.headerTitle}>Your work</Text>
+      </View>
 
       {isHost ? <HostTab /> : <RunnerTab />}
     </View>
@@ -1253,55 +1558,42 @@ const styles = StyleSheet.create({
     backgroundColor: T.bg,
   },
   header: {
-    paddingHorizontal: rw(20),
-    paddingBottom: rw(16),
-    justifyContent: "flex-end",
-    gap: rw(4),
+    paddingHorizontal: S.lg,
+    paddingBottom: S.xs,
+    gap: 2,
+  },
+  headerEyebrow: {
+    ...TYPE.label,
+    color: T.textMuted,
   },
   headerTitle: {
-    fontSize: rf(24),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title1,
     color: T.text,
-  },
-  roleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rw(6),
-  },
-  roleLabel: {
-    fontSize: rf(13),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
-    color: T.textMuted,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+    marginTop: 2,
   },
 
   // Sub-tabs
   subTabBar: {
     flexDirection: "row",
-    paddingHorizontal: rw(16),
-    paddingTop: rw(14),
-    paddingBottom: rw(10),
-    gap: rw(8),
+    paddingHorizontal: S.lg,
+    paddingTop: S.sm,
+    paddingBottom: S.sm,
+    gap: S.xs,
   },
   subTab: {
-    paddingHorizontal: rw(16),
-    paddingVertical: rw(7),
-    borderRadius: rw(20),
-    backgroundColor: T.surface,
-    borderWidth: 1,
-    borderColor: T.border,
+    paddingHorizontal: S.md,
+    paddingVertical: 8,
+    borderRadius: R.chip,
+    backgroundColor: T.surface1,
+    ...SHADOW.sm,
   },
   subTabActive: {
     backgroundColor: T.selBg,
-    borderColor: T.selBg,
   },
   subTabText: {
-    fontSize: rf(13),
+    ...TYPE.body,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
     color: T.textMuted,
   },
   subTabTextActive: {
@@ -1310,93 +1602,85 @@ const styles = StyleSheet.create({
 
   // List
   list: {
-    paddingHorizontal: rw(16),
-    paddingTop: rw(4),
+    paddingHorizontal: S.lg,
+    paddingTop: S.xs,
     paddingBottom: rw(100),
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: rw(40),
-    gap: rw(16),
+    padding: S.hero,
+    gap: S.md,
     minHeight: 300,
   },
   emptyTitle: {
-    fontSize: rf(18),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title2,
     color: T.text,
   },
   emptySubtitle: {
-    fontSize: rf(14),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.textSub,
     textAlign: "center",
-    lineHeight: rf(21),
   },
 
-  // Event card (Poster tab)
+  // Event card (Host tab)
   eventCard: {
-    backgroundColor: T.surface,
-    borderRadius: rw(14),
-    padding: rw(16),
-    borderWidth: 1,
-    borderColor: T.border,
-    gap: rw(12),
+    backgroundColor: T.surface1,
+    borderRadius: R.card,
+    padding: S.md,
+    gap: S.sm,
+    ...SHADOW.card,
   },
   eventHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(12),
+    gap: S.sm,
   },
   eventIconWrap: {
     width: rw(40),
     height: rw(40),
-    borderRadius: rw(10),
+    borderRadius: R.thumb,
     backgroundColor: T.avatarBg,
     justifyContent: "center",
     alignItems: "center",
   },
   eventTitle: {
-    fontSize: rf(16),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title3,
     color: T.text,
   },
   eventMeta: {
-    fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.textSub,
   },
   eventStats: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: rw(8),
+    gap: S.xs,
   },
   statChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(4),
-    paddingHorizontal: rw(8),
-    paddingVertical: rw(4),
-    backgroundColor: T.bg,
-    borderRadius: rw(8),
+    gap: 4,
+    paddingHorizontal: S.xs,
+    paddingVertical: 4,
+    backgroundColor: T.surface2,
+    borderRadius: 8,
   },
   statText: {
-    fontSize: rf(12),
+    ...TYPE.caption,
+    fontFamily: "Inter_500Medium",
     fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
     color: T.textSub,
   },
   statusBadge: {
-    paddingHorizontal: rw(8),
-    paddingVertical: rw(4),
-    borderRadius: rw(8),
+    paddingHorizontal: S.xs,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   statusText: {
-    fontSize: rf(12),
+    ...TYPE.caption,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
   },
 });

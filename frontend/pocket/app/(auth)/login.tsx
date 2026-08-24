@@ -1,3 +1,10 @@
+/**
+ * Login — phone-number step of the OTP flow.
+ *
+ * Redesigned 2026-08-23: gradient hero at top, form card lifted with SHADOW,
+ * TYPE tokens throughout, trust chips on a soft primary tint (no borders).
+ */
+
 import { useState } from "react";
 import {
   View,
@@ -14,7 +21,8 @@ import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useAuthStore } from "@/stores/authStore";
 import { T } from "@/constants/colors";
-import { rf, rw, SCREEN } from "@/constants/responsive";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
+import { rw, SCREEN } from "@/constants/responsive";
 import Logo from "@/assets/logo.svg";
 
 export default function LoginScreen() {
@@ -51,9 +59,8 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         bounces={false}
       >
-        {/* ── Gradient Hero ─────────────────────────────────────────────── */}
         <LinearGradient
-          colors={T.gradBrand}
+          colors={T.gradAccent}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
@@ -62,12 +69,11 @@ export default function LoginScreen() {
           <Text style={styles.tagline}>Event gigs for students</Text>
         </LinearGradient>
 
-        {/* ── Form Card ─────────────────────────────────────────────────── */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Welcome back</Text>
           <Text style={styles.cardSubtitle}>Enter your phone number to get started</Text>
 
-          <Text style={styles.label}>Phone Number</Text>
+          <Text style={styles.label}>PHONE NUMBER</Text>
           <View style={styles.inputContainer}>
             <Text style={styles.countryCode}>+91</Text>
             <TextInput
@@ -92,7 +98,7 @@ export default function LoginScreen() {
             disabled={isLoading}
           >
             <LinearGradient
-              colors={T.gradBrand}
+              colors={T.gradAccent}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.button}
@@ -103,7 +109,6 @@ export default function LoginScreen() {
             </LinearGradient>
           </Pressable>
 
-          {/* Trust row */}
           <View style={styles.trustRow}>
             <View style={styles.trustItem}>
               <Feather name="shield" size={rw(13)} color={T.primary} />
@@ -130,7 +135,7 @@ export default function LoginScreen() {
   );
 }
 
-const HERO_HEIGHT = SCREEN.height * 0.38;
+const HERO_HEIGHT = SCREEN.height * 0.36;
 
 const styles = StyleSheet.create({
   container: {
@@ -143,83 +148,78 @@ const styles = StyleSheet.create({
   scrollContent: {
     minHeight: SCREEN.height,
   },
-  // ── Hero
+
   hero: {
     height: HERO_HEIGHT,
     justifyContent: "flex-end",
-    paddingHorizontal: rw(28),
-    paddingBottom: rw(36),
+    paddingHorizontal: S.xl,
+    paddingBottom: rw(48),
   },
   tagline: {
-    fontSize: rf(15),
-    color: "rgba(0,0,0,0.65)",
-    marginTop: 4,
-    fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
+    ...TYPE.bodyLg,
+    color: "rgba(255,255,255,0.9)",
+    marginTop: S.xxs,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
   },
-  // ── Card
+
   card: {
     flex: 1,
-    backgroundColor: T.surface,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    marginTop: -20,
-    paddingHorizontal: rw(24),
-    paddingTop: rw(32),
-    paddingBottom: rw(32),
+    backgroundColor: T.surface1,
+    borderTopLeftRadius: R.hero,
+    borderTopRightRadius: R.hero,
+    marginTop: -S.xl,
+    paddingHorizontal: S.xl,
+    paddingTop: S.xxl,
+    paddingBottom: S.xxl,
+    ...SHADOW.xl,
   },
   cardTitle: {
-    fontSize: rf(26),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.title1,
     color: T.text,
-    marginBottom: 4,
+    marginBottom: S.xxs,
   },
   cardSubtitle: {
-    fontSize: rf(14),
-    fontFamily: "SpaceGrotesk_400Regular",
+    ...TYPE.body,
     color: T.textSub,
-    marginBottom: rw(28),
+    marginBottom: S.xl,
   },
   label: {
-    fontSize: rf(13),
-    fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    ...TYPE.label,
     color: T.textSub,
-    marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
+    marginBottom: S.xs,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: T.bg,
-    borderWidth: 1.5,
-    borderColor: T.border,
-    borderRadius: 12,
-    paddingHorizontal: rw(16),
+    backgroundColor: T.surface2,
+    borderRadius: R.input,
+    paddingHorizontal: S.md,
     height: rw(56),
+    ...SHADOW.sm,
   },
   countryCode: {
-    fontSize: rf(17),
+    ...TYPE.title3,
     color: T.text,
-    marginRight: 8,
+    marginRight: S.xs,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   input: {
     flex: 1,
-    fontSize: rf(17),
+    ...TYPE.title3,
     color: T.text,
   },
   error: {
     color: T.error,
-    fontSize: rf(13),
-    marginTop: 8,
+    ...TYPE.body,
+    marginTop: S.xs,
   },
   buttonWrapper: {
-    marginTop: rw(24),
-    borderRadius: 14,
+    marginTop: S.xl,
+    borderRadius: R.button,
     overflow: "hidden",
+    ...SHADOW.md,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -230,47 +230,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: {
-    color: T.textInverse,
-    fontSize: rf(17),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    color: "#FFFFFF",
+    ...TYPE.title3,
     letterSpacing: 0.3,
   },
   footer: {
-    fontSize: rf(12),
+    ...TYPE.caption,
     color: T.textMuted,
     textAlign: "center",
-    lineHeight: 18,
-    marginTop: rw(16),
+    marginTop: S.md,
   },
   trustRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: rw(10),
-    marginTop: rw(22),
-    paddingVertical: rw(10),
-    paddingHorizontal: rw(14),
-    backgroundColor: "rgba(212,255,0,0.06)",
-    borderRadius: rw(12),
-    borderWidth: 1,
-    borderColor: "rgba(212,255,0,0.16)",
+    gap: S.sm,
+    marginTop: S.lg,
+    paddingVertical: S.sm,
+    paddingHorizontal: S.md,
+    backgroundColor: T.primary + "10",
+    borderRadius: R.card,
   },
   trustItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(5),
+    gap: 5,
   },
   trustText: {
-    fontSize: rf(11),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    ...TYPE.label,
     color: T.text,
-    letterSpacing: 0.2,
   },
   trustDivider: {
     width: 1,
     height: rw(12),
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: T.surface2,
   },
 });

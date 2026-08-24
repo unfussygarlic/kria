@@ -14,6 +14,7 @@ import { HostAvatarChip } from "@/components/gig/HostAvatarChip";
 import type { HostSummary } from "@/lib/api/gigs";
 import { Gig, GigCategory } from "@/types/database";
 import { T, CategoryColors } from "@/constants/colors";
+import { S, R, SHADOW, TYPE } from "@/constants/design";
 import { GigCategories } from "@/constants/config";
 import { rf, rw } from "@/constants/responsive";
 
@@ -113,62 +114,68 @@ function computeTimeToStart(eventDate: string, shiftStart: string | null): strin
 }
 
 /**
- * FallbackHero — typography-first hero shown when a gig has no compositor
- * cover image. Mirrors the compositor's layout (gradient background + text
- * zone at bottom) so the overlay stack (momentum, spots, time pill) lands
- * in the same places on both branches.
+ * PosterHero — the top ~55% of the explore card when no user photo exists.
  *
- * The host chip lives INSIDE the text zone (above the category chip) rather
- * than as a bottom-left absolute overlay — otherwise it collides with the
- * venue text (fixed 2026-08-07, mirrors the 2026-08-06 fix on the cover
- * branch that removed the chip because the compositor already bakes the
- * host name in).
+ * All-native (no PNG generation). Category-tinted gradient + big Feather
+ * icon + bold category name. Info (title / host / pay / venue) sits in
+ * a separate zone BELOW this hero, not baked into it — so the same info
+ * layout works for both photo and no-photo branches.
  */
-function FallbackHero({
-  gig,
+function PosterHero({
   categoryColor,
   categoryLabel,
-  host,
+  categoryIconName,
 }: {
-  gig: Gig;
   categoryColor: string;
   categoryLabel: string;
-  host?: HostSummary;
+  categoryIconName: React.ComponentProps<typeof Feather>["name"];
 }) {
   return (
-    <View style={styles.fallbackHero}>
+    <View style={styles.hero}>
       <LinearGradient
-        colors={[categoryColor + "55", "#0e0e0e"]}
-        start={{ x: 0.75, y: 0 }}
-        end={{ x: 0.25, y: 1 }}
+        colors={[categoryColor, mixTowardDark(categoryColor)]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      {/* Massive category watermark high up — echoes the icon area of the compositor */}
-      <Text style={[styles.fallbackWatermark, { color: categoryColor + "18" }]} numberOfLines={1}>
+      {/* Big soft-white icon centered — the "logo" of the card */}
+      <View style={styles.posterIconRing}>
+        <Feather name={categoryIconName} size={rw(48)} color="#FFFFFF" />
+      </View>
+      {/* Category name as a poster subtitle */}
+      <Text style={styles.posterCategoryText} numberOfLines={1}>
         {categoryLabel.toUpperCase()}
       </Text>
-
-      {/* Bottom text zone — mirrors compositor's baked layout
-          (host → chip → title → pay → venue) */}
-      <View style={styles.fallbackTextZone}>
-        {host && (
-          <View style={styles.fallbackHostRow}>
-            <HostAvatarChip host={host} />
-          </View>
-        )}
-        <View style={[styles.fallbackChip, { borderColor: categoryColor, backgroundColor: categoryColor + "22" }]}>
-          <Text style={[styles.fallbackChipText, { color: categoryColor }]}>{categoryLabel}</Text>
-        </View>
-        <Text style={styles.fallbackTitle} numberOfLines={2}>{gig.title}</Text>
-        <Text style={[styles.fallbackPay, { color: categoryColor }]}>
-          {formatPay(gig.pay_amount, gig.pay_type)}
-        </Text>
-        <Text style={styles.fallbackVenue} numberOfLines={1}>
-          {gig.venue_name}{gig.city ? ` · ${gig.city}` : ""}
-        </Text>
-      </View>
     </View>
   );
+}
+
+/**
+ * PhotoHero — user-uploaded image in the top ~55% of the card. Same shape
+ * as PosterHero so overlays / info-zone below stay aligned.
+ *
+ * `resizeMode="cover"` fills the hero flush (image is user-controlled from
+ * Grid — we assume reasonable aspect). The legacy `resizeMode="contain"`
+ * from the compositor days is gone since we no longer render compositor
+ * PNGs (see 2026-08-24 revamp).
+ */
+function PhotoHero({ uri }: { uri: string }) {
+  return <Image source={{ uri }} style={styles.heroPhoto} resizeMode="cover" />;
+}
+
+// Mix a color 60% toward near-black. Keeps hue for the gradient end.
+function mixTowardDark(hex: string): string {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const t = 0.6;
+  const px = (n: number) => Math.round(n * (1 - t)).toString(16).padStart(2, "0");
+  return `#${px(r)}${px(g)}${px(b)}`;
+}
+
+function iconForCategory(cat: GigCategory): React.ComponentProps<typeof Feather>["name"] {
+  return (GigCategories.find((c) => c.value === cat)?.icon ?? "briefcase") as React.ComponentProps<typeof Feather>["name"];
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -210,57 +217,76 @@ export const JobCard = memo(function JobCard({ gig, variant, applicationCount, p
   const spotsLeft = gig.slots_total - gig.slots_filled;
   const isExplore = variant === "explore";
 
-  // Explore cards render as photo-first cards: cover image if the compositor
-  // ran, or a typography-first gradient hero if it didn't. Both share the same
-  // overlay stack (momentum, boost, spots, host chip, time pill) so the fall-
-  // back doesn't feel like a "second-class" experience — just a stylized
-  // treatment when there's no photo. Compact variants ("space"/"event") skip
-  // both branches and use the hand-built list card below.
-  const content = isExplore ? (
-    <View style={[styles.card, styles.cardExploreCover]} pointerEvents="none">
-      {gig.cover_image_url ? (
-        // resizeMode="contain" is defensive — new 1080×1620 covers match the
-        // 2:3 container exactly (contain == cover), but any cover generated
-        // before the 2026-08-07 compositor bump is 1080×1350 (4:5). With
-        // resizeMode="cover" the taller 2:3 container zooms + center-crops
-        // those, chopping the baked title/pay/host text on both sides.
-        // "contain" fits the full image with letterboxing on the mismatched
-        // ones, so old covers stay readable until they're regenerated.
-        <Image source={{ uri: gig.cover_image_url }} style={styles.coverImage} resizeMode="contain" />
-      ) : (
-        <FallbackHero
-          gig={gig}
-          categoryColor={categoryColor}
-          categoryLabel={getCategoryLabel(gig.category)}
-          host={host}
-        />
-      )}
+  // Explore cards are 2:3 portrait split into HERO (top 55%) + INFO (bottom 45%).
+  //   • HERO branch: uploaded photo (PhotoHero) OR in-app category poster
+  //     (PosterHero — gradient + big icon + category name). No PNG compositor.
+  //   • INFO branch: native text — title / host / pay / venue. IDENTICAL
+  //     across both hero types so photo vs no-photo doesn't shift layout.
+  //   • Overlays (momentum, boost, spots, time pill) sit on the hero half.
+  const categoryLabel = getCategoryLabel(gig.category);
+  const categoryIconName = iconForCategory(gig.category);
 
-      {/* Top-right stack: momentum + boost + live spots. Only shown when they
-          carry real signal — 0-momentum newcomers get no chip (avoids showing
-          "0" as if it were a bad score). */}
-      <View style={styles.coverBadgeStack}>
-        {posterMomentum !== undefined && posterMomentum > 0 && (
-          <MomentumBadge score={posterMomentum} variant="chip" />
+  const content = isExplore ? (
+    <View style={[styles.card, styles.cardExplore]} pointerEvents="none">
+      {/* ─── HERO (top 55%) ─────────────────────────────────────────── */}
+      <View style={styles.heroWrap}>
+        {gig.cover_image_url ? (
+          <PhotoHero uri={gig.cover_image_url} />
+        ) : (
+          <PosterHero
+            categoryColor={categoryColor}
+            categoryLabel={categoryLabel}
+            categoryIconName={categoryIconName}
+          />
         )}
-        {gig.momentum_boost > 0 && (
-          <View style={styles.boostBadge}>
-            <Feather name="zap" size={11} color={T.momentum} />
-            <Text style={styles.boostText}>Boosted</Text>
+
+        {/* Top-right stack: momentum + boost + live spots. Only shown when
+            they carry real signal — 0-momentum newcomers get no chip. */}
+        <View style={styles.overlayBadgeStack}>
+          {posterMomentum !== undefined && posterMomentum > 0 && (
+            <MomentumBadge score={posterMomentum} variant="chip" />
+          )}
+          {gig.momentum_boost > 0 && (
+            <View style={styles.boostBadge}>
+              <Feather name="zap" size={11} color={T.momentum} />
+              <Text style={styles.boostText}>Boosted</Text>
+            </View>
+          )}
+          <SpotsChipOverlay spotsLeft={spotsLeft} />
+        </View>
+
+        {/* Top-left floating: time-to-start pill (only within 24h of shift) */}
+        {gig.event_date && (
+          <View style={styles.overlayTimePillWrap}>
+            <TimeToStartPill eventDate={gig.event_date} shiftStart={gig.shift_start_time} />
           </View>
         )}
-        <SpotsChipOverlay spotsLeft={spotsLeft} />
       </View>
 
-      {/* Middle-left floating: time-to-start pill (only within 24h of shift) */}
-      {gig.event_date && (
-        <View style={styles.coverTimePillWrap}>
-          <TimeToStartPill eventDate={gig.event_date} shiftStart={gig.shift_start_time} />
+      {/* ─── INFO (bottom 45%) ─────────────────────────────────────── */}
+      <View style={styles.infoZone}>
+        {/* Category chip — top row anchor + host chip on the right */}
+        <View style={styles.infoTopRow}>
+          <View style={[styles.infoCategoryChip, { backgroundColor: categoryColor + "22" }]}>
+            <View style={[styles.infoCategoryDot, { backgroundColor: categoryColor }]} />
+            <Text style={[styles.infoCategoryText, { color: categoryColor }]} numberOfLines={1}>
+              {categoryLabel}
+            </Text>
+          </View>
+          {host && <HostAvatarChip host={host} />}
         </View>
-      )}
-      {/* Host chip: baked into cover on the photo branch; embedded inside
-          FallbackHero's text zone on the fallback branch. Either way it's
-          not an absolute overlay anymore — was colliding with venue text. */}
+
+        <Text style={styles.infoTitle} numberOfLines={2}>{gig.title}</Text>
+
+        <View style={styles.infoFooter}>
+          <Text style={[styles.infoPay, { color: categoryColor }]} numberOfLines={1}>
+            {formatPay(gig.pay_amount, gig.pay_type)}
+          </Text>
+          <Text style={styles.infoVenue} numberOfLines={1}>
+            {gig.venue_name}{gig.city ? ` · ${gig.city}` : ""}
+          </Text>
+        </View>
+      </View>
     </View>
   ) : (
     <View style={[styles.card, styles.cardCompact]} pointerEvents="auto">
@@ -354,134 +380,138 @@ const styles = StyleSheet.create({
     borderRadius: rw(14),
   },
 
-  // ── Explore variant, cover-art card (gig.cover_image_url present) ──
-  cardExploreCover: {
-    borderRadius: rw(24),
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  coverImage: {
-    width: "100%",
-    // 2:3 aspect matches the compositor's 1080×1620 output (2026-08-07). If
-    // the compositor's PORTRAIT canvas changes, this must change too — a
-    // mismatch stretches or letterboxes existing covers.
+  // ── Explore variant — 2:3 portrait, split hero + info ──────────
+  cardExplore: {
     aspectRatio: 2 / 3,
+    borderRadius: R.hero,
+    overflow: "hidden",
+    backgroundColor: T.surface1,
+    ...SHADOW.lg,
+  },
+  heroWrap: {
+    flex: 55,             // top ~55% of the card
+    overflow: "hidden",
     backgroundColor: T.surface2,
   },
-  coverBadgeStack: {
+  // In-app poster hero (no user photo)
+  hero: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: S.lg,
+    gap: S.sm,
+  },
+  posterIconRing: {
+    width: rw(96),
+    height: rw(96),
+    borderRadius: rw(48),
+    backgroundColor: "rgba(255,255,255,0.16)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  posterCategoryText: {
+    ...TYPE.label,
+    fontSize: rf(14),
+    letterSpacing: 2.4,
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginTop: S.xs,
+  },
+  // User-uploaded photo hero
+  heroPhoto: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: T.surface2,
+  },
+  // Info zone (bottom 45%)
+  infoZone: {
+    flex: 45,
+    padding: S.lg,
+    justifyContent: "space-between",
+    backgroundColor: T.surface1,
+  },
+  infoTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: S.xs,
+  },
+  infoCategoryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: S.sm,
+    paddingVertical: 5,
+    borderRadius: R.chip,
+    flexShrink: 1,
+  },
+  infoCategoryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  infoCategoryText: {
+    ...TYPE.label,
+    flexShrink: 1,
+  },
+  infoTitle: {
+    ...TYPE.title2,
+    color: T.text,
+    marginTop: S.xs,
+  },
+  infoFooter: {
+    gap: 2,
+    marginTop: S.xs,
+  },
+  infoPay: {
+    ...TYPE.title2,
+    fontSize: rf(22),
+  },
+  infoVenue: {
+    ...TYPE.body,
+    color: T.textMuted,
+  },
+
+  // ── Overlay stack (top of hero) ────────────────────────────────
+  overlayBadgeStack: {
     position: "absolute",
-    top: rw(16),
-    right: rw(16),
-    gap: rw(8),
+    top: S.sm,
+    right: S.sm,
+    gap: S.xs,
     alignItems: "flex-end",
   },
   coverSlotsChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(6),
-    paddingHorizontal: rw(10),
-    paddingVertical: rw(6),
-    borderRadius: rw(20),
+    gap: 6,
+    paddingHorizontal: S.sm,
+    paddingVertical: 5,
+    borderRadius: R.chip,
   },
   coverSlotsText: {
-    fontSize: rf(12),
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
   },
-  coverTimePillWrap: {
+  overlayTimePillWrap: {
     position: "absolute",
-    top: rw(16),
-    left: rw(16),
+    top: S.sm,
+    left: S.sm,
   },
   timeToStartPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: rw(5),
-    paddingHorizontal: rw(10),
-    paddingVertical: rw(6),
-    borderRadius: rw(20),
+    gap: 5,
+    paddingHorizontal: S.sm,
+    paddingVertical: 5,
+    borderRadius: R.chip,
     backgroundColor: T.primary,
   },
   timeToStartText: {
-    fontSize: rf(12),
+    ...TYPE.caption,
+    fontFamily: "Inter_700Bold",
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: "#0e0e0e",
-  },
-
-  // ── Fallback hero (no cover image) ─────────────────────────────
-  fallbackHero: {
-    width: "100%",
-    // Must mirror the compositor's PORTRAIT aspectRatio so the FallbackHero
-    // and photo branches feel like the same card. See coverImage above.
-    aspectRatio: 2 / 3,
-    backgroundColor: "#0e0e0e",
-    overflow: "hidden",
-  },
-  fallbackWatermark: {
-    position: "absolute",
-    // Percentage keeps the watermark visually centered in the upper third
-    // regardless of card size (small phones vs large). aspectRatio: 2/3 gives
-    // the parent a definite height so % values resolve correctly.
-    top: "12%",
-    left: rw(-20),
-    right: rw(-20),
-    textAlign: "center",
-    fontSize: rf(78),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
-    letterSpacing: 3,
-  },
-  fallbackTextZone: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: rw(24),
-    paddingBottom: rw(28),
-    gap: rw(8),
-  },
-  fallbackHostRow: {
-    alignSelf: "flex-start",
-    marginBottom: rw(2),
-  },
-  fallbackChip: {
-    alignSelf: "flex-start",
-    paddingHorizontal: rw(12),
-    paddingVertical: rw(5),
-    borderRadius: rw(20),
-    borderWidth: 1,
-    marginBottom: rw(8),
-  },
-  fallbackChipText: {
-    fontSize: rf(13),
-    fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
-    letterSpacing: 0.7,
-    textTransform: "uppercase",
-  },
-  fallbackTitle: {
-    fontSize: rf(34),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: "#ffffff",
-    lineHeight: rf(38),
-  },
-  fallbackPay: {
-    fontSize: rf(34),
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
-    marginTop: rw(6),
-  },
-  fallbackVenue: {
-    fontSize: rf(17),
-    fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
-    color: "rgba(255,255,255,0.7)",
-    marginTop: rw(4),
+    color: T.onPrimary,
   },
 
   // ── Compact variant styles (space/event) ────────────────────
@@ -507,7 +537,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: rf(11),
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     letterSpacing: 0.3,
   },
   boostBadge: {
@@ -522,19 +552,19 @@ const styles = StyleSheet.create({
   boostText: {
     fontSize: rf(11),
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    fontFamily: "Inter_600SemiBold",
     color: T.momentum,
   },
   title: {
     fontSize: rf(18),
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: T.text,
     lineHeight: rf(24),
   },
   company: {
     fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
+    fontFamily: "Inter_400Regular",
     color: T.textSub,
     marginTop: rw(2),
   },
@@ -544,7 +574,7 @@ const styles = StyleSheet.create({
   payAmount: {
     fontSize: rf(22),
     fontWeight: "bold",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: T.success,
   },
   details: {
@@ -558,7 +588,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
+    fontFamily: "Inter_400Regular",
     color: T.textSub,
     flex: 1,
   },
@@ -578,7 +608,7 @@ const styles = StyleSheet.create({
   },
   slotsText: {
     fontSize: rf(13),
-    fontFamily: "SpaceGrotesk_400Regular",
+    fontFamily: "Inter_400Regular",
     color: T.textSub,
   },
   slotsUrgent: {
@@ -594,6 +624,6 @@ const styles = StyleSheet.create({
     fontSize: rf(13),
     color: T.primary,
     fontWeight: "600",
-    fontFamily: "SpaceGrotesk_600SemiBold",
+    fontFamily: "Inter_600SemiBold",
   },
 });

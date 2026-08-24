@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: rf(24),
     fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     letterSpacing: -0.5,
   },
   labelRow: {
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontSize: rf(10),
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: T.textMuted,
     letterSpacing: 1.4,
   },
@@ -137,13 +137,13 @@ const styles = StyleSheet.create({
   bandLabel: {
     fontSize: rf(11),
     fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     letterSpacing: 0.4,
   },
   streak: {
     fontSize: rf(12),
     fontWeight: "700",
-    fontFamily: "SpaceGrotesk_700Bold",
+    fontFamily: "Inter_700Bold",
     color: "#FFC83D",
   },
   progressTrack: {
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: rf(11),
     fontWeight: "500",
-    fontFamily: "SpaceGrotesk_500Medium",
+    fontFamily: "Inter_500Medium",
     color: T.textMuted,
   },
 });
