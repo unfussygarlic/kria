@@ -1,7 +1,14 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────────
+   Design tokens (mirrors frontend/pocket/constants/design.ts)
+   ─────────────────────────────────────────────────────────────────
+   Same scale across both apps so the design language ports 1:1.
+   Use as `var(--s-md)`, `var(--r-card)`, `var(--type-title2-*)`.
+   ───────────────────────────────────────────────────────────────── */
+
 @theme {
-  /* Solar Flare dark palette */
+  /* Solar Flare dark palette (default) */
   --color-bg:        #0e0e0e;
   --color-surface-1: #131313;
   --color-surface-2: #1a1919;
@@ -19,6 +26,27 @@
   --color-text-sub:   #adaaaa;
   --color-text-muted: #777575;
   --color-text-inv:   #000000;
+
+  /* ── Spacing (S.*) — 8-based scale with 4 half-step ── */
+  --s-xxs:     4px;
+  --s-xs:      8px;
+  --s-sm:     12px;
+  --s-md:     16px;
+  --s-lg:     20px;
+  --s-xl:     24px;
+  --s-xxl:    32px;
+  --s-hero:   40px;
+  --s-section: 48px;
+  --s-bigHero: 64px;
+
+  /* ── Radius (R.*) — semantic corner sizes ── */
+  --r-chip:   999px;
+  --r-button:  14px;
+  --r-input:   14px;
+  --r-card:    20px;
+  --r-hero:    28px;
+  --r-avatar: 999px;
+  --r-thumb:   12px;
 
   --font-sans: "Inter", system-ui, sans-serif;
 }
@@ -367,8 +395,108 @@ input:-internal-autofill-selected {
   background-color: var(--nav-hover-bg);
   color: var(--nav-hover-text);
 }
+/* Active is a rounded pill now (Sidebar wraps items in var(--r-thumb) —
+   no more edge-flush strip with a right border, which visibly clipped
+   inside the rounded corners). Accent-tinted background carries the
+   active signal, matching Linear/Notion patterns. */
 .nav-item-active {
   color: var(--nav-active-text);
   background-color: var(--nav-active-bg);
-  border-right: 2px solid var(--nav-active-border);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Foreground-on-* semantic tokens (mirrors Pocket's on* tokens)
+   ─────────────────────────────────────────────────────────────────
+   Text/icon color on colored fills. Fixed for the current preset —
+   Grid doesn't ship the multi-preset palette system yet, so these
+   are hand-picked per theme. Update if changing primary/secondary
+   hues.
+
+   Rule: never hardcode `color: white` on a colored button/chip.
+   Use `color: var(--on-primary)` so light-theme swap Just Works.
+   ───────────────────────────────────────────────────────────────── */
+:root {
+  --on-primary:   #0e0e0e;   /* dark ink on bright lime */
+  --on-secondary: #ffffff;   /* white on cobalt */
+  --on-accent:    #0e0e0e;   /* dark on cream/amber */
+  --on-error:     #ffffff;   /* white on coral */
+  --on-grad-brand:  #0e0e0e; /* dark on lime→lime-dim */
+  --on-grad-accent: #0e0e0e; /* dark on lime→cream */
+}
+[data-theme="light"] {
+  --on-primary:   #FFFFFF;   /* white on olive */
+  --on-secondary: #FFFFFF;   /* white on cobalt */
+  --on-accent:    #FFFFFF;   /* white on burnt caramel */
+  --on-error:     #FFFFFF;
+  --on-grad-brand:  #FFFFFF;
+  --on-grad-accent: #FFFFFF;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Typography system (mirrors Pocket's TYPE.*)
+   ─────────────────────────────────────────────────────────────────
+   Nine-token static schema. Every screen text must land on one of
+   these — same rule as Pocket: if a size doesn't fit, the design
+   is off, not the scale.
+
+   Legacy `.pg-title`, `.pg-eyebrow`, `.pg-sub`, `.section-title`
+   are preserved for existing pages; new code should prefer these.
+   ───────────────────────────────────────────────────────────────── */
+
+.type-display  { font-size: 3rem;     font-weight: 800; line-height: 1.05; letter-spacing: -0.04em; }
+.type-title1   { font-size: 1.625rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; }
+.type-title2   { font-size: 1.25rem;  font-weight: 700; line-height: 1.25; letter-spacing: -0.015em; }
+.type-title3   { font-size: 1.0625rem; font-weight: 700; line-height: 1.3; }
+.type-body-lg  { font-size: 0.9375rem; font-weight: 400; line-height: 1.5; }
+.type-body     { font-size: 0.875rem;  font-weight: 400; line-height: 1.5; }
+.type-caption  { font-size: 0.75rem;   font-weight: 400; line-height: 1.4; }
+.type-label    { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; }
+.type-money    { font-size: 1.125rem;  font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ─────────────────────────────────────────────────────────────────
+   Shadow scale (mirrors Pocket's SHADOW.*)
+   ─────────────────────────────────────────────────────────────────
+   Elevation, not borders. Warm-tinted in light, no-op in dark
+   (dark uses surface lightness cascade instead).
+   ───────────────────────────────────────────────────────────────── */
+:root {
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+}
+[data-theme="light"] {
+  --shadow-sm: 0 1px 2px rgba(20,20,17,0.04);
+  --shadow-md: 0 1px 2px rgba(20,20,17,0.04), 0 1px 1px rgba(20,20,17,0.02);
+  --shadow-lg: 0 4px 12px rgba(20,20,17,0.06), 0 1px 3px rgba(20,20,17,0.04);
+  --shadow-xl: 0 8px 24px rgba(20,20,17,0.08), 0 2px 6px rgba(20,20,17,0.04);
+}
+
+.shadow-card    { box-shadow: var(--shadow-md); }
+.shadow-card-lg { box-shadow: var(--shadow-lg); }
+.shadow-card-xl { box-shadow: var(--shadow-xl); }
+
+/* ─────────────────────────────────────────────────────────────────
+   Card primitive — replaces the ad-hoc "rounded-xl border" pattern
+   ─────────────────────────────────────────────────────────────────
+   Use `.card` on any container that should feel like a raised
+   surface. Handles the light-mode shadow and the dark-mode border
+   lift automatically. No more inline `style={{ borderColor:
+   'var(--border-color)', backgroundColor: 'var(--card-bg)' }}`.
+   ───────────────────────────────────────────────────────────────── */
+.card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-card);
+  box-shadow: var(--card-shadow);
+}
+.card-hero {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--r-hero);
+  box-shadow: var(--card-shadow-strong);
+}
+.card-flat {
+  background-color: var(--card-bg);
+  border-radius: var(--r-card);
 }

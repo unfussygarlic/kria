@@ -70,10 +70,12 @@ function ActionCard({
   return (
     <button
       onClick={onClick}
-      className="text-left rounded-xl p-5 border transition-all hover:brightness-110 active:scale-[0.99] group"
+      className="text-left border transition-all hover:brightness-110 active:scale-[0.99] group shadow-card"
       style={{
         backgroundColor: bg,
         borderColor: tone === "expired" ? "var(--border-color)" : `color-mix(in srgb, ${color} 35%, transparent)`,
+        borderRadius: "var(--r-card)",
+        padding: "var(--s-lg)",
       }}
     >
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -148,8 +150,7 @@ function AgendaRow({ gig }: { gig: PostedGigSummary }) {
 function StatStrip({ items }: { items: { label: string; value: string; Icon: React.ElementType }[] }) {
   return (
     <div
-      className="grid grid-cols-2 md:grid-cols-4 rounded-xl border overflow-hidden"
-      style={{ borderColor: "var(--border-color)", backgroundColor: "var(--card-bg)" }}
+      className="grid grid-cols-2 md:grid-cols-4 overflow-hidden card shadow-card"
     >
       {items.map(({ label, value, Icon }, i) => (
         <div
@@ -221,10 +222,7 @@ export default function DashboardPage() {
           <h1 className="pg-title">{greeting}</h1>
           <p className="pg-sub">Welcome to Grid. Post your first gig to see runners apply.</p>
         </div>
-        <div
-          className="rounded-2xl p-16 text-center border"
-          style={{ borderColor: "var(--border-color)", backgroundColor: "var(--card-bg)" }}
-        >
+        <div className="p-16 text-center card-hero shadow-card-lg">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 mx-auto mb-6 flex items-center justify-center">
             <Zap size={28} className="text-primary" />
           </div>
@@ -327,10 +325,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── This week (agenda) ──────────────────────────────────────────── */}
-      <div
-        className="rounded-xl border overflow-hidden mb-6"
-        style={{ borderColor: "var(--border-color)", backgroundColor: "var(--card-bg)" }}
-      >
+      <div className="overflow-hidden mb-6 card shadow-card">
         <div
           className="px-5 py-4 flex items-center justify-between border-b"
           style={{ borderColor: "var(--border-color)" }}

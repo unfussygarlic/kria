@@ -281,10 +281,7 @@ export default function GigsPage() {
 
       {/* ── Empty state ───────────────────────────────────────────────── */}
       {filtered.length === 0 ? (
-        <div
-          className="rounded-xl p-16 text-center border"
-          style={{ borderColor: "var(--border-color)", backgroundColor: "var(--card-bg)" }}
-        >
+        <div className="p-16 text-center card shadow-card">
           {gigs.length === 0 ? (
             <>
               <p className="text-sm text-text-muted mb-4">No gigs yet. Post your first one!</p>
@@ -317,10 +314,8 @@ export default function GigsPage() {
               <section key={bucket}>
                 <BucketHeader bucket={bucket} count={rows.length} />
                 <div
-                  className="rounded-xl border overflow-hidden [&>*+*]:border-t"
+                  className="overflow-hidden [&>*+*]:border-t card shadow-card"
                   style={{
-                    borderColor: "var(--border-color)",
-                    backgroundColor: "var(--card-bg)",
                     // Arbitrary child selector uses `border-t` with no color;
                     // set the divider color at container level via CSS var so
                     // both themes render consistently.

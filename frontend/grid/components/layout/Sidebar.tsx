@@ -43,23 +43,38 @@ export function Sidebar({ profile, trialDaysRemaining }: Props) {
 
   return (
     <aside
-      className="w-[220px] flex-shrink-0 h-screen sticky top-0 flex flex-col z-50"
+      // 256px width — the 2026 SaaS-dashboard convention (Linear, Vercel,
+      // Attio, Notion all land here). Was 220px which felt cramped once
+      // the label + urgency-dot combo grew.
+      className="w-[256px] flex-shrink-0 h-screen sticky top-0 flex flex-col z-50"
       style={{
         backgroundColor: "var(--sidebar-bg)",
         borderRight: "1px solid var(--border-color)",
       }}
     >
-      {/* Logo */}
-      <div className="px-6 pt-7 pb-8 flex items-center gap-3">
+      {/* Logo — slightly more air above/below to sit at the same rhythm
+          as the top bar on the content side. */}
+      <div className="flex items-center gap-3" style={{ padding: "var(--s-xl) var(--s-lg) var(--s-lg)" }}>
         <KriaLogo size={28} style={{ color: "var(--color-primary)" }} />
         <div>
-          <div className="text-sm font-bold leading-none" style={{ fontFamily: "var(--font-comfortaa)", color: "var(--color-primary)" }}>kria</div>
-          <div className="text-[9px] font-semibold tracking-[0.3em] uppercase mt-0.5" style={{ color: "var(--color-text-muted)" }}>Grid</div>
+          <div
+            className="text-sm font-bold leading-none"
+            style={{ fontFamily: "var(--font-comfortaa)", color: "var(--color-primary)" }}
+          >
+            kria
+          </div>
+          <div
+            className="text-[9px] font-semibold tracking-[0.3em] uppercase mt-0.5"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            Grid
+          </div>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 flex flex-col">
+      {/* Nav — the primary work surface. Rounded pill hover per Linear/
+          Notion pattern instead of the old edge-flush strip. */}
+      <nav className="flex-1 flex flex-col gap-1" style={{ padding: `0 var(--s-sm)` }}>
         {NAV.map(({ href, label, Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           const isSubscription = href === "/subscription";
@@ -68,9 +83,13 @@ export function Sidebar({ profile, trialDaysRemaining }: Props) {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-6 py-4 text-xs font-bold uppercase tracking-wider active:scale-[0.98] ${
+              className={`flex items-center gap-3 text-xs font-bold uppercase tracking-wider active:scale-[0.98] ${
                 active ? "nav-item-active" : "nav-item"
               }`}
+              style={{
+                padding: `var(--s-sm) var(--s-md)`,
+                borderRadius: `var(--r-thumb)`,
+              }}
             >
               <Icon size={16} />
               <span className="flex-1">{label}</span>
@@ -87,10 +106,7 @@ export function Sidebar({ profile, trialDaysRemaining }: Props) {
       </nav>
 
       {/* Bottom actions */}
-      <div
-        className="mt-auto"
-        style={{ borderTop: "1px solid var(--border-subtle)" }}
-      >
+      <div className="mt-auto" style={{ borderTop: "1px solid var(--border-subtle)" }}>
         <ThemeToggle />
       </div>
     </aside>

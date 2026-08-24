@@ -112,11 +112,12 @@ export function TopBar({ profile }: Props) {
           {/* Dropdown */}
           {open && (
             <div
-              className="absolute right-0 top-full mt-2 w-48 rounded-xl overflow-hidden z-50"
+              className="absolute right-0 top-full mt-2 w-48 overflow-hidden z-50"
               style={{
                 backgroundColor: "var(--sidebar-bg)",
                 border: "1px solid var(--border-color)",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.20)",
+                borderRadius: "var(--r-card)",
+                boxShadow: "var(--shadow-xl, 0 8px 24px rgba(0,0,0,0.20))",
               }}
             >
               <button
